@@ -1,0 +1,5 @@
+{
+  "name": "Kesher",
+  "description": "A Hebrew-first Jewish dating app for Israel, designed for serious, respectful, verified dating with clear intent and finite discovery.",
+  "requestFramePermissions": ["camera", "geolocation"]
+}
