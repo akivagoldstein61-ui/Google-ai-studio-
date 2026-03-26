@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Core dating profile for Kesher users",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "User's first name" },
+        "birthDate": { "type": "string", "format": "date", "description": "Birth date for age calculation" },
+        "gender": { "type": "string", "enum": ["male", "female"], "description": "User's gender" },
+        "location": { "type": "string", "description": "City or region in Israel" },
+        "bio": { "type": "string", "description": "AI-coached personal bio" },
+        "prompts": { "type": "array", "items": { "type": "object" }, "description": "Answered profile prompts" },
+        "photos": { "type": "array", "items": { "type": "string" }, "description": "URLs to profile photos" },
+        "intent": { "type": "string", "enum": ["marriage", "serious", "exploring"], "description": "Dating intent clarity" },
+        "isVerified": { "type": "boolean", "description": "Trust verification status" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "gender", "intent"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A connection between two users",
+      "type": "object",
+      "properties": {
+        "users": { "type": "array", "items": { "type": "string" }, "description": "UIDs of the two users" },
+        "status": { "type": "string", "enum": ["active", "unmatched", "blocked"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "whyThisMatch": { "type": "string", "description": "AI-generated reasoning for the match" }
+      }
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A chat message",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Like": {
+      "title": "Like",
+      "description": "A like from one user to another",
+      "type": "object",
+      "properties": {
+        "fromId": { "type": "string" },
+        "toId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profile documents"
+    },
+    "/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Likes between users"
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Match documents"
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages within a match"
+    }
+  }
+}
