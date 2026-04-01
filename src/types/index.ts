@@ -38,17 +38,19 @@ export interface ProfilePrompt {
 
 export interface Profile {
   id: string;
+  uid?: string;
   displayName: string;
   age: number;
   city: string;
   gender: Gender;
   bio: string;
-  photos: ProfilePhoto[];
-  prompts: ProfilePrompt[];
+  photos: string[];
+  prompts: (ProfilePrompt | { id: string; question: string; answer: string })[];
   intent: IntentType;
   observance: ObservanceLevel;
-  verificationLevel: VerificationLevel;
-  isVerified: boolean; // Legacy support
+  verificationLevel?: VerificationLevel;
+  isVerified: boolean;
+  isPremium?: boolean;
   distance?: number;
   lastActive?: string;
   tags: string[];
@@ -74,9 +76,9 @@ export interface DiscoveryPreferences {
   maxDistance: number;
   observancePreference: ObservanceLevel[];
   intentPreference: IntentType[];
-  hardFilters: HardFilter[];
-  softPreferences: SoftPreference[];
-  recommendationMode: 'values-first' | 'balanced' | 'chemistry-first';
+  hardFilters: (string | HardFilter)[];
+  softPreferences: (string | SoftPreference)[];
+  recommendationMode: 'values-first' | 'values_first' | 'balanced' | 'chemistry-first' | 'chemistry_first';
 }
 
 export interface TasteProfile {
@@ -101,8 +103,9 @@ export interface Message {
   id: string;
   senderId: string;
   text: string;
-  timestamp: string;
-  status: 'sent' | 'delivered' | 'read';
+  timestamp?: string;
+  createdAt?: string;
+  status?: 'sent' | 'delivered' | 'read';
   aiAssisted?: boolean;
   imageUrl?: string;
 }
@@ -111,16 +114,17 @@ export interface Conversation {
   id: string;
   participants: Profile[];
   lastMessage?: Message;
-  unreadCount: number;
-  isPaused: boolean;
+  messages: Message[];
+  unreadCount?: number;
+  isPaused?: boolean;
 }
 
 export interface Match {
   id: string;
   users: string[];
-  status: 'active' | 'paused' | 'unmatched';
+  status: 'active' | 'paused' | 'unmatched' | 'blocked';
   createdAt: string;
-  whyThisMatch?: string;
+  whyThisMatch: string;
   participants: Profile[];
 }
 
@@ -143,7 +147,11 @@ export interface Report {
   timestamp: string;
 }
 
-export type AnalyticsEvent = 
+// Compatibility aliases for types.ts consumers
+export type ReligiousObservance = ObservanceLevel;
+export type Intent = IntentType;
+
+export type AnalyticsEvent =
   | 'landing_viewed'
   | 'signup_started'
   | 'verification_started'
