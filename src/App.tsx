@@ -16,7 +16,7 @@ import { ProfileDetail } from './components/discovery/ProfileDetail';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { AnimatePresence, motion } from 'motion/react';
-import { Profile, Conversation } from './types';
+import { Profile, Conversation } from '@/types';
 import { AppProvider } from './context/AppContext';
 
 const AppContent: React.FC = () => {

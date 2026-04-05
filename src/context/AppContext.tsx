@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '../types';
+import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 
 interface AppState {

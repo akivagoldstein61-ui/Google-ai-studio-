@@ -1,34 +1,31 @@
-import { SYSTEM_INSTRUCTIONS } from "@/ai/policies";
-import { SafetyScanSchema } from "@/ai/schemas";
-import { capabilityRouter } from "@/ai/capabilityRouter";
-import { outputValidators } from "@/ai/outputValidators";
-import { PROMPT_TEMPLATES } from "@/ai/prompts";
-import { getAI } from "./aiService";
+/**
+ * Client-side AI safety service — calls server-side proxy endpoints.
+ *
+ * All Gemini SDK usage has been moved to server/aiRoutes.ts.
+ */
+
+async function post(endpoint: string, body: Record<string, unknown>): Promise<any> {
+  const res = await fetch(`/api/ai/${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Server error" }));
+    throw new Error(err.error || `AI request failed: ${res.status}`);
+  }
+
+  return res.json();
+}
 
 export const aiSafetyService = {
   async scanMessage(params: { message_text: string; context: string }) {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: capabilityRouter.getRoute('safety_scan'),
-      contents: PROMPT_TEMPLATES.SAFETY_SCAN(params),
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTIONS.SAFETY_SCAN,
-        responseMimeType: "application/json",
-        responseSchema: SafetyScanSchema,
-      }
-    });
-    return outputValidators.validateSafetyScan(JSON.parse(response.text || "{}"));
+    return post("safety-scan", params);
   },
 
   async getSafetyAdvice(question: string): Promise<string> {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: capabilityRouter.getRoute('safety_advice'),
-      contents: PROMPT_TEMPLATES.SAFETY_ADVICE(question),
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-    return response.text || "Your safety is our priority. Please contact support if you have immediate concerns.";
+    const data = await post("safety-advice", { question });
+    return data.advice || "Your safety is our priority. Please contact support if you have immediate concerns.";
   }
 };

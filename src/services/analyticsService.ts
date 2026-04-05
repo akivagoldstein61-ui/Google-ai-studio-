@@ -1,4 +1,4 @@
-import { AnalyticsEvent } from '../types';
+import { AnalyticsEvent } from '@/types';
 
 export const analytics = {
   track(event: AnalyticsEvent, properties?: Record<string, any>) {
