@@ -22,6 +22,7 @@ import { capabilityRouter } from "../src/ai/capabilityRouter.js";
 import { outputValidators } from "../src/ai/outputValidators.js";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.js";
 import { AI_FEATURE_REGISTRY } from "../src/ai/featureRegistry.js";
+import { sanitize } from "../src/ai/promptSanitizer.js";
 
 // ---------------------------------------------------------------------------
 // Gemini client — server-side only, key from process.env
@@ -361,7 +362,7 @@ export function createAIRoutes(): Router {
       const response = await ai.models.generateContent({
         model: capabilityRouter.getRoute("why_match"),
         contents: `Generate a short, calming, and premium intro for the Daily Picks screen.
-The user's name is ${userProfile?.displayName || "there"}.
+The user's name is ${sanitize.short(userProfile?.displayName || "there")}.
 Emphasize that these picks are finite, intentional, and prioritize quality over endless swiping.
 Provide the output in both English and Hebrew.`,
         config: {
@@ -395,7 +396,7 @@ Provide the output in both English and Hebrew.`,
         contents: {
           parts: [
             {
-              text: `A calm, premium, artistic illustration for a Jewish dating app icebreaker: ${prompt}. Style: Minimalist, warm, high-end.`,
+              text: `A calm, premium, artistic illustration for a Jewish dating app icebreaker: ${sanitize.short(prompt)}. Style: Minimalist, warm, high-end.`,
             },
           ],
         },

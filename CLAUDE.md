@@ -111,7 +111,7 @@ Dependency chain for remaining work (completed items struck through):
 3. ~~Type consolidation + cleanup — single `types/index.ts`, remove duplicates~~ (DONE)
 4. ~~Test foundation — Vitest + AI layer unit tests~~ (DONE)
 5. ~~CLAUDE.md — project memory file~~ (DONE — this file)
-6. Prompt input sanitization — prevent injection in AI prompts (no approval needed)
+6. ~~Prompt input sanitization — prevent injection in AI prompts~~ (DONE)
 7. Router introduction — replace useState navigation (approval needed)
 8. Real Firebase Auth — phone/email sign-in (approval needed, blocks 9-10)
 9. Firestore persistence — replace mock data (approval needed, blocked by 8)
@@ -126,24 +126,25 @@ Dependency chain for remaining work (completed items struck through):
 | Slice 1+2 | `186d012` | Removed client-side API key, added 11 server-side AI proxy routes, rewrote all service files to use fetch |
 | Slice 3 | `670ea1a` | Consolidated types, deleted duplicate screens, fixed branding |
 | Test foundation | `2d7f0c9` | Added Vitest with 39 unit tests for outputValidators + capabilityRouter |
+| CLAUDE.md | `46b312c` | Project memory file with architecture, red lines, dev conventions |
+| Prompt sanitization | *this commit* | Added `promptSanitizer.ts` with length-bounding, control-char stripping, role-marker neutralization; applied to all prompt templates |
 | Planning docs | `5a6ced4`, `e943cad` | Full audit + plan artifacts in `docs/claude-import-refresh/` |
 
 ---
 
 ## 9. Single Safest Next Slices
 
-**No approval needed:**
-- Prompt input sanitization in `src/ai/prompts.ts` — add escaping/length-limiting for user-provided text interpolated into prompts. Prevents prompt injection. Pure safety improvement.
-
 **Needs approval:**
 - Router introduction (React Router v7 is already installed as a dependency)
+- Real Firebase Auth — phone/email sign-in
+- Firestore persistence — replace mock data
 
 ---
 
 ## 10. Commands to Run Before Commit
 
 ```bash
-npx vitest run          # 39 tests must pass
+npx vitest run          # 74 tests must pass
 npx tsc --noEmit        # 0 type errors
 npx vite build          # must succeed
 ```
