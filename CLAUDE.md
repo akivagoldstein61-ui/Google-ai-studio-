@@ -112,7 +112,7 @@ Dependency chain for remaining work (completed items struck through):
 4. ~~Test foundation — Vitest + AI layer unit tests~~ (DONE)
 5. ~~CLAUDE.md — project memory file~~ (DONE — this file)
 6. ~~Prompt input sanitization — prevent injection in AI prompts~~ (DONE)
-7. Router introduction — replace useState navigation (approval needed)
+7. ~~Router introduction — React Router v7 replacing useState navigation~~ (DONE)
 8. Real Firebase Auth — phone/email sign-in (approval needed, blocks 9-10)
 9. Firestore persistence — replace mock data (approval needed, blocked by 8)
 10. Real matching algorithm — replace Math.random() (approval needed, blocked by 9)
@@ -127,7 +127,8 @@ Dependency chain for remaining work (completed items struck through):
 | Slice 3 | `670ea1a` | Consolidated types, deleted duplicate screens, fixed branding |
 | Test foundation | `2d7f0c9` | Added Vitest with 39 unit tests for outputValidators + capabilityRouter |
 | CLAUDE.md | `46b312c` | Project memory file with architecture, red lines, dev conventions |
-| Prompt sanitization | *this commit* | Added `promptSanitizer.ts` with length-bounding, control-char stripping, role-marker neutralization; applied to all prompt templates |
+| Prompt sanitization | `d8ef993` | Added `promptSanitizer.ts` with length-bounding, control-char stripping, role-marker neutralization; applied to all prompt templates |
+| Router introduction | *this commit* | Replaced 8 useState booleans with React Router v7; 14 routes; MainLayout as tab layout |
 | Planning docs | `5a6ced4`, `e943cad` | Full audit + plan artifacts in `docs/claude-import-refresh/` |
 
 ---
