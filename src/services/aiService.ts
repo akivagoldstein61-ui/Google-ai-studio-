@@ -5,10 +5,11 @@
  * This module calls /api/ai/* endpoints via fetch.
  */
 
+import { authFetch } from './authFetch';
+
 async function post(endpoint: string, body: Record<string, unknown>): Promise<any> {
-  const res = await fetch(`/api/ai/${endpoint}`, {
+  const res = await authFetch(`/api/ai/${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 

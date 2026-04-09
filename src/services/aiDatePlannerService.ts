@@ -4,10 +4,11 @@
  * All Gemini SDK usage has been moved to server/aiRoutes.ts.
  */
 
+import { authFetch } from './authFetch';
+
 async function post(endpoint: string, body: Record<string, unknown>): Promise<any> {
-  const res = await fetch(`/api/ai/${endpoint}`, {
+  const res = await authFetch(`/api/ai/${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 

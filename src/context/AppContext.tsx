@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '@/firebase';
 import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 
@@ -34,6 +36,7 @@ interface AppState {
   resetTasteProfile: () => void;
   setTasteProfile: (profile: any) => void;
   sendMessage: (conversationId: string, text: string, aiAssisted?: boolean) => void;
+  signOut: () => Promise<void>;
   verifyAge: () => void;
   acceptTerms: () => void;
 }
@@ -86,9 +89,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || '',
+          age: 0,
+          gender: 'male',
+          city: '',
+          photos: [],
+          bio: '',
+          observance: 'traditional',
+          intent: 'serious_relationship',
+          prompts: [],
+          isVerified: false,
+          isPremium: false,
+          tags: [],
+        });
+        // New users without a display name need onboarding
+        if (!firebaseUser.displayName) setOnboarding(true);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
   const likeProfile = async (profileId: string): Promise<boolean> => {
@@ -213,6 +239,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ));
   };
 
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    setUser(null);
+    setOnboarding(false);
+  };
+
   const verifyAge = () => setIsAgeVerified(true);
   const acceptTerms = () => setHasAcceptedTerms(true);
 
@@ -243,6 +275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetTasteProfile,
       setTasteProfile,
       sendMessage,
+      signOut,
       verifyAge,
       acceptTerms
     }}>

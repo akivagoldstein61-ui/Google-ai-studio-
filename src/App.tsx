@@ -25,10 +25,18 @@ import { AppProvider } from './context/AppContext';
 // ---------------------------------------------------------------------------
 
 const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isOnboarding, setUser, setOnboarding } = useApp();
+  const { user, loading, isOnboarding, setOnboarding } = useApp();
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#F3EFEA] border-t-[#D4AF37] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
-    return <WelcomeScreen onNext={() => setUser({ id: 'me', uid: 'me', displayName: 'Akiva', age: 28, gender: 'male', city: 'Jerusalem', photos: [], bio: '', observance: 'modern_orthodox', intent: 'marriage_minded', prompts: [], isVerified: true, isPremium: false, tags: [] })} />;
+    return <WelcomeScreen />;
   }
 
   if (isOnboarding) {
