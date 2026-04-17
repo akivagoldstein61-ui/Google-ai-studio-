@@ -22,6 +22,18 @@ import { capabilityRouter } from "../src/ai/capabilityRouter.js";
 import { outputValidators } from "../src/ai/outputValidators.js";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.js";
 import { AI_FEATURE_REGISTRY } from "../src/ai/featureRegistry.js";
+import {
+  adaptBioCoachResponse,
+  adaptDatePlannerResponse,
+  adaptSafetyClassification,
+  adaptWhyMatchResponse,
+  buildScamWarningScaffold,
+  classifySafety,
+  validateBioCoachRequest,
+  validateDatePlannerRequest,
+  validateSafetyClassifierRequest,
+  validateWhyMatchRequest,
+} from "./aiTrustBackbone.js";
 
 // ---------------------------------------------------------------------------
 // Gemini client — server-side only, key from process.env
@@ -58,7 +70,8 @@ function asyncHandler(
       const message =
         err instanceof Error ? err.message : "Internal server error";
       if (!res.headersSent) {
-        res.status(500).json({ error: message });
+        const status = message.startsWith("Bad request:") ? 400 : 500;
+        res.status(status).json({ error: message.replace("Bad request: ", "") });
       }
     });
   };
@@ -78,15 +91,13 @@ export function createAIRoutes(): Router {
       if (!isAllowedFeature("bio_coach"))
         return void res.status(403).json({ error: "Feature disabled" });
 
-      const { bio_raw, tone, values, dealbreakers, length } = req.body;
-      if (!bio_raw)
-        return void res
-          .status(400)
-          .json({ error: "bio_raw is required" });
+      const { value } = validateBioCoachRequest(req.body);
+      const { bio_raw, tone, values, dealbreakers, length } = value;
 
       const ai = getAI();
+      const modelRoute = capabilityRouter.getRoute("bio_coach");
       const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("bio_coach"),
+        model: modelRoute,
         contents: PROMPT_TEMPLATES.BIO_COACH({
           bio_raw,
           tone: tone || "warm",
@@ -102,8 +113,9 @@ export function createAIRoutes(): Router {
         },
       });
 
-      const data = outputValidators.validateBioCoach(
-        JSON.parse(response.text || "{}")
+      const data = adaptBioCoachResponse(
+        JSON.parse(response.text || "{}"),
+        modelRoute
       );
       res.json(data);
     })
@@ -145,10 +157,12 @@ export function createAIRoutes(): Router {
       if (!isAllowedFeature("why_match"))
         return void res.status(403).json({ error: "Feature disabled" });
 
-      const { user_profile, candidate_profile, signals } = req.body;
+      const { value } = validateWhyMatchRequest(req.body);
+      const { user_profile, candidate_profile, signals } = value;
       const ai = getAI();
+      const modelRoute = capabilityRouter.getRoute("why_match");
       const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("why_match"),
+        model: modelRoute,
         contents: PROMPT_TEMPLATES.WHY_MATCH({
           user_profile,
           candidate_profile,
@@ -161,8 +175,9 @@ export function createAIRoutes(): Router {
         },
       });
 
-      const data = outputValidators.validateWhyMatch(
-        JSON.parse(response.text || "{}")
+      const data = adaptWhyMatchResponse(
+        JSON.parse(response.text || "{}"),
+        modelRoute
       );
       res.json(data);
     })
@@ -209,13 +224,13 @@ export function createAIRoutes(): Router {
       if (!isAllowedFeature("date_planner"))
         return void res.status(403).json({ error: "Feature disabled" });
 
-      const { area, time, preferences, budget } = req.body;
-      if (!area)
-        return void res.status(400).json({ error: "area is required" });
+      const { value } = validateDatePlannerRequest(req.body);
+      const { area, time, preferences, budget } = value;
 
       const ai = getAI();
+      const modelRoute = capabilityRouter.getRoute("date_planner");
       const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("date_planner"),
+        model: modelRoute,
         contents:
           PROMPT_TEMPLATES.DATE_PLANNER({
             area,
@@ -233,8 +248,33 @@ export function createAIRoutes(): Router {
       let text = response.text || "{}";
       text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
-      const data = outputValidators.validateDatePlanner(JSON.parse(text));
+      const data = adaptDatePlannerResponse(JSON.parse(text), modelRoute);
       res.json(data);
+    })
+  );
+
+  // --- Safety Classifier (Phase 1 scaffold) -------------------------------
+  router.post(
+    "/safety-classifier",
+    asyncHandler(async (req, res) => {
+      const { value } = validateSafetyClassifierRequest(req.body);
+      const classification = classifySafety(value.message_text);
+      const data = adaptSafetyClassification(classification, "heuristic-safety-v1");
+      res.json(data);
+    })
+  );
+
+  // --- Scam Warning Scaffold ----------------------------------------------
+  router.post(
+    "/scam-warning",
+    asyncHandler(async (req, res) => {
+      const { value } = validateSafetyClassifierRequest(req.body);
+      const classification = classifySafety(value.message_text);
+      const scaffold = buildScamWarningScaffold(classification);
+      res.json({
+        classification,
+        scaffold,
+      });
     })
   );
 
