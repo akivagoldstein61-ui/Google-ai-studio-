@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Grounded Date Intelligence"
+  short_description: "Plan grounded date and freshness flows"
+  default_prompt: "Use $kesher-grounded-date-intelligence to design a grounded Kesher date-planning flow."
