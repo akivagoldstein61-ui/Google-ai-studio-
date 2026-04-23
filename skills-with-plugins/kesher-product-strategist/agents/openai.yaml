@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Product Strategist"
+  short_description: "Plan trust-forward Kesher product strategy"
+  default_prompt: "Use $kesher-product-strategist to pressure-test this Kesher product decision."
