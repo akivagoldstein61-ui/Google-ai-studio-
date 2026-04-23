@@ -56,7 +56,7 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> =
               )}
             >
               <img 
-                src={profile.photos[0]} 
+                src={profile.photos?.[0]} 
                 className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
                 referrerPolicy="no-referrer"
               />
@@ -195,9 +195,9 @@ const FilterDrawer: React.FC<{
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {['Urban', 'Outdoorsy', 'Artistic', 'Tech-focused', 'Traditional', 'Secular'].map(tag => (
+            {['Urban', 'Outdoorsy', 'Artistic', 'Tech-focused', 'Traditional', 'Secular'].map((tag, i) => (
               <button 
-                key={tag}
+                key={`soft-pref-${i}`}
                 onClick={() => setLocalPrefs({ ...localPrefs, softPreferences: localPrefs.softPreferences.includes(tag) ? localPrefs.softPreferences.filter(t => t !== tag) : [...localPrefs.softPreferences, tag] })}
                 className={cn(
                   "px-6 py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border",

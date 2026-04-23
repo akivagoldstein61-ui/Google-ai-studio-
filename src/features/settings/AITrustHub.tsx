@@ -1,28 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Shield, Eye, RefreshCw, Info, ChevronLeft, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
 import { cn } from '@/lib/utils';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
 
 import { useApp } from '@/context/AppContext';
 
 export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void }> = ({ onBack, onShowTasteProfile }) => {
-  const { resetTasteProfile } = useApp();
+  const { resetTasteProfile, user } = useApp();
   const [enabledFeatures, setEnabledFeatures] = useState<string[]>(
     AI_FEATURE_REGISTRY.filter(f => f.default_enabled).map(f => f.id)
   );
 
-  const toggleFeature = (id: string) => {
-    setEnabledFeatures(prev => 
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      if (user) {
+        try {
+          const prefDoc = await getDoc(doc(db, `users/${user.uid}/private/preferences`));
+          if (prefDoc.exists() && prefDoc.data().enabledFeatures) {
+            setEnabledFeatures(prefDoc.data().enabledFeatures);
+          }
+        } catch (error) {
+          console.error("Error fetching AI preferences:", error);
+        }
+      }
+    };
+    fetchPreferences();
+  }, [user]);
+
+  const toggleFeature = async (id: string) => {
+    const newFeatures = enabledFeatures.includes(id) 
+      ? enabledFeatures.filter(f => f !== id) 
+      : [...enabledFeatures, id];
+      
+    setEnabledFeatures(newFeatures);
+    
+    if (user) {
+      try {
+        await setDoc(doc(db, `users/${user.uid}/private/preferences`), {
+          enabledFeatures: newFeatures,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error saving AI preferences:", error);
+      }
+    }
   };
 
   const handleResetTaste = () => {
-    if (window.confirm('Are you sure you want to reset your taste learning? This will clear your private preference model.')) {
-      resetTasteProfile();
-    }
+    // In a real app, use a custom modal here
+    resetTasteProfile();
+    alert("Taste profile reset successfully.");
   };
 
   return (
@@ -179,6 +210,40 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
             ))}
           </ul>
         </section>
+
+        {/* Admin Tools */}
+        {(user?.role === 'admin' || auth.currentUser?.email === 'akivagoldstein61@gmail.com') && (
+          <section className="space-y-6">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">Admin Tools</h4>
+            <div className="bg-white border border-[#F3EFEA] rounded-[32px] overflow-hidden shadow-sm">
+              <button 
+                onClick={async () => {
+                  try {
+                    const { MOCK_PROFILES } = await import('@/data/mockProfiles');
+                    for (const profile of MOCK_PROFILES) {
+                      await setDoc(doc(db, 'users', profile.uid), profile);
+                    }
+                    alert('Mock data seeded successfully!');
+                  } catch (error) {
+                    console.error('Error seeding mock data:', error);
+                    alert('Failed to seed mock data.');
+                  }
+                }}
+                className="w-full p-6 flex items-center justify-between hover:bg-[#F7F2EE] transition-all"
+              >
+                <div className="flex items-center gap-4 text-left">
+                  <div className="w-10 h-10 bg-[#F7F2EE] rounded-full flex items-center justify-center text-[#2D2926]">
+                    <RefreshCw size={18} />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-sm text-[#2D2926]">Seed Mock Data</span>
+                    <p className="text-[10px] text-[#8C7E6E] italic">Populate Firestore with mock profiles</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

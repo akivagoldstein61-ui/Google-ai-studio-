@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/Button';
 import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 import { cn } from '@/lib/utils';
+import { SafetyMenu } from '@/features/safety/SafetyMenu';
+import { ReportFlow } from '@/features/safety/ReportFlow';
+
+import { trustService } from '@/services/trustService';
 
 export const ProfileDetail: React.FC<{ 
   profile: Profile, 
@@ -13,12 +17,14 @@ export const ProfileDetail: React.FC<{
   onLike: () => void,
   onPass: () => void
 }> = ({ profile, onBack, onLike, onPass }) => {
-  const [openers, setOpeners] = useState<string[]>([]);
+  const [openers, setOpeners] = useState<any[]>([]);
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
   const { user, moreLikeThis, lessLikeThis } = useApp();
   const [explanation, setExplanation] = useState<{ reasons: string[], first_question?: string, gentle_clarification?: string } | null>(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
+  const [showSafetyMenu, setShowSafetyMenu] = useState(false);
+  const [showReportFlow, setShowReportFlow] = useState(false);
 
   useEffect(() => {
     if (profile && user) {
@@ -49,7 +55,7 @@ export const ProfileDetail: React.FC<{
       const suggested = await aiService.generateOpeners(
         profile.displayName, 
         profile.bio, 
-        profile.prompts[0]?.answer || ''
+        profile.prompts?.[0]?.answer || ''
       );
       setOpeners(suggested);
       setShowOpeners(true);
@@ -57,6 +63,18 @@ export const ProfileDetail: React.FC<{
       console.error(error);
     } finally {
       setLoadingOpeners(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!user) return;
+    try {
+      await trustService.block(user.id, profile.id);
+      alert("This person can no longer contact you. The connection is severed.");
+      onBack();
+    } catch (error) {
+      console.error('Failed to block user', error);
+      alert('Failed to block user. Please try again.');
     }
   };
 
@@ -70,7 +88,10 @@ export const ProfileDetail: React.FC<{
           <ArrowLeft size={24} />
         </button>
         <div className="flex gap-2 pointer-events-auto">
-          <button className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/20 hover:bg-white/30 transition-all">
+          <button 
+            onClick={() => setShowSafetyMenu(true)}
+            className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/20 hover:bg-white/30 transition-all"
+          >
             <Info size={24} />
           </button>
         </div>
@@ -79,7 +100,7 @@ export const ProfileDetail: React.FC<{
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
         <div className="relative aspect-[3/4] w-full">
           <img 
-            src={profile.photos[0]} 
+            src={profile.photos?.[0]} 
             className="w-full h-full object-cover" 
             referrerPolicy="no-referrer"
           />
@@ -144,7 +165,7 @@ export const ProfileDetail: React.FC<{
               {explanation ? (
                 <>
                   <ul className="space-y-2">
-                    {explanation.reasons.map((reason, i) => (
+                    {explanation.reasons?.map((reason, i) => (
                       <li key={i} className="text-lg text-[#2D2926] leading-relaxed italic font-serif flex gap-3">
                         <span className="text-[#D4AF37]">•</span>
                         <span>{reason}</span>
@@ -204,8 +225,8 @@ export const ProfileDetail: React.FC<{
 
           {/* Tags */}
           <section className="flex flex-wrap gap-3">
-            {profile.tags.map(tag => (
-              <span key={tag} className="px-5 py-2.5 bg-[#F7F2EE] text-[#8C7E6E] rounded-full text-[11px] font-bold uppercase tracking-widest border border-[#E5DED5]">
+            {profile.tags?.map((tag, i) => (
+              <span key={`${tag}-${i}`} className="px-5 py-2.5 bg-[#F7F2EE] text-[#8C7E6E] rounded-full text-[11px] font-bold uppercase tracking-widest border border-[#E5DED5]">
                 {tag}
               </span>
             ))}
@@ -275,9 +296,17 @@ export const ProfileDetail: React.FC<{
                   <button 
                     key={i}
                     onClick={() => { onLike(); setShowOpeners(false); }}
-                    className="w-full p-8 text-left bg-white border border-[#F3EFEA] rounded-[32px] hover:border-[#D4AF37] transition-all shadow-sm group relative overflow-hidden"
+                    className="w-full p-6 text-right bg-white border border-[#F3EFEA] rounded-[32px] hover:border-[#D4AF37] transition-all shadow-sm group relative overflow-hidden flex flex-col gap-2"
                   >
-                    <p className="text-lg text-[#2D2926] leading-relaxed italic font-serif relative z-10">{opener}</p>
+                    <div className="flex justify-between items-start w-full">
+                      <span className="text-xs text-[#8C7E6E] font-sans text-left max-w-[40%]">{opener.text_en}</span>
+                      <span className="text-lg text-[#2D2926] leading-relaxed font-hebrew font-medium text-right flex-1">{opener.text_he}</span>
+                    </div>
+                    {opener.rationale && (
+                      <div className="mt-2 pt-3 border-t border-[#F3EFEA]/50 w-full text-right">
+                        <span className="text-[10px] text-[#8C7E6E] italic font-serif">{opener.rationale}</span>
+                      </div>
+                    )}
                     <div className="absolute top-0 right-0 w-24 h-24 bg-[#D4AF37]/5 blur-3xl -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
@@ -288,6 +317,21 @@ export const ProfileDetail: React.FC<{
           </motion.div>
         )}
       </AnimatePresence>
+      <SafetyMenu
+        isOpen={showSafetyMenu}
+        onClose={() => setShowSafetyMenu(false)}
+        onReport={() => setShowReportFlow(true)}
+        onBlock={handleBlock}
+        targetName={profile.displayName}
+      />
+
+      <ReportFlow
+        isOpen={showReportFlow}
+        onClose={() => setShowReportFlow(false)}
+        targetName={profile.displayName}
+        reporterId={user?.id}
+        targetId={profile.id}
+      />
     </div>
   );
 };

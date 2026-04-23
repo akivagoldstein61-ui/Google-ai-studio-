@@ -11,22 +11,46 @@ export const DailyPicksScreen: React.FC<{
   onSelect: (profile: Profile) => void,
   onMatch: (profile: Profile) => void
 }> = ({ onSelect, onMatch }) => {
-  const { dailyPicks, likeProfile, passProfile, moreLikeThis, lessLikeThis, user } = useApp();
+  const { dailyPicks, likeProfile, passProfile, moreLikeThis, lessLikeThis, user, trackEvent } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [explanation, setExplanation] = useState<{ reasons: string[], first_question?: string, gentle_clarification?: string } | null>(null);
+  const [explanation, setExplanation] = useState<{ reasons_he: string[], first_question_he: string, gentle_clarification_he?: string } | null>(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [introData, setIntroData] = useState<{ headline_en: string, headline_he: string, body_en: string, body_he: string } | null>(null);
   const [loadingIntro, setLoadingIntro] = useState(false);
+  const [introAttempted, setIntroAttempted] = useState(false);
+  const [pacingData, setPacingData] = useState<{ message_he: string, reflection_prompt_he: string } | null>(null);
+  const [pacingAttempted, setPacingAttempted] = useState(false);
 
   useEffect(() => {
-    if (showIntro && user && !introData && !loadingIntro) {
+    if (currentIndex >= dailyPicks.length && !pacingData && !pacingAttempted) {
+      const fetchPacing = async () => {
+        setPacingAttempted(true);
+        try {
+          const result = await aiService.getPacingIntervention(10, 5); // Mock session length and velocity
+          if (result) {
+            setPacingData(result);
+          }
+        } catch (error) {
+          console.error("Failed to fetch pacing intervention", error);
+        }
+      };
+      fetchPacing();
+    }
+  }, [currentIndex, dailyPicks.length, pacingData, pacingAttempted]);
+
+  useEffect(() => {
+    if (showIntro && user && !introData && !loadingIntro && !introAttempted) {
       const fetchIntro = async () => {
         setLoadingIntro(true);
+        setIntroAttempted(true);
         try {
           const result = await aiService.generateDailyPicksIntro(user);
-          setIntroData(result);
+          if (result) {
+            setIntroData(result);
+          }
+          trackEvent('daily_picks_intro_seen', { userId: user.id });
         } catch (error) {
           console.error("Failed to generate intro", error);
         } finally {
@@ -35,7 +59,7 @@ export const DailyPicksScreen: React.FC<{
       };
       fetchIntro();
     }
-  }, [showIntro, user, introData, loadingIntro]);
+  }, [showIntro, user, introData, loadingIntro, trackEvent, introAttempted]);
 
   const currentProfile = dailyPicks[currentIndex];
 
@@ -44,15 +68,19 @@ export const DailyPicksScreen: React.FC<{
       const fetchExplanation = async () => {
         setLoadingExplanation(true);
         try {
-          const result = await aiService.explainMatch({
-            user_profile: user,
-            candidate_profile: currentProfile,
-            signals: ['interests', 'intent', 'observance']
-          });
-          setExplanation(result);
+          const result = await aiService.explainMatch({ user_profile: user, candidate_profile: currentProfile, signals: [] });
+          if (result) {
+            setExplanation(result);
+          } else {
+            setExplanation({
+              reasons_he: [`אתם חולקים תחומי עניין כמו ${currentProfile.tags.slice(0, 2).join(' ו-')}.`],
+              first_question_he: "מה אתה אוהב לעשות בסופי שבוע?"
+            });
+          }
         } catch (error) {
           setExplanation({
-            reasons: [`You both share an interest in ${currentProfile.tags.slice(0, 2).join(' and ')}.`]
+            reasons_he: [`אתם חולקים תחומי עניין כמו ${currentProfile.tags.slice(0, 2).join(' ו-')}.`],
+            first_question_he: "מה אתה אוהב לעשות בסופי שבוע?"
           });
         } finally {
           setLoadingExplanation(false);
@@ -129,12 +157,17 @@ export const DailyPicksScreen: React.FC<{
             </>
           )}
         </div>
-        <Button 
-          onClick={() => setShowIntro(false)}
-          className="w-full h-14 text-sm font-bold rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all uppercase tracking-widest"
-        >
-          View Today's Picks
-        </Button>
+        <div className="space-y-3 w-full max-w-sm">
+          <Button 
+            onClick={() => setShowIntro(false)}
+            className="w-full h-14 text-sm font-bold rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all uppercase tracking-widest"
+          >
+            View Today's Picks
+          </Button>
+          <p className="text-[10px] text-center text-[#8C7E6E] uppercase tracking-widest">
+            Adjust preferences in Settings
+          </p>
+        </div>
         <div className="h-px w-16 bg-[#2D2926] opacity-10" />
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Intentional • Finite • Calm</p>
       </div>
@@ -143,7 +176,7 @@ export const DailyPicksScreen: React.FC<{
 
   if (currentIndex >= dailyPicks.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-8 text-center space-y-8">
+      <div className="flex flex-col items-center justify-center h-full px-8 text-center space-y-8 bg-[#FDFCFB]">
         <div className="w-20 h-20 bg-[#F7F2EE] text-[#D4AF37] rounded-[32px] flex items-center justify-center shadow-sm">
           <ShieldCheck size={40} />
         </div>
@@ -151,6 +184,25 @@ export const DailyPicksScreen: React.FC<{
           <h2 className="text-3xl font-serif italic text-[#2D2926]">That's all for today</h2>
           <p className="text-[#8C7E6E] leading-relaxed italic">We prioritize quality over quantity. Your next set of curated picks will arrive tomorrow morning.</p>
         </div>
+        
+        <AnimatePresence>
+          {pacingData && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#F7F2EE] p-6 rounded-[32px] space-y-4 border border-[#E5DED5] w-full max-w-sm"
+            >
+              <div className="flex items-center justify-center gap-2 text-[#D4AF37]">
+                <Sparkles size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Mindful Dating</span>
+              </div>
+              <p className="text-[#2D2926] leading-relaxed italic font-serif" dir="rtl">{pacingData.message_he}</p>
+              <div className="h-px w-full bg-[#E5DED5]" />
+              <p className="text-[#8C7E6E] text-sm leading-relaxed" dir="rtl">{pacingData.reflection_prompt_he}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="h-px w-16 bg-[#2D2926] opacity-10" />
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Intentional • Finite • Calm</p>
       </div>
@@ -184,7 +236,7 @@ export const DailyPicksScreen: React.FC<{
             onClick={() => onSelect(currentProfile)}
           >
             <img 
-              src={currentProfile.photos[0]} 
+              src={currentProfile.photos?.[0]} 
               className="w-full h-full object-cover" 
               referrerPolicy="no-referrer"
             />
@@ -211,9 +263,12 @@ export const DailyPicksScreen: React.FC<{
 
               <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">
-                    <Sparkles size={12} />
-                    <span>Why this match / למה ההתאמה הזו</span>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">
+                      <Sparkles size={12} />
+                      <span>Why this match / למה ההתאמה הזו</span>
+                    </div>
+                    <span className="text-[8px] text-white/50 uppercase tracking-widest">Based on your settings</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
@@ -239,17 +294,28 @@ export const DailyPicksScreen: React.FC<{
                   {explanation ? (
                     <>
                       <ul className="space-y-1">
-                        {explanation.reasons.map((reason, i) => (
-                          <li key={i} className="text-sm text-white/90 leading-relaxed italic font-serif flex gap-2">
+                        {explanation.reasons_he?.map((reason, i) => (
+                          <li key={`syn-${i}`} className="text-sm text-white/90 leading-relaxed italic font-serif flex gap-2">
                             <span className="text-[#D4AF37]">•</span>
-                            <span>{reason}</span>
+                            <span dir="rtl">{reason}</span>
                           </li>
                         ))}
                       </ul>
-                      {explanation.first_question && (
-                        <p className="text-xs text-white/70 italic mt-2 border-t border-white/10 pt-2">
-                          <span className="font-bold text-white/90 not-italic">Icebreaker:</span> {explanation.first_question}
-                        </p>
+                      {explanation.gentle_clarification_he && (
+                        <div className="mt-2 border-t border-white/10 pt-2">
+                          <p className="text-xs text-white/70 leading-relaxed italic font-serif flex gap-2">
+                            <span className="text-amber-500/70">•</span>
+                            <span dir="rtl">{explanation.gentle_clarification_he}</span>
+                          </p>
+                        </div>
+                      )}
+                      {explanation.first_question_he && (
+                        <div className="mt-2 border-t border-white/10 pt-2">
+                          <p className="text-xs text-white/90 leading-relaxed font-serif flex gap-2">
+                            <span className="text-blue-400/70">?</span>
+                            <span dir="rtl" className="font-bold">{explanation.first_question_he}</span>
+                          </p>
+                        </div>
                       )}
                     </>
                   ) : (

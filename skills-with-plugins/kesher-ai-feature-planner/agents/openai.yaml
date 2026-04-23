@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher AI Feature Planner"
-  short_description: "Design trust-forward Kesher AI features"
-  default_prompt: "Use $kesher-ai-feature-planner to design this Kesher AI feature safely."

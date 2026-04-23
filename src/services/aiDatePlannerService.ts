@@ -1,26 +1,48 @@
-/**
- * Client-side date planner service — calls server-side proxy endpoint.
- *
- * All Gemini SDK usage has been moved to server/aiRoutes.ts.
- */
+import { auth } from '@/firebase';
 
-async function post(endpoint: string, body: Record<string, unknown>): Promise<any> {
-  const res = await fetch(`/api/ai/${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Server error" }));
-    throw new Error(err.error || `AI request failed: ${res.status}`);
+const getHeaders = async () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
   }
-
-  return res.json();
-}
+  return headers;
+};
 
 export const aiDatePlannerService = {
-  async planDate(params: { area: string; time: string; preferences: string; budget: string }) {
-    return post("date-planner", params);
+  async planDate(params: { 
+    locationScope: string; 
+    locationValue: string; 
+    time: string; 
+    budget: string; 
+    vibe: string; 
+    transport: string; 
+    constraints: string; 
+  }) {
+    try {
+      const response = await fetch('/api/ai/plan-date', {
+        method: 'POST',
+        headers: await getHeaders(),
+        body: JSON.stringify({ params })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("INVALID_JSON_RESPONSE");
+      }
+      
+      return await response.json();
+    } catch (e: any) {
+      if (e?.message !== "INVALID_JSON_RESPONSE") {
+        console.error("Date planner API call failed", e);
+      }
+      return { venues: [], how_to_choose_tip: "" };
+    }
   }
 };

@@ -1,30 +1,37 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, RefreshCw, Info, Edit2, Check, X, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 
 export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { tasteProfile, setTasteProfile, resetTasteProfile, interactions } = useApp();
+  const { tasteProfile, setTasteProfile, resetTasteProfile, interactions, trackEvent, user } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(tasteProfile);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      trackEvent('private_taste_profile_viewed', { userId: user.id });
+    }
+  }, [user, trackEvent]);
 
   const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset your taste learning? This will clear your private preference model.')) {
-      resetTasteProfile();
-      setEditedProfile({
-        hard_dealbreakers: [],
-        soft_preferences: [],
-        things_to_avoid: [],
-        weights: {
-          values_vs_lifestyle: 0.5,
-          distance_tolerance: 0.5
-        },
-        explanation: ""
-      });
-    }
+    resetTasteProfile();
+    setEditedProfile({
+      hard_dealbreakers: [],
+      soft_preferences: [],
+      things_to_avoid: [],
+      weights: {
+        attraction_weight: 0.5,
+        stability_weight: 0.5,
+        pacing_weight: 0.5
+      },
+      explanation: ""
+    });
+    setShowResetConfirm(false);
   };
 
   const handleSave = () => {
@@ -35,11 +42,11 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
-      // TODO(SERVER-SIDE): Replace this client-side AI call with a secure backend API call.
-      // e.g., await fetch('/api/taste-profile/analyze', { method: 'POST', body: JSON.stringify({ interactions }) })
       const newProfile = await aiService.analyzeTasteProfile(interactions, tasteProfile);
-      setTasteProfile(newProfile);
-      setEditedProfile(newProfile);
+      if (newProfile) {
+        setTasteProfile(newProfile);
+        setEditedProfile(newProfile);
+      }
     } catch (error) {
       console.error("Taste profile analysis error:", error);
     } finally {
@@ -49,11 +56,13 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
 
   const renderListEditor = (title: string, key: keyof typeof tasteProfile) => {
     const items = isEditing ? editedProfile[key] : tasteProfile[key];
+    const [addingNew, setAddingNew] = useState(false);
+    const [newItemText, setNewItemText] = useState('');
     
     return (
       <div className="space-y-3">
         <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">{title}</h4>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {items.map((item: string, i: number) => (
             <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F3EFEA] rounded-full text-xs font-medium text-[#2D2926]">
               <span>{item}</span>
@@ -71,18 +80,41 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
               )}
             </div>
           ))}
-          {isEditing && (
+          {isEditing && !addingNew && (
             <button 
-              onClick={() => {
-                const newItem = window.prompt(`Add new ${title.toLowerCase()}:`);
-                if (newItem) {
-                  setEditedProfile({ ...editedProfile, [key]: [...items, newItem] });
-                }
-              }}
+              onClick={() => setAddingNew(true)}
               className="px-3 py-1.5 bg-[#F7F2EE] border border-dashed border-[#D4AF37]/50 rounded-full text-xs font-medium text-[#D4AF37] hover:bg-[#D4AF37]/10"
             >
               + Add
             </button>
+          )}
+          {isEditing && addingNew && (
+            <div className="flex items-center gap-2">
+              <input 
+                type="text"
+                autoFocus
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newItemText.trim()) {
+                    setEditedProfile({ ...editedProfile, [key]: [...items, newItemText.trim()] });
+                    setNewItemText('');
+                    setAddingNew(false);
+                  } else if (e.key === 'Escape') {
+                    setAddingNew(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (newItemText.trim()) {
+                    setEditedProfile({ ...editedProfile, [key]: [...items, newItemText.trim()] });
+                  }
+                  setNewItemText('');
+                  setAddingNew(false);
+                }}
+                className="px-3 py-1 bg-white border border-[#D4AF37] rounded-full text-xs font-medium text-[#2D2926] focus:outline-none w-32"
+                placeholder="Type and enter..."
+              />
+            </div>
           )}
           {!isEditing && items.length === 0 && (
             <span className="text-xs text-[#8C7E6E] italic">None learned yet.</span>
@@ -164,34 +196,34 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           <div className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-6 shadow-sm">
             <div className="space-y-3">
               <div className="flex justify-between text-xs font-bold text-[#2D2926]">
-                <span>Values</span>
-                <span>Lifestyle</span>
+                <span>Attraction</span>
+                <span>Stability</span>
               </div>
               <input 
                 type="range" 
                 min="0" max="1" step="0.1" 
                 disabled={!isEditing}
-                value={isEditing ? editedProfile.weights.values_vs_lifestyle : tasteProfile.weights.values_vs_lifestyle}
+                value={isEditing ? editedProfile.weights.attraction_weight : tasteProfile.weights.attraction_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
-                  weights: { ...editedProfile.weights, values_vs_lifestyle: parseFloat(e.target.value) }
+                  weights: { ...editedProfile.weights, attraction_weight: parseFloat(e.target.value) }
                 })}
                 className="w-full accent-[#D4AF37]"
               />
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-xs font-bold text-[#2D2926]">
-                <span>Strict Distance</span>
-                <span>Flexible Distance</span>
+                <span>Fast Paced</span>
+                <span>Slow Paced</span>
               </div>
               <input 
                 type="range" 
                 min="0" max="1" step="0.1" 
                 disabled={!isEditing}
-                value={isEditing ? editedProfile.weights.distance_tolerance : tasteProfile.weights.distance_tolerance}
+                value={isEditing ? editedProfile.weights.pacing_weight : tasteProfile.weights.pacing_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
-                  weights: { ...editedProfile.weights, distance_tolerance: parseFloat(e.target.value) }
+                  weights: { ...editedProfile.weights, pacing_weight: parseFloat(e.target.value) }
                 })}
                 className="w-full accent-[#D4AF37]"
               />
@@ -201,7 +233,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
 
         <section className="pt-4">
           <button 
-            onClick={handleReset}
+            onClick={() => setShowResetConfirm(true)}
             className="w-full p-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm"
           >
             <RefreshCw size={16} />
@@ -209,6 +241,44 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           </button>
         </section>
       </div>
+
+      <AnimatePresence>
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm bg-[#FDFCFB] rounded-[32px] p-6 space-y-6 shadow-2xl"
+            >
+              <div className="space-y-2 text-center">
+                <div className="w-12 h-12 bg-[#F7F2EE] rounded-full flex items-center justify-center mx-auto mb-4 text-[#2D2926]">
+                  <RefreshCw size={24} />
+                </div>
+                <h3 className="text-xl font-serif italic text-[#2D2926]">Reset Taste Learning?</h3>
+                <p className="text-sm text-[#8C7E6E] leading-relaxed">
+                  Are you sure you want to reset your taste learning? This will clear your private preference model.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Button 
+                  className="w-full h-12 bg-[#2D2926] text-white font-bold rounded-full"
+                  onClick={handleReset}
+                >
+                  Yes, Reset
+                </Button>
+                <Button 
+                  variant="ghost"
+                  className="w-full h-12 text-[#2D2926] font-bold rounded-full"
+                  onClick={() => setShowResetConfirm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

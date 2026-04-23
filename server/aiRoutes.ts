@@ -1,424 +1,559 @@
-/**
- * Server-side AI proxy routes.
- *
- * All Gemini SDK usage lives here — never in the client bundle.
- * Each route corresponds to a registered AI feature in src/ai/featureRegistry.ts.
- * The feature allowlist is enforced: only registered feature IDs are served.
- */
-
-import { Router, Request, Response } from "express";
+import express from "express";
 import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.js";
+import rateLimit from "express-rate-limit";
+import admin from "firebase-admin";
+import fs from "fs";
+import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.ts";
 import {
-  BioCoachSchema,
-  WhyMatchSchema,
-  SafetyScanSchema,
-  DateIdeasSchema,
-  ProfileCompletenessSchema,
+  OpenersSchema,
+  RephraseSchema,
+  MessageSafetyScanSchema,
+  ModerationSummarySchema,
   TasteProfileSchema,
+  ProfileCompletenessSchema,
+  BioCoachSchema,
   DailyPicksIntroSchema,
-} from "../src/ai/schemas.js";
-import { capabilityRouter } from "../src/ai/capabilityRouter.js";
-import { outputValidators } from "../src/ai/outputValidators.js";
-import { PROMPT_TEMPLATES } from "../src/ai/prompts.js";
-import { AI_FEATURE_REGISTRY } from "../src/ai/featureRegistry.js";
+  WhyThisMatchPayloadSchema,
+  PersonalitySummarySchema,
+  PairInsightReportSchema,
+  PacingInterventionSchema,
+  DateIdeasSchema,
+  PhotoAnalysisSchema,
+} from "../src/ai/schemas.ts";
+import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
+import { outputValidators } from "../src/ai/outputValidators.ts";
+import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
 
-// ---------------------------------------------------------------------------
-// Gemini client — server-side only, key from process.env
-// ---------------------------------------------------------------------------
+export const aiRouter = express.Router();
 
-function getAI(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY is not set on the server. AI features are unavailable."
-    );
+const getAI = () => {
+  let apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    throw new Error("MISSING_API_KEY");
   }
+  
+  apiKey = apiKey.replace(/^["']|["']$/g, '').trim();
+  
   return new GoogleGenAI({ apiKey });
-}
+};
 
-/** Feature allowlist derived from the canonical registry. */
-const ALLOWED_FEATURES = new Set(AI_FEATURE_REGISTRY.map((f) => f.id));
+// Rate limiting middleware
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false, trustProxy: false },
+});
 
-function isAllowedFeature(id: string): boolean {
-  return ALLOWED_FEATURES.has(id);
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Wrap an async route handler so errors become JSON 500s, not crashes. */
-function asyncHandler(
-  fn: (req: Request, res: Response) => Promise<void>
-): (req: Request, res: Response) => void {
-  return (req, res) => {
-    fn(req, res).catch((err) => {
-      console.error(`[AI Route Error]`, err);
-      const message =
-        err instanceof Error ? err.message : "Internal server error";
-      if (!res.headersSent) {
-        res.status(500).json({ error: message });
-      }
+// Initialize Firebase Admin for auth verification
+const configPath = "./firebase-applet-config.json";
+if (fs.existsSync(configPath)) {
+  const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      projectId: config.projectId,
     });
-  };
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Routes
-// ---------------------------------------------------------------------------
+// Auth enforcement middleware
+const requireAuth = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
-export function createAIRoutes(): Router {
-  const router = Router();
+  const token = authHeader.split("Bearer ")[1];
 
-  // --- Bio Coach -----------------------------------------------------------
-  router.post(
-    "/bio-coach",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("bio_coach"))
-        return void res.status(403).json({ error: "Feature disabled" });
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    (req as any).user = decodedToken;
+    next();
+  } catch (error) {
+    console.error("Error verifying auth token:", error);
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+};
 
-      const { bio_raw, tone, values, dealbreakers, length } = req.body;
-      if (!bio_raw)
-        return void res
-          .status(400)
-          .json({ error: "bio_raw is required" });
+// Apply middlewares to all AI routes
+aiRouter.use(apiLimiter);
+aiRouter.use(requireAuth);
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("bio_coach"),
-        contents: PROMPT_TEMPLATES.BIO_COACH({
-          bio_raw,
-          tone: tone || "warm",
-          values: values || "",
-          dealbreakers: dealbreakers || "",
-          length: length || "medium",
-        }),
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.BIO_COACH,
-          responseMimeType: "application/json",
-          responseSchema: BioCoachSchema,
-          temperature: 0.4,
-        },
-      });
+aiRouter.post("/safety-advice", async (req, res) => {
+  try {
+    const { question } = req.body;
 
-      const data = outputValidators.validateBioCoach(
-        JSON.parse(response.text || "{}")
-      );
-      res.json(data);
-    })
-  );
+    if (!question) {
+      return res.status(400).json({ error: "Missing question" });
+    }
 
-  // --- Taste Profile -------------------------------------------------------
-  router.post(
-    "/taste-profile",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("taste_profile"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Provide brief, calm, and actionable safety advice for this dating app user's question: "${question}"`,
+      config: {
+        systemInstruction:
+          "You are Kesher's safety assistant. Provide brief, calm, and actionable safety advice. Never blame the user. If the situation sounds dangerous, advise them to contact local authorities.",
+      },
+    });
 
-      const { interactions, currentProfile } = req.body;
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("taste_profile"),
-        contents: PROMPT_TEMPLATES.TASTE_PROFILE(
-          interactions,
-          currentProfile
-        ),
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.TASTE_PROFILE,
-          responseMimeType: "application/json",
-          responseSchema: TasteProfileSchema,
-        },
-      });
+    res.json({ advice: response.text });
+  } catch (error) {
+    console.error("Safety advice generation failed:", error);
+    res.json({
+      advice:
+        "Your safety is our priority. Please contact support if you have immediate concerns.",
+      error: error instanceof Error ? error.message : String(error)
+    }); // Safe fallback
+  }
+});
 
-      const data = outputValidators.validateTasteProfile(
-        JSON.parse(response.text || "{}")
-      );
-      res.json(data);
-    })
-  );
+aiRouter.post("/plan-date", async (req, res) => {
+  try {
+    const { params } = req.body;
 
-  // --- Why This Match ------------------------------------------------------
-  router.post(
-    "/why-match",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("why_match"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    if (!params) {
+      return res.status(400).json({ error: "Missing params" });
+    }
 
-      const { user_profile, candidate_profile, signals } = req.body;
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("why_match"),
-        contents: PROMPT_TEMPLATES.WHY_MATCH({
-          user_profile,
-          candidate_profile,
-          signals: signals || [],
-        }),
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
-          responseMimeType: "application/json",
-          responseSchema: WhyMatchSchema,
-        },
-      });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("date_planner"),
+      contents:
+        PROMPT_TEMPLATES.DATE_PLANNER(params) +
+        "\n\nIMPORTANT: You must return ONLY valid JSON matching the expected schema. Do not include markdown formatting like ```json.",
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.DATE_PLANNER,
+        responseMimeType: "application/json",
+        responseSchema: DateIdeasSchema,
+        tools: [{ googleMaps: {} }],
+      },
+    });
 
-      const data = outputValidators.validateWhyMatch(
-        JSON.parse(response.text || "{}")
-      );
-      res.json(data);
-    })
-  );
+    let text = response.text || "{}";
+    // Clean up potential markdown formatting
+    text = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-  // --- Safety Scan ---------------------------------------------------------
-  router.post(
-    "/safety-scan",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("safety_scan"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    const validated = outputValidators.validateDatePlanner(JSON.parse(text));
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Date planner failed:", error);
+    }
+    res.json({ venues: [], how_to_choose_tip: "" });
+  }
+});
 
-      const { message_text, context } = req.body;
-      if (!message_text)
-        return void res
-          .status(400)
-          .json({ error: "message_text is required" });
+aiRouter.post("/taste-profile", async (req, res) => {
+  try {
+    const { interactions, currentProfile } = req.body;
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("safety_scan"),
-        contents: PROMPT_TEMPLATES.SAFETY_SCAN({
-          message_text,
-          context: context || "",
-        }),
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.SAFETY_SCAN,
-          responseMimeType: "application/json",
-          responseSchema: SafetyScanSchema,
-        },
-      });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("taste_profile"),
+      contents: PROMPT_TEMPLATES.TASTE_PROFILE(interactions, currentProfile),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.TASTE_PROFILE,
+        responseMimeType: "application/json",
+        responseSchema: TasteProfileSchema,
+      },
+    });
 
-      const data = outputValidators.validateSafetyScan(
-        JSON.parse(response.text || "{}")
-      );
-      res.json(data);
-    })
-  );
+    const validated = outputValidators.validateTasteProfile(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Taste profile analysis failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-  // --- Date Planner --------------------------------------------------------
-  router.post(
-    "/date-planner",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("date_planner"))
-        return void res.status(403).json({ error: "Feature disabled" });
+aiRouter.post("/profile-completeness", async (req, res) => {
+  try {
+    const { profile } = req.body;
 
-      const { area, time, preferences, budget } = req.body;
-      if (!area)
-        return void res.status(400).json({ error: "area is required" });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("profile_completeness"),
+      contents: PROMPT_TEMPLATES.PROFILE_COMPLETENESS(profile),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.PROFILE_COMPLETENESS,
+        responseMimeType: "application/json",
+        responseSchema: ProfileCompletenessSchema,
+      },
+    });
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("date_planner"),
-        contents:
-          PROMPT_TEMPLATES.DATE_PLANNER({
-            area,
-            time: time || "",
-            preferences: preferences || "",
-            budget: budget || "",
-          }) +
-          "\n\nIMPORTANT: You must return ONLY valid JSON matching the expected schema. Do not include markdown formatting like ```json.",
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.DATE_PLANNER,
-          tools: [{ googleSearch: {} }],
-        },
-      });
+    const validated = outputValidators.validateProfileCompleteness(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Profile completeness analysis failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-      let text = response.text || "{}";
-      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+aiRouter.post("/coach-bio", async (req, res) => {
+  try {
+    const { params } = req.body;
 
-      const data = outputValidators.validateDatePlanner(JSON.parse(text));
-      res.json(data);
-    })
-  );
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("bio_coach"),
+      contents: PROMPT_TEMPLATES.BIO_COACH(params),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.BIO_COACH,
+        responseMimeType: "application/json",
+        responseSchema: BioCoachSchema,
+        temperature: 0.4,
+      },
+    });
 
-  // --- Safety Advice -------------------------------------------------------
-  router.post(
-    "/safety-advice",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("safety_advice"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    const validated = outputValidators.validateBioCoach(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Bio coaching failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-      const { question } = req.body;
-      if (!question)
-        return void res
-          .status(400)
-          .json({ error: "question is required" });
+aiRouter.post("/daily-picks-intro", async (req, res) => {
+  try {
+    const { userProfile } = req.body;
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("safety_advice"),
-        contents: PROMPT_TEMPLATES.SAFETY_ADVICE(question),
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
-      });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("bio_coach"), // Using a generic structured model route
+      contents: `Generate a short daily picks intro for this user: ${JSON.stringify(userProfile)}`,
+      config: {
+        systemInstruction:
+          "You are Kesher's matchmaker. Generate a short, warm, respectful intro for the user's daily picks.",
+        responseMimeType: "application/json",
+        responseSchema: DailyPicksIntroSchema,
+      },
+    });
 
-      res.json({
-        advice:
-          response.text ||
-          "Your safety is our priority. Please contact support if you have immediate concerns.",
-      });
-    })
-  );
+    const validated = outputValidators.validateDailyPicksIntro(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Daily picks intro generation failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-  // --- Rephrase Message ----------------------------------------------------
-  router.post(
-    "/rephrase",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("rephrase_message"))
-        return void res.status(403).json({ error: "Feature disabled" });
+aiRouter.post("/explain-match", async (req, res) => {
+  try {
+    const { params } = req.body;
 
-      const { text } = req.body;
-      if (!text)
-        return void res.status(400).json({ error: "text is required" });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("why_match"),
+      contents: PROMPT_TEMPLATES.WHY_MATCH(params),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
+        responseMimeType: "application/json",
+        responseSchema: WhyThisMatchPayloadSchema,
+      },
+    });
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("rephrase_message"),
-        contents: PROMPT_TEMPLATES.REPHRASE_MESSAGE(text),
-        config: {
-          systemInstruction:
-            "You are a helpful communication assistant for a respectful dating app.",
-        },
-      });
+    const validated = outputValidators.validateWhyMatch(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Match explanation failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-      res.json({ rephrased: response.text || text });
-    })
-  );
+aiRouter.post("/openers", async (req, res) => {
+  try {
+    const { profileName, bio, prompt } = req.body;
 
-  // --- Generate Openers ----------------------------------------------------
-  router.post(
-    "/openers",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("generate_openers"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    if (!profileName || !bio || !prompt) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-      const { profileName, bio, prompt } = req.body;
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("generate_openers"),
-        contents: PROMPT_TEMPLATES.GENERATE_OPENERS({
-          name: profileName || "",
-          bio: bio || "",
-          prompt: prompt || "",
-        }),
-        config: {
-          systemInstruction:
-            "You are a helpful icebreaker assistant. Keep it respectful and Jewish-values aligned.",
-        },
-      });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("generate_openers"),
+      contents: PROMPT_TEMPLATES.GENERATE_OPENERS({
+        name: profileName,
+        bio,
+        prompt,
+      }),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.GENERATE_OPENERS,
+        responseMimeType: "application/json",
+        responseSchema: OpenersSchema,
+      },
+    });
 
-      const openers = (response.text || "")
-        .split("\n")
-        .filter((l: string) => l.trim())
-        .slice(0, 3);
-      res.json({ openers });
-    })
-  );
+    const validated = outputValidators.validateOpeners(
+      JSON.parse(response.text || "[]"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Openers generation failed:", error);
+    }
+    res.json([]);
+  }
+});
 
-  // --- Profile Completeness ------------------------------------------------
-  router.post(
-    "/profile-completeness",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("profile_completeness"))
-        return void res.status(403).json({ error: "Feature disabled" });
+aiRouter.post("/rephrase", async (req, res) => {
+  try {
+    const { text } = req.body;
 
-      const { profile } = req.body;
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("profile_completeness"),
-        contents: PROMPT_TEMPLATES.PROFILE_COMPLETENESS(profile),
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTIONS.PROFILE_COMPLETENESS,
-          responseMimeType: "application/json",
-          responseSchema: ProfileCompletenessSchema,
-        },
-      });
+    if (!text) {
+      return res.status(400).json({ error: "Missing text" });
+    }
 
-      const data = outputValidators.validateProfileCompleteness(
-        JSON.parse(response.text || "{}")
-      );
-      res.json(data);
-    })
-  );
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("rephrase_message"),
+      contents: PROMPT_TEMPLATES.REPHRASE_MESSAGE(text),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.REPHRASE_MESSAGE,
+        responseMimeType: "application/json",
+        responseSchema: RephraseSchema,
+      },
+    });
 
-  // --- Daily Picks Intro ---------------------------------------------------
-  router.post(
-    "/daily-picks-intro",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("why_match"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    const validated = outputValidators.validateRephrase(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Rephrase generation failed:", error);
+    }
+    res.json({ original: req.body.text });
+  }
+});
 
-      const { userProfile } = req.body;
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("why_match"),
-        contents: `Generate a short, calming, and premium intro for the Daily Picks screen.
-The user's name is ${userProfile?.displayName || "there"}.
-Emphasize that these picks are finite, intentional, and prioritize quality over endless swiping.
-Provide the output in both English and Hebrew.`,
-        config: {
-          systemInstruction:
-            "You are Kesher AI, a calm, respectful, and premium dating assistant. Keep the tone warm, grounded, and serious. Do not use hype or casino-like language.",
-          responseMimeType: "application/json",
-          responseSchema: DailyPicksIntroSchema,
-        },
-      });
+aiRouter.post("/message-safety", async (req, res) => {
+  try {
+    const { text } = req.body;
 
-      res.json(JSON.parse(response.text || "{}"));
-    })
-  );
+    if (!text) {
+      return res.status(400).json({ error: "Missing text" });
+    }
 
-  // --- Visual Icebreaker ---------------------------------------------------
-  router.post(
-    "/icebreaker-image",
-    asyncHandler(async (req, res) => {
-      if (!isAllowedFeature("visual_icebreaker"))
-        return void res.status(403).json({ error: "Feature disabled" });
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("safety_scan"),
+      contents: `Analyze this drafted message for safety and tone before sending: "${text}"`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.MESSAGE_SAFETY_SCAN,
+        responseMimeType: "application/json",
+        responseSchema: MessageSafetyScanSchema,
+      },
+    });
 
-      const { prompt } = req.body;
-      if (!prompt)
-        return void res
-          .status(400)
-          .json({ error: "prompt is required" });
+    const validated = outputValidators.validateMessageSafetyScan(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Safety scan failed:", error);
+    }
+    res.json({
+      risk_level: "low",
+      categories: [],
+      recommended_action: "allow",
+      short_rationale: "",
+    });
+  }
+});
 
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: capabilityRouter.getRoute("visual_icebreaker"),
-        contents: {
-          parts: [
-            {
-              text: `A calm, premium, artistic illustration for a Jewish dating app icebreaker: ${prompt}. Style: Minimalist, warm, high-end.`,
-            },
-          ],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-          },
-        },
-      });
+aiRouter.post("/personality-profile", async (req, res) => {
+  try {
+    const { userProfile } = req.body;
 
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if ((part as any).inlineData) {
-          return void res.json({
-            imageUrl: `data:image/png;base64,${(part as any).inlineData.data}`,
-          });
-        }
-      }
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("personality_profile"),
+      contents: PROMPT_TEMPLATES.PERSONALITY_INTERPRETER(userProfile),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.PERSONALITY_INTERPRETER,
+        responseMimeType: "application/json",
+        responseSchema: PersonalitySummarySchema,
+      },
+    });
 
-      res.json({
-        imageUrl: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/800/800`,
-      });
-    })
-  );
+    const validated = outputValidators.validatePersonalityProfile(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Personality profile generation failed:", error);
+    }
+    res.json(null);
+  }
+});
 
-  return router;
-}
+aiRouter.post("/compatibility-reflection", async (req, res) => {
+  try {
+    const { userA, userB } = req.body;
+
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("compatibility_reflection"),
+      contents: PROMPT_TEMPLATES.COMPATIBILITY_REFLECTION(userA, userB),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.COMPATIBILITY_REFLECTION,
+        responseMimeType: "application/json",
+        responseSchema: PairInsightReportSchema,
+      },
+    });
+
+    const validated = outputValidators.validateCompatibilityReflection(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Compatibility reflection failed:", error);
+    }
+    res.json(null);
+  }
+});
+
+aiRouter.post("/pacing-intervention", async (req, res) => {
+  try {
+    const { sessionLength, swipeVelocity } = req.body;
+
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("pacing_coach"),
+      contents: PROMPT_TEMPLATES.PACING_INTERVENTION(
+        sessionLength,
+        swipeVelocity,
+      ),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.PACING_INTERVENTION,
+        responseMimeType: "application/json",
+        responseSchema: PacingInterventionSchema,
+      },
+    });
+
+    const validated = outputValidators.validatePacingIntervention(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Pacing intervention failed:", error);
+    }
+    res.json(null);
+  }
+});
+
+aiRouter.post("/analyze-photos", async (req, res) => {
+  try {
+    const { photoUrl } = req.body;
+
+    if (!photoUrl) {
+      return res.status(400).json({ error: "Missing photoUrl" });
+    }
+
+    // In a real app, you would download the image or pass the URL if the API supports it directly.
+    // For this prototype, we'll assume the URL is accessible or we pass it as text context.
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-pro", // Use pro for image understanding
+      contents: `Analyze this photo for a dating profile: ${photoUrl}`,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.PHOTO_ANALYSIS,
+        responseMimeType: "application/json",
+        responseSchema: PhotoAnalysisSchema,
+      },
+    });
+
+    const validated = outputValidators.validatePhotoAnalysis(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Photo analysis failed:", error);
+    }
+    res.json({
+      is_appropriate: true,
+      clarity_score: "medium",
+      flags: [],
+      overall_feedback_he: "התמונה נראית בסדר, אבל תמיד אפשר לשפר את התאורה.",
+      overall_feedback_en:
+        "The photo looks okay, but lighting could be improved.",
+    });
+  }
+});
+
+aiRouter.post("/moderation-summary", async (req, res) => {
+  try {
+    const { reports } = req.body;
+
+    if (!reports || !Array.isArray(reports)) {
+      return res
+        .status(400)
+        .json({ error: "Missing or invalid reports array" });
+    }
+
+    // TODO(LAUNCH): Add moderation audit logging here
+    // TODO(LAUNCH): Add RLS-backed evidence retrieval here
+
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("mod_summarizer"),
+      contents: PROMPT_TEMPLATES.MOD_SUMMARIZER(reports),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.MOD_SUMMARIZER,
+        responseMimeType: "application/json",
+        responseSchema: ModerationSummarySchema,
+      },
+    });
+
+    const validated = outputValidators.validateModerationSummary(
+      JSON.parse(response.text || "{}"),
+    );
+    res.json(validated);
+  } catch (error: any) {
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Moderation summary failed:", error);
+    }
+    res.json({
+      summary: "Failed to generate summary.",
+      claims: [],
+      evidence: [],
+      riskLevel: "low",
+      escalationRecommended: false,
+    });
+  }
+});

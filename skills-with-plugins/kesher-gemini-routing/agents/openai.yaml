@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Gemini Routing"
-  short_description: "Route Gemini work by risk and latency"
-  default_prompt: "Use $kesher-gemini-routing to choose the right Gemini routing policy for this Kesher task."

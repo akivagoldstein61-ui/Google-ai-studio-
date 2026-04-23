@@ -7,12 +7,14 @@ export const capabilityRouter = {
 
     switch (featureId) {
       case 'bio_coach':
+      case 'rephrase_message':
+      case 'generate_openers':
+        route = 'optionalFastFallbackModel';
+        break;
       case 'taste_profile':
       case 'why_match':
       case 'safety_scan':
       case 'mod_summarizer':
-      case 'rephrase_message':
-      case 'generate_openers':
       case 'profile_completeness':
         route = 'primaryStructuredModel';
         break;
@@ -38,12 +40,13 @@ export const capabilityRouter = {
   getRouteName(featureId: string): ModelRoute {
     switch (featureId) {
       case 'bio_coach':
+      case 'rephrase_message':
+      case 'generate_openers':
+        return 'optionalFastFallbackModel';
       case 'taste_profile':
       case 'why_match':
       case 'safety_scan':
       case 'mod_summarizer':
-      case 'rephrase_message':
-      case 'generate_openers':
       case 'profile_completeness':
         return 'primaryStructuredModel';
       case 'date_planner':

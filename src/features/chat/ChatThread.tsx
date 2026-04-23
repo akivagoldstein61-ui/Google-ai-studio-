@@ -9,22 +9,36 @@ import { aiDatePlannerService } from '@/services/aiDatePlannerService';
 import { aiSafetyService } from '@/services/aiSafetyService';
 import { getFeatureById } from '@/ai/featureRegistry';
 import { cn } from '@/lib/utils';
+import { SafetyMenu } from '@/features/safety/SafetyMenu';
+import { ReportFlow } from '@/features/safety/ReportFlow';
+import { DatePlannerModal } from '@/features/match/DatePlannerModal';
+
+import { trustService } from '@/services/trustService';
 
 export const ChatThread: React.FC<{ 
   conversation: Conversation, 
   onBack: () => void 
 }> = ({ conversation, onBack }) => {
-  const { sendMessage } = useApp();
+  const { user, sendMessage } = useApp();
   const [inputText, setInputText] = useState('');
   const [isRephrasing, setIsRephrasing] = useState(false);
+  const [rephraseOptions, setRephraseOptions] = useState<{ 
+    original: string; 
+    softer_he?: string; 
+    softer_en?: string; 
+    clearer_he?: string; 
+    clearer_en?: string; 
+    notes?: string[] 
+  } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [safetyAlert, setSafetyAlert] = useState<{ reason: string; suggestion: string } | null>(null);
   const [showSafetyTip, setShowSafetyTip] = useState(true);
   const [isPlanningDate, setIsPlanningDate] = useState(false);
   const [dateIdeas, setDateIdeas] = useState<any[]>([]);
-  const [isGeneratingIcebreaker, setIsGeneratingIcebreaker] = useState(false);
-  const [icebreakerPrompt, setIcebreakerPrompt] = useState('');
-  const [showIcebreakerInput, setShowIcebreakerInput] = useState(false);
+  const [showSafetyMenu, setShowSafetyMenu] = useState(false);
+  const [showReportFlow, setShowReportFlow] = useState(false);
+  const [isGeneratingOpeners, setIsGeneratingOpeners] = useState(false);
+  const [openerSuggestions, setOpenerSuggestions] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const icebreakerFeature = getFeatureById('visual_icebreaker');
@@ -44,15 +58,16 @@ export const ChatThread: React.FC<{
     // Safety Scan
     setIsScanning(true);
     try {
-      const scanResult = await aiSafetyService.scanMessage({
-        message_text: inputText,
-        context: 'initial_chat'
-      });
+      const scanResult = await aiSafetyService.scanMessageSafety(inputText);
       
-      if (!scanResult.is_safe) {
+      if (scanResult.recommended_action !== 'allow' || scanResult.risk_level !== 'low') {
+        let suggestion = 'This message has been flagged by our safety system.';
+        if (scanResult.recommended_action === 'warn') suggestion = 'Try rephrasing to be more respectful.';
+        if (scanResult.recommended_action === 'needs_human_review') suggestion = 'This message is pending review.';
+        
         setSafetyAlert({
-          reason: scanResult.reason || 'Potential policy violation',
-          suggestion: scanResult.suggestion || 'Try rephrasing to be more respectful.'
+          reason: scanResult.short_rationale || 'Potential policy violation',
+          suggestion
         });
         setIsScanning(false);
         return;
@@ -73,7 +88,7 @@ export const ChatThread: React.FC<{
     setIsRephrasing(true);
     try {
       const rephrased = await aiService.rephraseMessage(inputText);
-      setInputText(rephrased);
+      setRephraseOptions(rephrased as any);
     } catch (error) {
       console.error(error);
     } finally {
@@ -81,38 +96,49 @@ export const ChatThread: React.FC<{
     }
   };
 
-  const handleGenerateIcebreaker = async () => {
-    if (!icebreakerPrompt.trim() || isGeneratingIcebreaker) return;
-    setIsGeneratingIcebreaker(true);
+  const [showDatePlanner, setShowDatePlanner] = useState(false);
+
+  const handlePlanDate = () => {
+    setShowDatePlanner(true);
+  };
+
+  const handleBlock = async () => {
+    if (!user || !conversation.participants?.[0]?.id) return;
     try {
-      const imageUrl = await aiService.generateIcebreakerImage(icebreakerPrompt);
-      if (imageUrl) {
-        sendMessage(conversation.id, `[Visual Icebreaker]: ${icebreakerPrompt}`, true);
-        // In a real app, we'd send the actual image
-      }
-      setIcebreakerPrompt('');
-      setShowIcebreakerInput(false);
+      await trustService.block(user.id, conversation.participants[0].id);
+      alert("This person can no longer contact you. The connection is severed.");
+      onBack();
     } catch (error) {
-      console.error(error);
-    } finally {
-      setIsGeneratingIcebreaker(false);
+      console.error('Failed to block user', error);
+      alert('Failed to block user. Please try again.');
     }
   };
 
-  const handlePlanDate = async () => {
-    setIsPlanningDate(true);
+  const handleUnmatch = async () => {
+    if (!user || !conversation.participants?.[0]?.id) return;
     try {
-      const ideas = await aiDatePlannerService.planDate({
-        area: 'Tel Aviv',
-        time: 'Thursday Evening',
-        preferences: 'Kosher, Quiet',
-        budget: 'Moderate'
-      });
-      setDateIdeas(ideas.venues);
+      await trustService.unmatch(user.id, conversation.participants[0].id, conversation.id);
+      alert("The chat is removed from your active relationship flow.");
+      onBack();
+    } catch (error) {
+      console.error('Failed to unmatch', error);
+      alert('Failed to unmatch. Please try again.');
+    }
+  };
+
+  const handleGenerateOpeners = async () => {
+    setIsGeneratingOpeners(true);
+    try {
+      const suggestions = await aiService.generateOpeners(
+        conversation.participants?.[0]?.displayName || "Match",
+        conversation.participants?.[0]?.bio || "",
+        "Help me start a conversation based on their profile."
+      );
+      setOpenerSuggestions(suggestions || []);
     } catch (error) {
       console.error(error);
     } finally {
-      setIsPlanningDate(false);
+      setIsGeneratingOpeners(false);
     }
   };
 
@@ -128,18 +154,18 @@ export const ChatThread: React.FC<{
           </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-[#F3EFEA]">
-              <img src={conversation.participants[0].photos[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={conversation.participants?.[0]?.photos?.[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[#2D2926] text-sm">{conversation.participants[0].displayName}</span>
-                {conversation.participants[0].isVerified && <ShieldCheck size={12} className="text-[#D4AF37]" />}
+                <span className="font-bold text-[#2D2926] text-sm">{conversation.participants?.[0]?.displayName}</span>
+                {conversation.participants?.[0]?.isVerified && <ShieldCheck size={12} className="text-[#D4AF37]" />}
               </div>
               <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Active today</span>
             </div>
           </div>
         </div>
-        <button className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
+        <button className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all" onClick={() => setShowSafetyMenu(true)}>
           <Info size={20} className="text-[#2D2926]" />
         </button>
       </header>
@@ -185,9 +211,14 @@ export const ChatThread: React.FC<{
               <div className="space-y-3">
                 {dateIdeas.map((idea, i) => (
                   <div key={i} className="p-4 bg-white rounded-2xl border border-emerald-100 shadow-sm">
-                    <p className="font-bold text-sm text-emerald-900">{idea.venue}</p>
-                    <p className="text-xs text-emerald-700 italic">{idea.activity}</p>
-                    <p className="text-[10px] text-emerald-500 mt-1">{idea.why_it_works}</p>
+                    <p className="font-bold text-sm text-emerald-900">{idea.name}</p>
+                    <p className="text-xs text-emerald-700 italic mt-1">{idea.suggested_meeting_time_window}</p>
+                    <p className="text-[10px] text-emerald-600 mt-2">{idea.why_good}</p>
+                    {idea.safety_note && (
+                      <p className="text-[9px] text-emerald-500 mt-2 border-t border-emerald-50 pt-2">
+                        <span className="font-bold">Safety Note:</span> {idea.safety_note}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -213,6 +244,72 @@ export const ChatThread: React.FC<{
               <p className="text-xs text-[#8C7E6E] leading-relaxed italic font-serif">
                 Keep your personal contact info private for now. We recommend meeting in public places and sharing your plans with a friend.
               </p>
+            </motion.div>
+          )}
+
+          {conversation.messages.length === 0 && openerSuggestions.length === 0 && !isGeneratingOpeners && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-4 text-center shadow-sm"
+            >
+              <div className="w-12 h-12 bg-[#F7F2EE] rounded-full flex items-center justify-center mx-auto text-[#D4AF37]">
+                <Sparkles size={24} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-[#2D2926]">Not sure what to say?</h4>
+                <p className="text-xs text-[#8C7E6E] italic">Get some draft ideas based on their profile.</p>
+              </div>
+              <Button 
+                onClick={handleGenerateOpeners}
+                className="w-full h-12 bg-[#2D2926] text-white font-bold rounded-full"
+              >
+                Suggest Openers
+              </Button>
+            </motion.div>
+          )}
+
+          {openerSuggestions.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 bg-[#F7F2EE] border border-[#E5DED5] rounded-[32px] space-y-4 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[#D4AF37]">
+                  <Sparkles size={16} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Draft Ideas</span>
+                </div>
+                <button onClick={() => setOpenerSuggestions([])} className="p-1 hover:bg-black/5 rounded-full transition-all">
+                  <X size={14} className="text-[#8C7E6E]" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {openerSuggestions?.map((suggestion, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => {
+                      setInputText(suggestion.text_he || suggestion.text_en);
+                      setOpenerSuggestions([]);
+                    }}
+                    className="w-full p-4 text-right bg-white border border-[#F3EFEA] rounded-[24px] hover:border-[#D4AF37] transition-all shadow-sm flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <span className="text-xs text-[#8C7E6E] font-sans text-left max-w-[40%]">{suggestion.text_en}</span>
+                      <span className="text-sm text-[#2D2926] leading-relaxed font-hebrew font-medium text-right flex-1">{suggestion.text_he}</span>
+                    </div>
+                    <div className="mt-1 pt-2 border-t border-[#F3EFEA]/50 w-full text-right flex justify-between items-center">
+                      <span className="text-[10px] text-[#8C7E6E] italic font-serif">{suggestion.rationale}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="pt-2 flex items-center justify-center">
+                <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+                  <Sparkles size={10} />
+                  <span>AI Draft • Human Control</span>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -251,7 +348,7 @@ export const ChatThread: React.FC<{
 
       <footer className="p-6 bg-white border-t border-[#F3EFEA] space-y-4 relative z-20">
         <AnimatePresence>
-          {showIcebreakerInput && (
+          {rephraseOptions && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -261,27 +358,60 @@ export const ChatThread: React.FC<{
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[#D4AF37]">
                   <Sparkles size={16} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Visual Icebreaker</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Rewrite Assist</span>
                 </div>
-                <button onClick={() => setShowIcebreakerInput(false)} className="p-1 hover:bg-black/5 rounded-full transition-all">
+                <button onClick={() => setRephraseOptions(null)} className="p-1 hover:bg-black/5 rounded-full transition-all">
                   <X size={14} className="text-[#8C7E6E]" />
                 </button>
               </div>
-              <div className="flex gap-3">
-                <input 
-                  placeholder="Describe an illustration..." 
-                  className="flex-1 bg-white border border-[#F3EFEA] rounded-full px-6 py-3 text-sm focus:outline-none focus:border-[#D4AF37] transition-all"
-                  value={icebreakerPrompt}
-                  onChange={(e) => setIcebreakerPrompt(e.target.value)}
-                />
-                <Button 
-                  size="icon" 
-                  onClick={handleGenerateIcebreaker}
-                  disabled={!icebreakerPrompt.trim() || isGeneratingIcebreaker}
-                  className="rounded-full bg-[#2D2926] text-white"
-                >
-                  {isGeneratingIcebreaker ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                </Button>
+              <div className="space-y-3">
+                {rephraseOptions.softer_he && (
+                  <button 
+                    onClick={() => {
+                      setInputText(rephraseOptions.softer_he!);
+                      setRephraseOptions(null);
+                    }}
+                    className="w-full p-4 text-right bg-white border border-[#F3EFEA] rounded-[24px] hover:border-[#D4AF37] transition-all shadow-sm flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <span className="text-xs text-[#8C7E6E] font-sans text-left max-w-[40%]">{rephraseOptions.softer_en}</span>
+                      <span className="text-sm text-[#2D2926] leading-relaxed font-hebrew font-medium text-right flex-1">{rephraseOptions.softer_he}</span>
+                    </div>
+                    <div className="mt-1 pt-2 border-t border-[#F3EFEA]/50 w-full text-right">
+                      <span className="text-[10px] text-[#8C7E6E] italic font-serif">Softer tone</span>
+                    </div>
+                  </button>
+                )}
+                {rephraseOptions.clearer_he && (
+                  <button 
+                    onClick={() => {
+                      setInputText(rephraseOptions.clearer_he!);
+                      setRephraseOptions(null);
+                    }}
+                    className="w-full p-4 text-right bg-white border border-[#F3EFEA] rounded-[24px] hover:border-[#D4AF37] transition-all shadow-sm flex flex-col gap-2"
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <span className="text-xs text-[#8C7E6E] font-sans text-left max-w-[40%]">{rephraseOptions.clearer_en}</span>
+                      <span className="text-sm text-[#2D2926] leading-relaxed font-hebrew font-medium text-right flex-1">{rephraseOptions.clearer_he}</span>
+                    </div>
+                    <div className="mt-1 pt-2 border-t border-[#F3EFEA]/50 w-full text-right">
+                      <span className="text-[10px] text-[#8C7E6E] italic font-serif">Clearer phrasing</span>
+                    </div>
+                  </button>
+                )}
+                {rephraseOptions.notes && rephraseOptions.notes.length > 0 && (
+                  <div className="text-[10px] text-[#8C7E6E] italic font-serif mt-2 px-2">
+                    {rephraseOptions.notes?.map((note, i) => (
+                      <div key={i}>• {note}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="pt-2 flex items-center justify-center">
+                <div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+                  <Sparkles size={10} />
+                  <span>AI Draft • Human Control</span>
+                </div>
               </div>
             </motion.div>
           )}
@@ -311,15 +441,6 @@ export const ChatThread: React.FC<{
                 >
                   {isRephrasing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                 </button>
-                {isIcebreakerEnabled && (
-                  <button 
-                    onClick={() => setShowIcebreakerInput(!showIcebreakerInput)}
-                    className="p-2 text-[#D4AF37] hover:bg-white rounded-full transition-all"
-                    title="Visual Icebreaker"
-                  >
-                    <Sparkles size={18} />
-                  </button>
-                )}
                 <button 
                   onClick={handlePlanDate}
                   disabled={isPlanningDate}
@@ -346,6 +467,31 @@ export const ChatThread: React.FC<{
         
         <p className="text-center text-[8px] text-[#8C7E6E] font-bold uppercase tracking-[0.4em] opacity-40">Kesher • Trust-Forward Messaging</p>
       </footer>
+      <SafetyMenu
+        isOpen={showSafetyMenu}
+        onClose={() => setShowSafetyMenu(false)}
+        onReport={() => setShowReportFlow(true)}
+        onBlock={handleBlock}
+        onUnmatch={handleUnmatch}
+        targetName={conversation.participants?.[0]?.displayName || "User"}
+      />
+
+      <ReportFlow
+        isOpen={showReportFlow}
+        onClose={() => setShowReportFlow(false)}
+        targetName={conversation.participants?.[0]?.displayName || "User"}
+        reporterId={user?.id}
+        targetId={conversation.participants?.[0]?.id || ""}
+      />
+
+      <AnimatePresence>
+        {showDatePlanner && (
+          <DatePlannerModal
+            onClose={() => setShowDatePlanner(false)}
+            partnerName={conversation.participants?.[0]?.displayName || "Match"}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

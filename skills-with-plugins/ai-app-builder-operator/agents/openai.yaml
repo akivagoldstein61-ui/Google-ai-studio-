@@ -1,4 +1,0 @@
-interface:
-  display_name: "AI App Builder Operator"
-  short_description: "Plan AI Studio and Manus app builds"
-  default_prompt: "Use $ai-app-builder-operator to turn this app idea into an execution-ready build plan."

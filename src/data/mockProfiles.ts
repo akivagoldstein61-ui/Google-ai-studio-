@@ -1,4 +1,4 @@
-import { Profile, Conversation } from '@/types';
+import { Profile, Conversation } from '../types';
 
 export const MOCK_PROFILES: Profile[] = [
   {
