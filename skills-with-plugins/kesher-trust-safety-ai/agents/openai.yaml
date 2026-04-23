@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Trust Safety AI"
+  short_description: "Design bounded safety AI surfaces"
+  default_prompt: "Use $kesher-trust-safety-ai to assess this Kesher image, voice, or moderation AI idea."
