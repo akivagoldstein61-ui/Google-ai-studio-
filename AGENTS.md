@@ -4,6 +4,8 @@ Kesher operator contract for Codex CLI, GitHub coding agent, and other repo-loca
 
 This file exists to keep implementation aligned with Kesher product truth, trust boundaries, and the current repo reality.
 
+For repo-wide and multi-phase work, use the companion master prompt kit at `docs/codex/KESHER_CODEX_MASTER_SKILLS.md`.
+
 ## 1. Mission
 
 Build Kesher as a trust-forward, Hebrew-first Jewish dating product for Israel.
