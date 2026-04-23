@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Personality Compatibility"
+  short_description: "Apply BFAS without deterministic scoring"
+  default_prompt: "Use $kesher-personality-compatibility to design a reflective Kesher personality feature."
