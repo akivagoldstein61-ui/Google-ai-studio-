@@ -12,6 +12,7 @@ import {
   TasteProfileSchema,
   ProfileCompletenessSchema,
   BioCoachSchema,
+  WhyMatchSchema,
   DailyPicksIntroSchema,
   WhyThisMatchPayloadSchema,
   PersonalitySummarySchema,
@@ -23,6 +24,18 @@ import {
 import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
 import { outputValidators } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
+import {
+  adaptBioCoachResponse,
+  adaptDatePlannerResponse,
+  adaptSafetyClassification,
+  adaptWhyMatchResponse,
+  buildScamWarningScaffold,
+  classifySafety,
+  validateBioCoachRequest,
+  validateDatePlannerRequest,
+  validateSafetyClassifierRequest,
+  validateWhyMatchRequest,
+} from "./aiTrustBackbone.ts";
 
 export const aiRouter = express.Router();
 
@@ -111,6 +124,138 @@ aiRouter.post("/safety-advice", async (req, res) => {
         "Your safety is our priority. Please contact support if you have immediate concerns.",
       error: error instanceof Error ? error.message : String(error)
     }); // Safe fallback
+  }
+});
+
+aiRouter.post("/safety-classifier", async (req, res) => {
+  try {
+    const { value } = validateSafetyClassifierRequest(req.body);
+    const classification = classifySafety(value.message_text);
+    const adapted = adaptSafetyClassification(classification, "heuristic-safety-v1");
+    res.json(adapted);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Bad request";
+    res.status(400).json({ error: message.replace("Bad request: ", "") });
+  }
+});
+
+aiRouter.post("/scam-warning", async (req, res) => {
+  try {
+    const { value } = validateSafetyClassifierRequest(req.body);
+    const classification = classifySafety(value.message_text);
+    const scaffold = buildScamWarningScaffold(classification);
+    res.json({ classification, scaffold });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Bad request";
+    res.status(400).json({ error: message.replace("Bad request: ", "") });
+  }
+});
+
+aiRouter.post("/date-planner", async (req, res) => {
+  try {
+    const { value } = validateDatePlannerRequest(req.body);
+    const { area, time, preferences, budget } = value;
+
+    const ai = getAI();
+    const modelRoute = capabilityRouter.getRoute("date_planner");
+    const response = await ai.models.generateContent({
+      model: modelRoute,
+      contents:
+        PROMPT_TEMPLATES.DATE_PLANNER({
+          area,
+          time: time || "",
+          preferences: preferences || "",
+          budget: budget || "",
+        }) +
+        "\n\nIMPORTANT: You must return ONLY valid JSON matching the expected schema. Do not include markdown formatting like ```json.",
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.DATE_PLANNER,
+        tools: [{ googleMaps: {} }],
+      },
+    });
+
+    const text = (response.text || "{}").replace(/```json/g, "").replace(/```/g, "").trim();
+    const data = adaptDatePlannerResponse(JSON.parse(text), modelRoute);
+    res.json(data);
+  } catch (error: any) {
+    if (error?.message?.startsWith("Bad request:")) {
+      return res.status(400).json({ error: error.message.replace("Bad request: ", "") });
+    }
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Date planner failed:", error);
+    }
+    res.json({ venues: [], how_to_choose_tip: "" });
+  }
+});
+
+aiRouter.post("/bio-coach", async (req, res) => {
+  try {
+    const { value } = validateBioCoachRequest(req.body);
+    const { bio_raw, tone, values, dealbreakers, length } = value;
+
+    const ai = getAI();
+    const modelRoute = capabilityRouter.getRoute("bio_coach");
+    const response = await ai.models.generateContent({
+      model: modelRoute,
+      contents: PROMPT_TEMPLATES.BIO_COACH({
+        bio_raw,
+        tone: tone || "warm",
+        values: values || "",
+        dealbreakers: dealbreakers || "",
+        length: length || "medium",
+      }),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.BIO_COACH,
+        responseMimeType: "application/json",
+        responseSchema: BioCoachSchema,
+        temperature: 0.4,
+      },
+    });
+
+    const data = adaptBioCoachResponse(JSON.parse(response.text || "{}"), modelRoute);
+    res.json(data);
+  } catch (error: any) {
+    if (error?.message?.startsWith("Bad request:")) {
+      return res.status(400).json({ error: error.message.replace("Bad request: ", "") });
+    }
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Bio coaching failed:", error);
+    }
+    res.json(null);
+  }
+});
+
+aiRouter.post("/why-match", async (req, res) => {
+  try {
+    const { value } = validateWhyMatchRequest(req.body);
+    const { user_profile, candidate_profile, signals } = value;
+
+    const ai = getAI();
+    const modelRoute = capabilityRouter.getRoute("why_match");
+    const response = await ai.models.generateContent({
+      model: modelRoute,
+      contents: PROMPT_TEMPLATES.WHY_MATCH({
+        user_profile,
+        candidate_profile,
+        signals: signals || [],
+      }),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
+        responseMimeType: "application/json",
+        responseSchema: WhyMatchSchema,
+      },
+    });
+
+    const data = adaptWhyMatchResponse(JSON.parse(response.text || "{}"), modelRoute);
+    res.json(data);
+  } catch (error: any) {
+    if (error?.message?.startsWith("Bad request:")) {
+      return res.status(400).json({ error: error.message.replace("Bad request: ", "") });
+    }
+    if (error?.message !== "MISSING_API_KEY" && !error?.message?.includes("API key not valid")) {
+      console.error("Match explanation failed:", error);
+    }
+    res.json(null);
   }
 });
 
