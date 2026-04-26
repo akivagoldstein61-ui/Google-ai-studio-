@@ -4,6 +4,7 @@ import {
   adaptBioCoachResponse,
   adaptWhyMatchResponse,
   classifySafety,
+  validateBioCoachRequest,
   validateDatePlannerRequest,
 } from "../server/aiTrustBackbone.js";
 
@@ -53,4 +54,11 @@ test("date planning request normalizes time to iso", () => {
 
   assert.equal(validated.value.area, "Tel Aviv");
   assert.equal(validated.value.time, "2026-05-01T16:30:00.000Z");
+});
+
+test("validators reject non-object request bodies", () => {
+  assert.throws(
+    () => validateBioCoachRequest([]),
+    /request body must be an object/
+  );
 });

@@ -52,6 +52,13 @@ function optionalString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function getPayloadObject(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    badRequest("request body must be an object");
+  }
+  return body as Record<string, unknown>;
+}
+
 export function validateBioCoachRequest(body: unknown): RequestValidation<{
   bio_raw: string;
   tone: string;
@@ -59,7 +66,7 @@ export function validateBioCoachRequest(body: unknown): RequestValidation<{
   dealbreakers: string;
   length: string;
 }> {
-  const payload = (body ?? {}) as Record<string, unknown>;
+  const payload = getPayloadObject(body);
   return {
     ok: true,
     value: {
@@ -77,7 +84,7 @@ export function validateWhyMatchRequest(body: unknown): RequestValidation<{
   candidate_profile: unknown;
   signals: string[];
 }> {
-  const payload = (body ?? {}) as Record<string, unknown>;
+  const payload = getPayloadObject(body);
   if (!payload.user_profile) badRequest("user_profile is required");
   if (!payload.candidate_profile) badRequest("candidate_profile is required");
 
@@ -109,7 +116,7 @@ export function validateDatePlannerRequest(body: unknown): RequestValidation<{
   preferences: string;
   budget: string;
 }> {
-  const payload = (body ?? {}) as Record<string, unknown>;
+  const payload = getPayloadObject(body);
   return {
     ok: true,
     value: {
@@ -125,7 +132,7 @@ export function validateSafetyClassifierRequest(body: unknown): RequestValidatio
   message_text: string;
   context: string;
 }> {
-  const payload = (body ?? {}) as Record<string, unknown>;
+  const payload = getPayloadObject(body);
   return {
     ok: true,
     value: {
@@ -245,19 +252,44 @@ export function adaptBioCoachResponse(output: unknown, model_route: string) {
 }
 
 export function adaptWhyMatchResponse(output: unknown, model_route: string) {
-  const data = outputValidators.validateWhyMatch(output) as {
-    reasons: string[];
-    first_question: string;
-    gentle_clarification?: string;
+  const raw = (output && typeof output === "object" ? output : {}) as Record<
+    string,
+    unknown
+  >;
+  const normalized = {
+    reasons_he: (Array.isArray(raw.reasons_he)
+      ? raw.reasons_he
+      : Array.isArray(raw.reasons)
+        ? raw.reasons
+        : []
+    ).map((reason) =>
+      typeof reason === "string" ? applyValuesSafePhrasing(reason) : reason
+    ),
+    first_question_he:
+      typeof raw.first_question_he === "string"
+        ? applyValuesSafePhrasing(raw.first_question_he)
+        : typeof raw.first_question === "string"
+          ? applyValuesSafePhrasing(raw.first_question)
+          : "",
+    gentle_clarification_he:
+      typeof raw.gentle_clarification_he === "string"
+        ? applyValuesSafePhrasing(raw.gentle_clarification_he)
+        : typeof raw.gentle_clarification === "string"
+          ? applyValuesSafePhrasing(raw.gentle_clarification)
+          : "",
+  };
+
+  const data = outputValidators.validateWhyMatch(normalized) as {
+    reasons_he: string[];
+    first_question_he: string;
+    gentle_clarification_he?: string;
   };
 
   return {
     ...data,
-    reasons: data.reasons.map(applyValuesSafePhrasing),
-    first_question: applyValuesSafePhrasing(data.first_question),
-    gentle_clarification: data.gentle_clarification
-      ? applyValuesSafePhrasing(data.gentle_clarification)
-      : "",
+    reasons: data.reasons_he,
+    first_question: data.first_question_he,
+    gentle_clarification: data.gentle_clarification_he || "",
     trust: baseTrust("why_match", model_route),
   };
 }
