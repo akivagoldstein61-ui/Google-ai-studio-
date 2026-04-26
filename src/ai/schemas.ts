@@ -1,4 +1,9 @@
 import { Type } from "@google/genai";
+import {
+  COMPATIBILITY_ALLOWED_SIGNALS,
+  WHY_MATCH_ALLOWED_SIGNALS,
+  WHY_MATCH_FORBIDDEN_SIGNALS,
+} from "./outputValidators";
 
 /**
  * Structured Output Schemas for Gemini
@@ -181,6 +186,15 @@ export const PairInsightReportSchema = {
       type: Type.ARRAY,
       items: CompatibilityInsightSchema,
     },
+    question_to_explore_he: { type: Type.STRING },
+    micro_habit_he: { type: Type.STRING },
+    gentle_boundary_he: { type: Type.STRING },
+    signals_used: {
+      type: Type.ARRAY,
+      minItems: 1,
+      items: { type: Type.STRING, enum: [...COMPATIBILITY_ALLOWED_SIGNALS] },
+      description: "Only mutually shared or approved inputs used for compatibility reflection.",
+    },
   },
   required: [
     "schemaVersion",
@@ -188,6 +202,10 @@ export const PairInsightReportSchema = {
     "evidenceLabel",
     "shared_strengths_he",
     "friction_loops",
+    "question_to_explore_he",
+    "micro_habit_he",
+    "gentle_boundary_he",
+    "signals_used",
   ],
 };
 
@@ -207,6 +225,22 @@ export const WhyThisMatchPayloadSchema = {
       type: Type.STRING,
       description: "Gentle mismatch to explore",
     },
+    signals_used: {
+      type: Type.ARRAY,
+      minItems: 1,
+      items: { type: Type.STRING, enum: [...WHY_MATCH_ALLOWED_SIGNALS] },
+      description: "Only visible whitelisted signals used for the explanation.",
+    },
+    signals_not_used: {
+      type: Type.ARRAY,
+      minItems: WHY_MATCH_FORBIDDEN_SIGNALS.length,
+      items: { type: Type.STRING, enum: [...WHY_MATCH_FORBIDDEN_SIGNALS] },
+      description: "Private, hidden, or sensitive signals explicitly not used.",
+    },
+    uncertainty_he: {
+      type: Type.STRING,
+      description: "A gentle uncertainty note. Must not claim certainty.",
+    },
   },
   required: [
     "schemaVersion",
@@ -214,6 +248,9 @@ export const WhyThisMatchPayloadSchema = {
     "evidenceLabel",
     "reasons_he",
     "first_question_he",
+    "signals_used",
+    "signals_not_used",
+    "uncertainty_he",
   ],
 };
 
@@ -323,8 +360,17 @@ export const WhyMatchSchema = {
     },
     first_question: { type: Type.STRING },
     gentle_clarification: { type: Type.STRING },
+    signals_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING, enum: [...WHY_MATCH_ALLOWED_SIGNALS] },
+    },
+    signals_not_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING, enum: [...WHY_MATCH_FORBIDDEN_SIGNALS] },
+    },
+    uncertainty: { type: Type.STRING },
   },
-  required: ["reasons", "first_question"],
+  required: ["reasons", "first_question", "signals_used", "signals_not_used", "uncertainty"],
 };
 
 export const SafetyScanSchema = {

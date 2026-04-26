@@ -175,9 +175,16 @@ export const aiService = {
     }
   },
 
-  async getCompatibilityReflection(userA: any, userB: any) {
+  async getCompatibilityReflection(
+    sharedInputs: any,
+    consent: { mutualConsent: boolean; bothOptedIn: boolean },
+  ) {
     try {
-      return await safeApiFetch("/api/ai/compatibility-reflection", { userA, userB });
+      return await safeApiFetch("/api/ai/compatibility-reflection", {
+        sharedInputs,
+        mutualConsent: consent.mutualConsent,
+        bothOptedIn: consent.bothOptedIn,
+      });
     } catch (e: any) {
       if (e?.message !== "INVALID_JSON_RESPONSE") {
         console.error("Compatibility reflection API call failed", e);

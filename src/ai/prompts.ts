@@ -21,17 +21,21 @@ Requirements:
   WHY_MATCH: (params: { user_profile: any; candidate_profile: any; signals: string[] }) => `Create a “Why you’re seeing this” explanation.
 User profile summary: ${JSON.stringify(params.user_profile)}
 Candidate profile summary: ${JSON.stringify(params.candidate_profile)}
-Whitelisted match signals: ${JSON.stringify(params.signals)}
+Canonical whitelisted match signals available to use: ${JSON.stringify(params.signals)}
 
 CRITICAL RULES:
 - NEVER use deterministic compatibility claims (e.g., "perfect match", "soulmate", "100% match").
 - NEVER use scoring, ranking, or tier language (e.g., "league", "score").
-- Keep it reflective and based ONLY on the provided whitelisted signals.
+- NEVER mention private taste, hidden dealbreakers, hidden ranking, raw personality scores, private messages, exact location, or protected traits.
+- Keep it reflective and based ONLY on the provided canonical whitelisted signals.
 
 Output:
-- 2–3 short reasons
-- 1 “good first question”
-- 1 “possible mismatch to clarify” (gentle)`,
+- 2-3 short Hebrew reasons in reasons_he
+- 1 good first Hebrew question in first_question_he
+- optional gentle mismatch to clarify in gentle_clarification_he
+- signals_used using only canonical signal ids from the prompt
+- signals_not_used with all excluded signal ids: ["private_taste_profile","hidden_dealbreakers","hidden_ranking_signals","raw_personality_scores","private_messages","exact_location","protected_trait_inference"]
+- uncertainty_he with gentle probabilistic wording`,
 
   SAFETY_SCAN: (params: { message_text: string; context: string }) => `Classify the following message for safety risk.
 Message: ${params.message_text}
@@ -98,16 +102,19 @@ CRITICAL RULES:
 
 Output a personality_aspect_card JSON.`,
 
-  COMPATIBILITY_REFLECTION: (userA: any, userB: any) => `Compare these two profiles and highlight friction/synergy.
-User A percentiles: ${JSON.stringify(userA)}
-User B percentiles: ${JSON.stringify(userB)}
+  COMPATIBILITY_REFLECTION: (sharedInputs: any) => `Create a mutual compatibility reflection from mutually shared inputs only.
+Shared inputs approved for both users: ${JSON.stringify(sharedInputs)}
 
 CRITICAL RULES:
 - NEVER use deterministic compatibility claims (e.g., "perfect match", "doomed", "incompatible").
+- NEVER use a match score, match percentage, rating, ranking, or tier.
 - NEVER use clinical or diagnostic language.
-- Frame differences as "friction loops" to navigate, not dealbreakers.
-- Frame similarities as "shared strengths".
+- NEVER mention private taste, hidden dealbreakers, hidden ranking, raw personality scores, private messages, exact location, or protected traits.
+- Frame differences as possible friction to navigate, not dealbreakers.
+- Frame similarities as shared strengths.
+- Include one question to explore, one micro-habit, one gentle boundary, and signals_used.
 
+Allowed signals_used values: ["mutually_shared_values","mutually_visible_intent","mutually_visible_observance","mutually_visible_lifestyle","mutually_visible_interests","mutually_visible_prompts","mutually_approved_share_card"]
 Output a compatibility_reflection JSON.`,
 
   PACING_INTERVENTION: (sessionLength: number, swipeVelocity: number) => `Generate a gentle prompt to take a break.

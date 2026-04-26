@@ -15,6 +15,25 @@ import { aiService } from "@/services/aiService";
 import { useApp } from "@/context/AppContext";
 import { DatePlannerModal } from "./DatePlannerModal";
 
+const SIGNAL_LABELS: Record<string, string> = {
+  visible_values: "Shared values",
+  visible_intent: "Visible intent",
+  visible_observance: "Visible observance",
+  visible_lifestyle: "Visible lifestyle",
+  visible_interests: "Visible interests",
+  visible_prompts: "Profile prompts",
+  self_declared_profile_fields: "Public profile fields",
+  private_taste_profile: "Private taste",
+  hidden_dealbreakers: "Hidden dealbreakers",
+  hidden_ranking_signals: "Hidden ranking",
+  raw_personality_scores: "Raw personality scores",
+  private_messages: "Private messages",
+  exact_location: "Exact location",
+  protected_trait_inference: "Sensitive inferences",
+};
+
+const labelSignal = (signal: string) => SIGNAL_LABELS[signal] || signal;
+
 export const MatchSheet: React.FC<{
   profile: Profile;
   onClose: () => void;
@@ -37,6 +56,7 @@ export const MatchSheet: React.FC<{
             observance: user.observance,
             intent: user.intent,
             tags: user.tags,
+            prompts: user.prompts,
           },
           candidate_profile: {
             age: profile.age,
@@ -44,8 +64,15 @@ export const MatchSheet: React.FC<{
             observance: profile.observance,
             intent: profile.intent,
             tags: profile.tags,
+            prompts: profile.prompts,
           },
-          signals: ["Shared values", "Similar observance level", "Proximity"],
+          signals: [
+            "visible_values",
+            "visible_intent",
+            "visible_observance",
+            "visible_interests",
+            "visible_prompts",
+          ],
         });
         setMatchExplanation(explanation);
       } catch (error) {
@@ -161,12 +188,63 @@ export const MatchSheet: React.FC<{
                   </p>
                 </div>
               )}
+
+              {matchExplanation.uncertainty_he && (
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    Note
+                  </p>
+                  <p className="text-xs text-white/60 italic leading-relaxed">
+                    {matchExplanation.uncertainty_he}
+                  </p>
+                </div>
+              )}
+
+              {(matchExplanation.signals_used?.length > 0 ||
+                matchExplanation.signals_not_used?.length > 0) && (
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  {matchExplanation.signals_used?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        Used
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {matchExplanation.signals_used.map((signal: string) => (
+                          <span
+                            key={signal}
+                            className="px-2 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/25 text-[10px] font-bold text-[#D4AF37]"
+                          >
+                            {labelSignal(signal)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {matchExplanation.signals_not_used?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        Not Used
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {matchExplanation.signals_not_used.map((signal: string) => (
+                          <span
+                            key={signal}
+                            className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/55"
+                          >
+                            {labelSignal(signal)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-white/80 leading-relaxed italic font-serif text-center">
               "You both prioritize {profile.tags?.[0]?.toLowerCase() || 'similar values'} and have
-              verified your identities. A great foundation for a first
-              conversation."
+              visible profile details that can be a useful start for a first
+              conversation. Private taste and hidden ranking signals are not used here."
             </p>
           )}
         </div>
