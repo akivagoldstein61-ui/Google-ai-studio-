@@ -2,11 +2,27 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Shield, Heart, Globe } from 'lucide-react';
+import { Shield, Heart, Globe, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { auth } from '@/firebase';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
   const { language, setLanguage } = useApp();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  const handleSignIn = async () => {
+    setIsSigningIn(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // AppContext will handle the auth state change and call onNext if needed,
+      // but since AppContext sets user and re-renders, this component will unmount.
+    } catch (error) {
+      console.error("Sign in failed", error);
+      setIsSigningIn(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen px-8 py-14 justify-between bg-[#FDFCFB] overflow-hidden relative">
@@ -77,11 +93,18 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
             </h2>
           </div>
           <div className="h-px w-16 bg-[#2D2926] opacity-10" />
-          <p className="text-xl text-[#8C7E6E] leading-relaxed max-w-[320px] font-medium italic">
-            {language === 'en' 
-              ? 'A refined space for serious Jewish singles in Israel.' 
-              : 'מרחב מעודן לרווקים ורווקות יהודים בישראל.'}
-          </p>
+          <div className="space-y-4">
+            <p className="text-xl text-[#8C7E6E] leading-relaxed max-w-[320px] font-medium italic">
+              {language === 'en' 
+                ? 'A refined space for serious Jewish singles in Israel.' 
+                : 'מרחב מעודן לרווקים ורווקות יהודים בישראל.'}
+            </p>
+            <p className="text-sm text-[#8C7E6E] leading-relaxed max-w-[320px]">
+              {language === 'en'
+                ? 'Fewer, more intentional introductions. Guided by your private taste profile.'
+                : 'פחות היכרויות, יותר כוונה. מודרך על ידי פרופיל הטעם הפרטי שלך.'}
+            </p>
+          </div>
         </motion.div>
 
         <motion.div 
@@ -90,15 +113,24 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
           transition={{ delay: 0.8 }}
           className="space-y-4"
         >
+          <div className="flex items-center justify-center gap-2 text-[#8C7E6E] pb-2">
+            <Sparkles size={14} className="text-[#D4AF37]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              {language === 'en' ? 'Private AI • You stay in control' : 'בינה מלאכותית פרטית • אתה בשליטה'}
+            </span>
+          </div>
           <Button 
             className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all active:scale-[0.98]" 
-            onClick={onNext}
+            onClick={handleSignIn}
+            disabled={isSigningIn}
           >
-            {language === 'en' ? 'Begin your journey' : 'התחל את המסע'}
+            {isSigningIn ? <Loader2 className="animate-spin" /> : (language === 'en' ? 'Begin your journey' : 'התחל את המסע')}
           </Button>
           <Button 
             variant="ghost" 
             className="w-full h-16 text-lg text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all"
+            onClick={handleSignIn}
+            disabled={isSigningIn}
           >
             {language === 'en' ? 'Sign In' : 'התחבר'}
           </Button>

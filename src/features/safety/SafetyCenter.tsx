@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, AlertTriangle, UserX, Trash2, MessageSquare, ArrowLeft, Search, Sparkles, Loader2, CheckCircle2, PhoneCall } from 'lucide-react';
+import { Shield, AlertTriangle, UserX, Trash2, MessageSquare, ArrowLeft, Search, Sparkles, Loader2, CheckCircle2, PhoneCall, Info } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiSafetyService } from '@/services/aiSafetyService';
 import { cn } from '@/lib/utils';
+import { ReportFlow } from '@/features/safety/ReportFlow';
+import { useApp } from '@/context/AppContext';
 
 export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { user } = useApp();
   const [safetyQuestion, setSafetyQuestion] = useState('');
   const [safetyAdvice, setSafetyAdvice] = useState<string | null>(null);
   const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
@@ -47,6 +50,14 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-12">
+        {/* Trust Philosophy */}
+        <section className="space-y-4 text-center">
+          <h3 className="text-2xl font-serif italic text-[#2D2926]">Kesher's Trust Philosophy</h3>
+          <p className="text-sm text-[#8C7E6E] leading-relaxed italic max-w-sm mx-auto">
+            We believe dating should be respectful, safe, and serious. We prioritize trust over growth, and human control over AI autonomy. Your safety and discretion matter here.
+          </p>
+        </section>
+
         {/* AI Safety Assistant */}
         <section className="space-y-6">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
@@ -92,6 +103,67 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </section>
 
+        {/* Safety Explanations */}
+        <section className="space-y-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">How Safety Works</h3>
+          <div className="space-y-4">
+            <div className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-3 shadow-sm">
+              <div className="flex items-center gap-3 text-[#2D2926]">
+                <AlertTriangle size={20} className="text-amber-600" />
+                <h4 className="font-bold">Reporting</h4>
+              </div>
+              <p className="text-sm text-[#8C7E6E] leading-relaxed">
+                Reporting helps protect the community. When you report someone, our moderation team reviews the context securely. The reported user is not notified that you reported them.
+              </p>
+            </div>
+            
+            <div className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-3 shadow-sm">
+              <div className="flex items-center gap-3 text-[#2D2926]">
+                <UserX size={20} className="text-red-600" />
+                <h4 className="font-bold">Blocking</h4>
+              </div>
+              <p className="text-sm text-[#8C7E6E] leading-relaxed">
+                Blocking severs the connection immediately. They can no longer contact you or see your profile. This action is currently permanent.
+              </p>
+            </div>
+
+            <div className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-3 shadow-sm">
+              <div className="flex items-center gap-3 text-[#2D2926]">
+                <Trash2 size={20} className="text-[#8C7E6E]" />
+                <h4 className="font-bold">Unmatching</h4>
+              </div>
+              <p className="text-sm text-[#8C7E6E] leading-relaxed">
+                Unmatching removes the chat from your active relationship flow. It is separate from reporting. If you need to report someone, do so before unmatching, or report directly from the chat.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Meeting Safely */}
+        <section className="space-y-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Meeting Safely</h3>
+          <div className="p-6 bg-[#F7F2EE] border border-[#E5DED5] rounded-[32px] space-y-4">
+            <ul className="space-y-3 text-sm text-[#2D2926] italic">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 size={16} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                <span>Meet in public, well-lit places for the first few dates.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 size={16} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                <span>Tell a friend or family member where you are going.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 size={16} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                <span>Never send money or share financial information.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 size={16} className="text-[#D4AF37] shrink-0 mt-0.5" />
+                <span>Trust your instincts. If something feels off, leave.</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
         {/* Emergency Contacts */}
         <section className="space-y-6">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Emergency Support</h3>
@@ -115,25 +187,18 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <section className="space-y-6">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Reporting Tools</h3>
           <div className="space-y-3">
-            {[
-              { icon: AlertTriangle, label: 'Report a User', color: 'text-amber-600', onClick: () => setShowReportFlow(true) },
-              { icon: UserX, label: 'Block a User', color: 'text-red-600' },
-              { icon: Trash2, label: 'Delete Account', color: 'text-[#8C7E6E]' }
-            ].map((item, i) => (
-              <button 
-                key={i}
-                onClick={item.onClick}
-                className="w-full p-6 bg-white border border-[#F3EFEA] rounded-[32px] flex items-center justify-between shadow-sm hover:bg-[#F7F2EE] transition-all group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={cn("w-10 h-10 bg-[#F7F2EE] rounded-full flex items-center justify-center", item.color)}>
-                    <item.icon size={20} />
-                  </div>
-                  <span className="font-bold text-[#2D2926]">{item.label}</span>
+            <button 
+              onClick={() => setShowReportFlow(true)}
+              className="w-full p-6 bg-white border border-[#F3EFEA] rounded-[32px] flex items-center justify-between shadow-sm hover:bg-[#F7F2EE] transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
+                  <AlertTriangle size={20} />
                 </div>
-                <ArrowLeft size={18} className="text-[#8C7E6E] rotate-180 opacity-0 group-hover:opacity-100 transition-all" />
-              </button>
-            ))}
+                <span className="font-bold text-[#2D2926]">Report an Issue</span>
+              </div>
+              <ArrowLeft size={18} className="text-[#8C7E6E] rotate-180 opacity-0 group-hover:opacity-100 transition-all" />
+            </button>
           </div>
         </section>
 
@@ -146,79 +211,7 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showReportFlow && (
-          <ReportFlow onClose={() => setShowReportFlow(false)} />
-        )}
-      </AnimatePresence>
+      <ReportFlow isOpen={showReportFlow} onClose={() => setShowReportFlow(false)} reporterId={user?.id} />
     </div>
   );
 };
-
-const ReportFlow: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [step, setStep] = useState(1);
-  const [reason, setReason] = useState('');
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-8"
-    >
-      <motion.div 
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        className="w-full max-w-sm bg-[#FDFCFB] rounded-[48px] p-10 space-y-8 relative"
-      >
-        <button onClick={onClose} className="absolute top-8 right-8 p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
-          <X size={20} className="text-[#2D2926]" />
-        </button>
-
-        {step === 1 ? (
-          <>
-            <div className="space-y-3">
-              <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-[20px] flex items-center justify-center">
-                <AlertTriangle size={28} />
-              </div>
-              <h3 className="text-2xl font-serif italic text-[#2D2926]">Report User</h3>
-              <p className="text-sm text-[#8C7E6E] italic">Select the reason for your report.</p>
-            </div>
-            <div className="space-y-3">
-              {['Harassment', 'Fake Profile', 'Inappropriate Content', 'Scam/Fraud', 'Other'].map(r => (
-                <button 
-                  key={r}
-                  onClick={() => { setReason(r); setStep(2); }}
-                  className="w-full p-5 text-left bg-white border border-[#F3EFEA] rounded-[24px] font-bold text-[#2D2926] hover:border-[#D4AF37] transition-all"
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="space-y-8 text-center">
-            <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 size={40} />
-            </div>
-            <div className="space-y-3">
-              <h3 className="text-2xl font-serif italic text-[#2D2926]">Report Received</h3>
-              <p className="text-sm text-[#8C7E6E] leading-relaxed italic">
-                Thank you for helping keep Kesher safe. Our team will review this report within 24 hours.
-              </p>
-            </div>
-            <Button onClick={onClose} className="w-full h-14 rounded-full bg-[#2D2926] text-white">
-              Done
-            </Button>
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-};
-
-const X = ({ size, className }: { size: number, className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-  </svg>
-);

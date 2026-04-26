@@ -29,7 +29,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       onClick={onSelect}
     >
       <img 
-        src={profile.photos[0]} 
+        src={profile.photos?.[0]} 
         alt={profile.displayName}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
         referrerPolicy="no-referrer"
