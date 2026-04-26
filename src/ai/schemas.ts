@@ -53,19 +53,71 @@ export const TasteProfileSchema = {
   required: ["hard_dealbreakers", "soft_preferences", "weights", "explanation"]
 };
 
+export const WHY_MATCH_SCHEMA_VERSION = "why_match.v2";
+
 export const WhyMatchSchema = {
   type: Type.OBJECT,
   properties: {
-    reasons: { 
-      type: Type.ARRAY, 
-      minItems: 2, 
-      maxItems: 3, 
-      items: { type: Type.STRING } 
+    schema_version: { type: Type.STRING, description: "Always 'why_match.v2'." },
+    reasons: {
+      type: Type.ARRAY,
+      minItems: 2,
+      maxItems: 3,
+      items: { type: Type.STRING },
+      description: "Short, honest reasons grounded only in whitelisted visible signals."
     },
     first_question: { type: Type.STRING },
-    gentle_clarification: { type: Type.STRING }
+    possible_mismatch_to_clarify: {
+      type: Type.STRING,
+      description: "One gentle clarification the user might want to ask, or empty string if none."
+    },
+    signals_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Whitelisted signals that informed the reasons. Subset of the input signals."
+    },
+    signals_not_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Whitelisted signals that were available but did not contribute."
+    },
+    confidence: {
+      type: Type.NUMBER,
+      description: "Self-reported confidence between 0 and 1. Treat as heuristic, not a score."
+    },
+    evidence_label: {
+      type: Type.STRING,
+      enum: ["VERIFIED", "INFERRED", "HEURISTIC", "UNKNOWN"],
+      description: "How firm the underlying signals are."
+    }
   },
-  required: ["reasons", "first_question"]
+  required: [
+    "schema_version",
+    "reasons",
+    "first_question",
+    "signals_used",
+    "signals_not_used",
+    "confidence",
+    "evidence_label"
+  ]
+};
+
+export const RephraseMessageSchema = {
+  type: Type.OBJECT,
+  properties: {
+    options: {
+      type: Type.ARRAY,
+      minItems: 2,
+      maxItems: 4,
+      items: { type: Type.STRING },
+      description: "Alternative phrasings of the user's draft. Same meaning, no invented facts."
+    },
+    what_changed: {
+      type: Type.STRING,
+      description: "Brief explanation of how the alternatives differ from the original."
+    }
+  },
+  required: ["options", "what_changed"]
 };
 
 export const SafetyScanSchema = {

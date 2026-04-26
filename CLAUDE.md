@@ -149,6 +149,8 @@ Dependency chain for remaining work (completed items struck through):
 | Router introduction | *prev commit* | Replaced 8 useState booleans with React Router v7; 14 routes; MainLayout as tab layout |
 | Planning docs | `5a6ced4`, `e943cad` | Full audit + plan artifacts in `docs/claude-import-refresh/` |
 | Firebase Auth | `c34298b` | Real phone + email auth via Firebase; authMiddleware on server; authFetch wrapper; signOut wired |
+| Docs reconcile | `9e391e4` | Made CLAUDE.md honest about current repo; moved unimplemented vision into `docs/target-architecture.md` |
+| Personality-adjacent | *this commit* | Data classification contract; WhyMatch hardening (signals_used/not_used, banned-phrase guard, server-side allowlist filter); rewrite-first message coach (structured output, requires draft, no autosend); AI Trust Hub copy pinned by tests; instrument-agnostic personality service shell (refuses to score) |
 
 ---
 
@@ -163,7 +165,7 @@ Dependency chain for remaining work (completed items struck through):
 ## 10. Commands to Run Before Commit
 
 ```bash
-npx vitest run          # 74 tests must pass
+npx vitest run          # 116 tests must pass
 npx tsc --noEmit        # 0 type errors
 npx vite build          # must succeed
 ```

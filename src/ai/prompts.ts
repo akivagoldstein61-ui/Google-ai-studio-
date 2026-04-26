@@ -23,15 +23,27 @@ Requirements:
 - Keep it authentic, not salesman-like.
 - Add 2 optional "conversation hooks" as short lines.`,
 
-  WHY_MATCH: (params: { user_profile: any; candidate_profile: any; signals: string[] }) => `Create a "Why you're seeing this" explanation.
-User profile summary: ${sanitize.profile(params.user_profile)}
-Candidate profile summary: ${sanitize.profile(params.candidate_profile)}
+  WHY_MATCH: (params: { user_profile: any; candidate_profile: any; signals: string[] }) => `Create a "Why you're seeing this" explanation grounded ONLY in the whitelisted signals below.
+
+User profile summary (visible fields only): ${sanitize.profile(params.user_profile)}
+Candidate profile summary (visible fields only): ${sanitize.profile(params.candidate_profile)}
 Whitelisted match signals: ${sanitize.profile(params.signals)}
 
-Output:
-- 2–3 short reasons
-- 1 "good first question"
-- 1 "possible mismatch to clarify" (gentle)`,
+Strict rules:
+- Use ONLY the whitelisted signals. Do not infer hidden ranking, private preferences, taste profile, safety flags, behavioral history, attractiveness, or protected traits.
+- Do NOT use the phrases: "perfect match", "soulmate", "compatibility score", "marriage probability", "your type".
+- Do NOT invent shared facts. If a signal is missing or ambiguous, omit it instead of guessing.
+- Keep reasons short, honest, and probabilistic in tone. No certainty claims.
+
+Output a JSON object with:
+- schema_version: "why_match.v2"
+- reasons: 2–3 short reasons grounded in whitelisted signals
+- first_question: one good first question for the user to ask
+- possible_mismatch_to_clarify: one gentle clarification, or "" if none
+- signals_used: subset of the whitelisted signals that actually shaped the reasons
+- signals_not_used: whitelisted signals that were available but did not contribute
+- confidence: number between 0 and 1 (heuristic, not a score)
+- evidence_label: "VERIFIED" | "INFERRED" | "HEURISTIC" | "UNKNOWN"`,
 
   SAFETY_SCAN: (params: { message_text: string; context: string }) => `Classify the following message for safety risk.
 Message: ${sanitize.message(params.message_text)}
@@ -53,7 +65,19 @@ Recent Interactions: ${sanitize.profile(interactions)}`,
 
   PROFILE_COMPLETENESS: (profile: any) => `Analyze this profile for completeness and quality: ${sanitize.profile(profile)}`,
 
-  REPHRASE_MESSAGE: (text: string) => `Rephrase this message to be more polite and clear, but keep the original intent: "${sanitize.message(text)}"`,
+  REPHRASE_MESSAGE: (text: string) => `The user wrote a draft message and is asking for help rephrasing it. They will choose whether to send anything; you NEVER send on their behalf.
+
+User draft: "${sanitize.message(text)}"
+
+Strict rules:
+- Preserve the user's intent and facts. Do NOT invent new facts, names, plans, or commitments.
+- Do NOT add information the user did not write.
+- Do NOT include the recipient's private preferences, taste profile, or any safety flags.
+- Keep the user's voice. The output is a draft for the user to choose from, not an automated send.
+
+Return a JSON object with:
+- options: 2–4 alternative phrasings, each preserving the original meaning
+- what_changed: a brief explanation of how the alternatives differ from the original (e.g. tone, clarity, length)`,
 
   GENERATE_OPENERS: (profile: any) => `Generate 3 respectful, engaging opening messages based on this profile: ${sanitize.profile(profile)}`,
 

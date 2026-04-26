@@ -3,6 +3,12 @@ import { motion } from 'motion/react';
 import { Sparkles, Shield, Eye, RefreshCw, Info, ChevronLeft, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
+import {
+  TRUST_HUB_PHILOSOPHY,
+  TRUST_HUB_DOES,
+  TRUST_HUB_RED_LINES,
+  TRUST_HUB_CONTROLS,
+} from '@/ai/trustHubCopy';
 import { cn } from '@/lib/utils';
 
 import { useApp } from '@/context/AppContext';
@@ -45,10 +51,15 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
               <Sparkles size={18} />
               <span className="text-[10px] font-bold uppercase tracking-widest">Our AI Philosophy</span>
             </div>
-            <h3 className="text-lg font-serif italic leading-snug">AI is our assistant, not our authority.</h3>
+            <h3 className="text-lg font-serif italic leading-snug">{TRUST_HUB_PHILOSOPHY.headline}</h3>
             <p className="text-sm text-white/60 leading-relaxed italic">
-              We use Google's Gemini AI to help you express yourself and stay safe. We never use AI to score your attractiveness or flirt on your behalf.
+              {TRUST_HUB_PHILOSOPHY.body}
             </p>
+            <ul className="pt-2 space-y-1">
+              {TRUST_HUB_DOES.map((line) => (
+                <li key={line} className="text-xs text-white/70 italic leading-relaxed">• {line}</li>
+              ))}
+            </ul>
             <div className="pt-4 border-t border-white/10 space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">Active Models</p>
               <div className="flex flex-col gap-1 text-xs text-white/80">
@@ -166,18 +177,35 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
             <span className="text-[10px] font-bold uppercase tracking-widest">Our Red Lines</span>
           </div>
           <ul className="space-y-2">
-            {[
-              "No public attractiveness ratings",
-              "No auto-chatting as the user",
-              "No sensitive identity inference from photos",
-              "No hidden ranking manipulation"
-            ].map((line, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-red-800/70 italic">
+            {TRUST_HUB_RED_LINES.map((line) => (
+              <li key={line} className="flex items-start gap-2 text-xs text-red-800/70 italic">
                 <Check size={14} className="mt-0.5 shrink-0" />
                 <span>{line}</span>
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* Your Controls */}
+        <section className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-3 shadow-sm">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Your Controls</h4>
+          <ul className="space-y-2">
+            {TRUST_HUB_CONTROLS.map((line) => (
+              <li key={line} className="flex items-start gap-2 text-xs text-[#2D2926] italic">
+                <Check size={14} className="mt-0.5 shrink-0 text-[#D4AF37]" />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleResetTaste}
+            className="w-full mt-2 text-red-500 hover:bg-red-50 rounded-full font-bold uppercase tracking-widest text-[10px] gap-2"
+          >
+            <RefreshCw size={14} />
+            Reset Taste Learning
+          </Button>
         </section>
       </div>
     </div>

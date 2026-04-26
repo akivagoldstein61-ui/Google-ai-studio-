@@ -43,7 +43,8 @@ describe('outputValidators', () => {
   describe('validateWhyMatch', () => {
     it('accepts valid output with reasons array', () => {
       const input = { reasons: ['Shared values', 'Same city'] };
-      expect(outputValidators.validateWhyMatch(input)).toBe(input);
+      const out = outputValidators.validateWhyMatch(input);
+      expect(out.reasons).toEqual(input.reasons);
     });
 
     it('rejects null output', () => {

@@ -12,6 +12,7 @@ import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.js";
 import {
   BioCoachSchema,
   WhyMatchSchema,
+  RephraseMessageSchema,
   SafetyScanSchema,
   DateIdeasSchema,
   ProfileCompletenessSchema,
@@ -23,6 +24,7 @@ import { outputValidators } from "../src/ai/outputValidators.js";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.js";
 import { AI_FEATURE_REGISTRY } from "../src/ai/featureRegistry.js";
 import { sanitize } from "../src/ai/promptSanitizer.js";
+import { filterWhyMatchSignals } from "../src/ai/dataClassification.js";
 
 // ---------------------------------------------------------------------------
 // Gemini client — server-side only, key from process.env
@@ -147,13 +149,20 @@ export function createAIRoutes(): Router {
         return void res.status(403).json({ error: "Feature disabled" });
 
       const { user_profile, candidate_profile, signals } = req.body;
+
+      // Server-side allowlist filter: drop any client-supplied signal that
+      // is not on WHY_MATCH_ALLOWED_SIGNALS, regardless of what the client
+      // asked for. This prevents a compromised or buggy client from feeding
+      // private/private-inferred signals into the explanation.
+      const safeSignals = filterWhyMatchSignals(signals);
+
       const ai = getAI();
       const response = await ai.models.generateContent({
         model: capabilityRouter.getRoute("why_match"),
         contents: PROMPT_TEMPLATES.WHY_MATCH({
           user_profile,
           candidate_profile,
-          signals: signals || [],
+          signals: safeSignals,
         }),
         config: {
           systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
@@ -269,7 +278,7 @@ export function createAIRoutes(): Router {
     })
   );
 
-  // --- Rephrase Message ----------------------------------------------------
+  // --- Rephrase Message (rewrite-first coach) -----------------------------
   router.post(
     "/rephrase",
     asyncHandler(async (req, res) => {
@@ -277,20 +286,35 @@ export function createAIRoutes(): Router {
         return void res.status(403).json({ error: "Feature disabled" });
 
       const { text } = req.body;
-      if (!text)
-        return void res.status(400).json({ error: "text is required" });
+      // Rewrite-first: a draft is required. Without it, refuse — there is
+      // nothing to rewrite and we never compose unprompted messages.
+      if (typeof text !== "string" || text.trim().length === 0) {
+        return void res
+          .status(400)
+          .json({ error: "A non-empty user draft is required." });
+      }
 
       const ai = getAI();
       const response = await ai.models.generateContent({
         model: capabilityRouter.getRoute("rephrase_message"),
         contents: PROMPT_TEMPLATES.REPHRASE_MESSAGE(text),
         config: {
-          systemInstruction:
-            "You are a helpful communication assistant for a respectful dating app.",
+          systemInstruction: SYSTEM_INSTRUCTIONS.MESSAGE_COACH,
+          responseMimeType: "application/json",
+          responseSchema: RephraseMessageSchema,
         },
       });
 
-      res.json({ rephrased: response.text || text });
+      const data = outputValidators.validateRephrase(
+        JSON.parse(response.text || "{}")
+      );
+
+      // Back-compat: callers that read `rephrased` get the first option.
+      res.json({
+        ...data,
+        rephrased: data.options[0],
+        requires_user_send: true,
+      });
     })
   );
 
