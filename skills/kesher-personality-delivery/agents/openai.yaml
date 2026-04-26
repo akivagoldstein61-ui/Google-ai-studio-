@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Personality Delivery"
+  short_description: "Ship personality work safely"
+  default_prompt: "Use $kesher-personality-delivery to plan, verify, review, and deploy Kesher personality work."
