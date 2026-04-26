@@ -15,11 +15,7 @@ export type ObservanceLevel =
   | 'other' 
   | 'prefer_not_to_say';
 
-export type VerificationLevel = 
-  | 'none' 
-  | 'contact_verified' 
-  | 'photo_verified' 
-  | 'id_verified';
+export type FamilyPlans = 'want_someday' | 'dont_want' | 'have_and_want_more' | 'have_and_dont_want_more' | 'not_sure_yet';
 
 export type PreferenceStrength = 'low' | 'medium' | 'high' | 'strict';
 
@@ -36,55 +32,84 @@ export interface ProfilePrompt {
   answer: string;
 }
 
-export interface Profile {
+export interface CandidateProfile {
   id: string;
-  displayName: string;
+  name: string;
   age: number;
   city: string;
-  gender: Gender;
-  bio: string;
-  photos: ProfilePhoto[];
-  prompts: ProfilePrompt[];
-  intent: IntentType;
+  distanceMiles: number;
+  relationshipIntent: IntentType;
   observance: ObservanceLevel;
-  verificationLevel: VerificationLevel;
-  isVerified: boolean; // Legacy support
-  distance?: number;
-  lastActive?: string;
-  tags: string[];
+  familyPlans: FamilyPlans;
+  verified: boolean;
+  languages: string[];
+  bio: string;
+  prompts: ProfilePrompt[];
+  interests: string[];
+  lifestyleTags: string[];
+  lastActiveLabel: string;
+  // added for compatibility
+  photos: ProfilePhoto[];
+  gender: Gender;
 }
 
-export interface HardFilter {
-  key: string;
-  value: any;
-  isActive: boolean;
-  poolImpact?: number;
-}
+export type RecommendationMode = 'values_first' | 'balanced' | 'exploratory';
 
 export interface SoftPreference {
-  key: string;
-  value: any;
+  id: string;
+  category: string;
+  label: string;
   strength: PreferenceStrength;
-  isActive: boolean;
+  userEditable: boolean;
 }
 
-export interface DiscoveryPreferences {
-  genderPreference: Gender[];
+export interface UserDiscoveryPreferences {
   ageRange: [number, number];
-  maxDistance: number;
-  observancePreference: ObservanceLevel[];
-  intentPreference: IntentType[];
-  hardFilters: HardFilter[];
+  maxDistanceMiles: number;
+  relationshipIntent: IntentType[];
+  observance: ObservanceLevel[];
+  familyPlans: FamilyPlans[];
+  verifiedOnly: boolean;
+  languages: string[];
+  dealbreakers: string[];
   softPreferences: SoftPreference[];
-  recommendationMode: 'values-first' | 'balanced' | 'chemistry-first';
+  recommendationMode: RecommendationMode;
 }
 
-export interface TasteProfile {
-  attractionTags: string[];
-  valuesTags: string[];
-  weightingAppearance: number;
-  weightingValues: number;
-  weightingVerification: number;
+export interface TastePattern {
+  id: string;
+  category: string;
+  value: string;
+  sourceClass: string;
+  provenanceSummary: string;
+  confidence: number;
+  supportCount: number;
+  distinctSessionCount: number;
+  lastConfirmedAt: string;
+  decayHalfLifeDays: number;
+  expiresAt: string;
+  userLocked: boolean;
+  userHidden: boolean;
+  rankWeightCap: number;
+  eligibleForRanking: boolean;
+  sensitivityTier: number;
+}
+
+export interface InteractionEvent {
+  id: string;
+  candidateId: string;
+  type: 'like' | 'pass' | 'more_like_this' | 'less_like_this';
+  surface: string;
+  createdAt: string;
+}
+
+export interface RecommendationResult {
+  candidateId: string;
+  surface: string;
+  hardFilterEligible: boolean;
+  score: number;
+  reasons: string[];
+  disclosures: string[];
 }
 
 export interface MatchExplanation {
@@ -93,7 +118,7 @@ export interface MatchExplanation {
 }
 
 export interface DailyPick {
-  profile: Profile;
+  profile: CandidateProfile;
   explanation: MatchExplanation;
 }
 
@@ -109,7 +134,7 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  participants: Profile[];
+  participants: CandidateProfile[];
   lastMessage?: Message;
   unreadCount: number;
   isPaused: boolean;
@@ -121,7 +146,7 @@ export interface Match {
   status: 'active' | 'paused' | 'unmatched';
   createdAt: string;
   whyThisMatch?: string;
-  participants: Profile[];
+  participants: CandidateProfile[];
 }
 
 export type ReportReason = 
@@ -145,26 +170,14 @@ export interface Report {
 
 export type AnalyticsEvent = 
   | 'landing_viewed'
-  | 'signup_started'
-  | 'verification_started'
-  | 'verification_completed'
   | 'onboarding_started'
-  | 'intent_selected'
-  | 'profile_completed'
   | 'daily_picks_viewed'
   | 'explore_opened'
-  | 'hard_filter_set'
-  | 'soft_preference_set'
   | 'taste_profile_adjusted'
   | 'like_sent'
   | 'pass_sent'
+  | 'more_like_this'
+  | 'less_like_this'
   | 'why_this_match_opened'
-  | 'match_created'
-  | 'opener_suggested'
-  | 'message_sent'
-  | 'report_submitted'
-  | 'block_confirmed'
-  | 'premium_viewed'
-  | 'premium_started'
-  | 'delete_account_started'
-  | 'account_deleted';
+  | 'report_submitted';
+

@@ -1,271 +1,139 @@
-import React, { useState } from 'react';
-import { useApp } from '@/context/AppContext';
-import { Profile, DiscoveryPreferences } from '@/types';
-import { motion, AnimatePresence } from 'motion/react';
-import { SlidersHorizontal, Grid, LayoutList, Check, X, ShieldCheck, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from 'react';
+import { CandidateProfile, RecommendationResult, UserDiscoveryPreferences } from '../../types';
+import { rankingService } from '../../services/rankingService';
+import { explanationService } from '../../services/explanationService';
+import { CandidateCard } from '../../components/discovery/CandidateCard';
+import { Settings2, Loader2, Info } from 'lucide-react';
+import { tasteProfileService } from '../../services/tasteProfileService';
 
-export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
-  const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+export const ExploreScreen = () => {
+  const [candidates, setCandidates] = useState<{profile: CandidateProfile, result: RecommendationResult, explanation?: string}[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  return (
-    <div className="h-full flex flex-col px-6 py-4 space-y-6 overflow-hidden">
-      <header className="flex justify-between items-center">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-serif italic text-[#2D2926]">Explore</h2>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Discover more connections</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="rounded-full hover:bg-[#F7F2EE]"
-          >
-            {viewMode === 'grid' ? <LayoutList size={20} /> : <Grid size={20} />}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setShowFilters(true)}
-            className="rounded-full hover:bg-[#F7F2EE]"
-          >
-            <SlidersHorizontal size={20} />
-          </Button>
-        </div>
-      </header>
+  // default mock prefs where age is NOT a dealbreaker so we can show widening
+  const [prefs, setPrefs] = useState<UserDiscoveryPreferences>({
+    ageRange: [20, 25], // Narrow age range to force widening on some candidates
+    maxDistanceMiles: 50,
+    relationshipIntent: ['serious_relationship', 'marriage_minded'],
+    observance: ['secular', 'traditional', 'dati'],
+    familyPlans: [],
+    verifiedOnly: false,
+    languages: [],
+    dealbreakers: [], // Empty to allow widening
+    softPreferences: [],
+    recommendationMode: 'exploratory'
+  });
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
-        <div className={cn(
-          "grid gap-4",
-          viewMode === 'grid' ? "grid-cols-2" : "grid-cols-1"
-        )}>
-          {exploreProfiles.map((profile, i) => (
-            <motion.div
-              key={profile.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => onSelect(profile)}
-              className={cn(
-                "relative rounded-[32px] overflow-hidden bg-[#F7F2EE] border border-[#F3EFEA] shadow-sm group",
-                viewMode === 'list' ? "aspect-[16/9]" : "aspect-[3/4]"
-              )}
-            >
-              <img 
-                src={profile.photos?.[0]} 
-                className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-white text-sm">{profile.displayName}, {profile.age}</span>
-                    {profile.isVerified && <ShieldCheck size={12} className="text-[#D4AF37]" />}
-                  </div>
-                  <span className="text-[10px] text-white/80 font-medium italic">{profile.city}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+  useEffect(() => {
+    loadCandidates();
+  }, [prefs]);
+
+  const loadCandidates = async () => {
+    setLoading(true);
+    const picks = await rankingService.getExploreCandidates(prefs);
+    
+    // fetch explanations
+    const withExplanations = await Promise.all(picks.map(async p => {
+      const explanation = await explanationService.getWhyMatchExplanation(p.profile, p.result);
+      return { ...p, explanation };
+    }));
+    
+    setCandidates(withExplanations);
+    setCurrentIndex(0);
+    setLoading(false);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => prev + 1);
+  };
+
+  const handleFeedback = async (type: string) => {
+    if (type === 'more' || type === 'less') {
+      const cand = candidates[currentIndex].profile;
+      await tasteProfileService.addPattern({
+        category: "Content Interaction",
+        value: type === 'more' ? `Likes ${cand.observance} profiles` : `Avoids ${cand.observance} profiles`,
+        sourceClass: "explicit_feedback",
+        provenanceSummary: `You clicked '${type === 'more' ? 'More' : 'Less'}' in Explore.`,
+        confidence: 0.5,
+        supportCount: 1,
+        distinctSessionCount: 1,
+        lastConfirmedAt: new Date().toISOString(),
+        decayHalfLifeDays: 14,
+        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        userLocked: false,
+        userHidden: false,
+        rankWeightCap: 0.8,
+        eligibleForRanking: true,
+        sensitivityTier: 1
+      });
+    }
+    handleNext();
+  };
+
+  return (
+    <div className="h-full flex flex-col pt-3 px-3 pb-0 relative">
+      <div className="flex items-center justify-between px-2 mb-3">
+        <h1 className="text-xl font-serif text-gray-900">Explore</h1>
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className={`p-2 rounded-full transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'bg-white shadow-sm text-gray-500 hover:text-gray-900'}`}
+        >
+          <Settings2 size={20} />
+        </button>
       </div>
 
-      <AnimatePresence>
-        {showFilters && (
-          <FilterDrawer 
-            preferences={preferences} 
-            onClose={() => setShowFilters(false)} 
-            onApply={(prefs) => { setPreferences(prefs); setShowFilters(false); }}
-            onResetTaste={resetTasteProfile}
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const FilterDrawer: React.FC<{ 
-  preferences: DiscoveryPreferences, 
-  onClose: () => void, 
-  onApply: (prefs: DiscoveryPreferences) => void,
-  onResetTaste: () => void
-}> = ({ preferences, onClose, onApply, onResetTaste }) => {
-  const [localPrefs, setLocalPrefs] = useState(preferences);
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end"
-      onClick={onClose}
-    >
-      <motion.div 
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full bg-[#FDFCFB] rounded-t-[48px] p-8 space-y-10 max-h-[90vh] overflow-y-auto no-scrollbar"
-        onClick={e => e.stopPropagation()}
-      >
-        <header className="flex justify-between items-center">
-          <div className="space-y-1">
-            <h3 className="text-2xl font-serif italic text-[#2D2926]">Refine Discovery</h3>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Intentional filtering</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
-            <X size={24} className="text-[#2D2926]" />
-          </button>
-        </header>
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Saved Presets</h4>
-            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Quick switch</span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            <button className="px-6 py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border bg-[#2D2926] text-white border-[#2D2926]">
-              Default
-            </button>
-            <button className="px-6 py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border bg-white text-[#8C7E6E] border-[#F3EFEA] hover:border-[#D4AF37]/30">
-              Strict Observance
-            </button>
-            <button className="px-6 py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border bg-white text-[#8C7E6E] border-[#F3EFEA] hover:border-[#D4AF37]/30">
-              Local Only
-            </button>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Hard Filters</h4>
-            <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest">Strict exclusions</span>
-          </div>
+      {showFilters && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 z-20">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Discovery Filters</h3>
+          <p className="text-xs text-gray-500 mb-4">In Explore, we may show profiles slightly outside non-dealbreaker filters. We will always disclose this.</p>
           
-          <div className="space-y-4">
-            <div className="p-6 bg-white border border-[#F3EFEA] rounded-[24px] space-y-4 shadow-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-[#2D2926]">Age Range</span>
-                <span className="text-xs font-medium text-[#8C7E6E]">{localPrefs.ageRange[0]} - {localPrefs.ageRange[1]}</span>
-              </div>
-              <input 
-                type="range" 
-                min="18" 
-                max="80" 
-                className="w-full accent-[#2D2926]" 
-                value={localPrefs.ageRange[1]}
-                onChange={(e) => setLocalPrefs({ ...localPrefs, ageRange: [localPrefs.ageRange[0], parseInt(e.target.value)] })}
-              />
-              <div className="flex items-center gap-2 text-[9px] text-[#8C7E6E] font-bold uppercase tracking-widest">
-                <div className="w-1 h-1 bg-[#D4AF37] rounded-full" />
-                <span>Pool impact: High</span>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-1">Age Range ({prefs.ageRange[0]} - {prefs.ageRange[1]})</label>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" checked={prefs.dealbreakers.includes('age')} onChange={(e) => {
+                  const d = Array.from(new Set(e.target.checked ? [...prefs.dealbreakers, 'age'] : prefs.dealbreakers.filter(x => x !== 'age')));
+                  setPrefs({...prefs, dealbreakers: d});
+                }} className="rounded border-gray-300" />
+                <span className="text-xs text-gray-600">Strict Dealbreaker (no widening)</span>
               </div>
             </div>
-
-            <div className="p-6 bg-white border border-[#F3EFEA] rounded-[24px] flex justify-between items-center shadow-sm">
-              <div className="space-y-1">
-                <span className="text-sm font-bold text-[#2D2926]">Verified Only</span>
-                <p className="text-[10px] text-[#8C7E6E] font-medium italic">Only show profiles with ID verification</p>
-              </div>
-              <button 
-                onClick={() => setLocalPrefs({ ...localPrefs, hardFilters: localPrefs.hardFilters.includes('verified') ? [] : ['verified'] })}
-                className={cn(
-                  "w-12 h-6 rounded-full transition-all relative",
-                  localPrefs.hardFilters.includes('verified') ? "bg-[#2D2926]" : "bg-[#F3EFEA]"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white transition-all",
-                  localPrefs.hardFilters.includes('verified') ? "left-7" : "left-1"
-                )} />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Soft Preferences</h4>
-            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Ranking biases</span>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {['Urban', 'Outdoorsy', 'Artistic', 'Tech-focused', 'Traditional', 'Secular'].map((tag, i) => (
-              <button 
-                key={`soft-pref-${i}`}
-                onClick={() => setLocalPrefs({ ...localPrefs, softPreferences: localPrefs.softPreferences.includes(tag) ? localPrefs.softPreferences.filter(t => t !== tag) : [...localPrefs.softPreferences, tag] })}
-                className={cn(
-                  "px-6 py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border",
-                  localPrefs.softPreferences.includes(tag) ? "bg-[#2D2926] text-white border-[#2D2926]" : "bg-white text-[#8C7E6E] border-[#F3EFEA] hover:border-[#D4AF37]/30"
-                )}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Recommendation Mode</h4>
-            <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest">Learned taste</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { id: 'values_first', label: 'Values' },
-              { id: 'balanced', label: 'Balanced' },
-              { id: 'chemistry_first', label: 'Chemistry' }
-            ].map(mode => (
-              <button 
-                key={mode.id}
-                onClick={() => setLocalPrefs({ ...localPrefs, recommendationMode: mode.id as any })}
-                className={cn(
-                  "p-4 rounded-[20px] text-[10px] font-bold uppercase tracking-widest transition-all border flex flex-col items-center gap-2",
-                  localPrefs.recommendationMode === mode.id ? "bg-[#F7F2EE] text-[#D4AF37] border-[#D4AF37]" : "bg-white text-[#8C7E6E] border-[#F3EFEA]"
-                )}
-              >
-                {localPrefs.recommendationMode === mode.id && <Sparkles size={14} />}
-                {mode.label}
-              </button>
-            ))}
-          </div>
-          
-          <div className="pt-4 flex items-center justify-between border-t border-[#F3EFEA]">
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Taste Profile</h4>
-              <p className="text-[10px] text-[#8C7E6E] font-medium italic">Your private learned preferences</p>
-            </div>
-            <button 
-              onClick={() => {
-                onResetTaste();
-                onClose();
-              }}
-              className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] hover:text-[#B8962E] transition-colors"
-            >
-              Reset Learning
+            <button onClick={() => setShowFilters(false)} className="w-full bg-gray-900 text-white rounded-lg py-2 text-sm font-medium mt-2">
+              Apply
             </button>
           </div>
-        </section>
-
-        <div className="pt-4 space-y-4">
-          <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">
-            <Sparkles size={12} />
-            <span>Based on your settings • AI Draft • Human Control</span>
-          </div>
-          <Button 
-            className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all" 
-            onClick={() => onApply(localPrefs)}
-          >
-            Apply Filters
-          </Button>
         </div>
-      </motion.div>
-    </motion.div>
+      )}
+
+      {loading ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+        </div>
+      ) : currentIndex >= candidates.length ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-6 text-gray-400">
+            <Info size={32} />
+          </div>
+          <h2 className="text-xl font-serif text-gray-900 mb-2">End of results</h2>
+          <p className="text-gray-500 text-sm">You have seen all available profiles in Explore.</p>
+        </div>
+      ) : (
+        <div className="flex-1 relative">
+          <CandidateCard
+            candidate={candidates[currentIndex].profile}
+            result={candidates[currentIndex].result}
+            explanation={candidates[currentIndex].explanation}
+            surface="explore"
+            onLike={() => handleNext()}
+            onPass={() => handleNext()}
+            onMoreLikeThis={() => handleFeedback('more')}
+            onLessLikeThis={() => handleFeedback('less')}
+          />
+        </div>
+      )}
+    </div>
   );
 };
