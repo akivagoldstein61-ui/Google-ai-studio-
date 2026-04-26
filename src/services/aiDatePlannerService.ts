@@ -1,3 +1,5 @@
+import { buildAuthHeaders } from './authHeaders';
+
 /**
  * Client-side date planner service — calls server-side proxy endpoint.
  *
@@ -7,7 +9,7 @@
 async function post(endpoint: string, body: Record<string, unknown>): Promise<any> {
   const res = await fetch(`/api/ai/${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await buildAuthHeaders(),
     body: JSON.stringify(body),
   });
 

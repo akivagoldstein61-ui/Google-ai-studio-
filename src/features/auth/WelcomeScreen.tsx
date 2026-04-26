@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Shield, Heart, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
+export const WelcomeScreen: React.FC<{ onNext: () => Promise<void> }> = ({ onNext }) => {
   const { language, setLanguage } = useApp();
 
   return (

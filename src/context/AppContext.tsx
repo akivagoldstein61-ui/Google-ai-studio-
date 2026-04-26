@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged, signInAnonymously, signOut, User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/firebase';
 import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 
@@ -26,6 +28,8 @@ interface AppState {
   setLanguage: (lang: 'en' | 'he') => void;
   setUser: (user: Profile | null) => void;
   setOnboarding: (isOnboarding: boolean) => void;
+  signIn: () => Promise<void>;
+  signOutUser: () => Promise<void>;
   setPreferences: (prefs: DiscoveryPreferences) => void;
   likeProfile: (profileId: string) => Promise<boolean>;
   passProfile: (profileId: string) => void;
@@ -39,6 +43,28 @@ interface AppState {
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
+
+const LOCAL_MOCK_AUTH_KEY = 'KESHER_LOCAL_MOCK_AUTH';
+
+function toProfileFromAuthUser(authUser: FirebaseUser): Profile {
+  return {
+    id: authUser.uid,
+    uid: authUser.uid,
+    displayName: authUser.displayName || 'Kesher Member',
+    age: 28,
+    gender: 'male',
+    city: 'Jerusalem',
+    photos: [],
+    bio: '',
+    observance: 'modern_orthodox',
+    intent: 'marriage_minded',
+    prompts: [],
+    isVerified: true,
+    isPremium: false,
+    tags: []
+  };
+}
+
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null);
@@ -86,10 +112,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        localStorage.removeItem(LOCAL_MOCK_AUTH_KEY);
+        setUser(toProfileFromAuthUser(authUser));
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
   }, []);
+
+  const signIn = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        localStorage.setItem(LOCAL_MOCK_AUTH_KEY, '1');
+        setUser({ id: 'local-dev-user', uid: 'local-dev-user', displayName: 'Local Dev User', age: 28, gender: 'male', city: 'Jerusalem', photos: [], bio: '', observance: 'modern_orthodox', intent: 'marriage_minded', prompts: [], isVerified: true, isPremium: false, tags: [] });
+        return;
+      }
+      throw error;
+    }
+  };
+
+  const signOutUser = async () => {
+    localStorage.removeItem(LOCAL_MOCK_AUTH_KEY);
+    await signOut(auth).catch(() => undefined);
+    setUser(null);
+  };
 
   const likeProfile = async (profileId: string): Promise<boolean> => {
     // Mock matching logic
@@ -235,6 +288,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage,
       setUser,
       setOnboarding,
+      signIn,
+      signOutUser,
       setPreferences,
       likeProfile,
       passProfile,

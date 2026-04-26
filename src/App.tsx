@@ -20,7 +20,7 @@ import { Profile, Conversation } from '@/types';
 import { AppProvider } from './context/AppContext';
 
 const AppContent: React.FC = () => {
-  const { user, isOnboarding, setUser, setOnboarding, likeProfile, passProfile } = useApp();
+  const { user, isOnboarding, signIn, setOnboarding, likeProfile, passProfile } = useApp();
   const [activeTab, setActiveTab] = useState<'daily' | 'explore' | 'matches' | 'profile'>('daily');
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -32,7 +32,7 @@ const AppContent: React.FC = () => {
   const [showMatch, setShowMatch] = useState<Profile | null>(null);
 
   if (!user) {
-    return <WelcomeScreen onNext={() => setUser({ id: 'me', uid: 'me', displayName: 'Akiva', age: 28, gender: 'male', city: 'Jerusalem', photos: [], bio: '', observance: 'modern_orthodox', intent: 'marriage_minded', prompts: [], isVerified: true, isPremium: false, tags: [] })} />;
+    return <WelcomeScreen onNext={signIn} />;
   }
 
   if (isOnboarding) {
