@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher BFAS Assessment"
-  short_description: "Implement BFAS scoring safely"
-  default_prompt: "Use $kesher-bfas-assessment to implement or revise Kesher BFAS assessment scoring."

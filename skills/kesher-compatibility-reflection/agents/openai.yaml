@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Compatibility Reflection"
-  short_description: "Build consented pair reflection"
-  default_prompt: "Use $kesher-compatibility-reflection to implement mutual-consent compatibility reflection."

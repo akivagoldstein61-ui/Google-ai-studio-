@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Permissioned Sharing"
-  short_description: "Build revocable share cards"
-  default_prompt: "Use $kesher-permissioned-sharing to implement revocable personality share cards."

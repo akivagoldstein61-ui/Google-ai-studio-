@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Personality Why Match"
-  short_description: "Explain matches without leakage"
-  default_prompt: "Use $kesher-personality-why-match to implement personality-safe Why This Match explanations."

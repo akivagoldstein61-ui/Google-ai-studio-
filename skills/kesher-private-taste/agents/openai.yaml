@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Private Taste"
-  short_description: "Implement owner-only taste learning"
-  default_prompt: "Use $kesher-private-taste to implement private taste learning for personality-aware recommendations."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kesher Personality Visibility"
-  short_description: "Design privacy-safe visibility"
-  default_prompt: "Use $kesher-personality-visibility to implement personality visibility and disclosure surfaces."
