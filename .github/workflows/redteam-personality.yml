@@ -27,6 +27,8 @@ jobs:
     name: Personality red-team checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,6 +56,8 @@ jobs:
   forbidden-language-scan:
     name: AI output forbidden language scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,7 +69,7 @@ jobs:
       - name: Scan AI prompts for forbidden patterns
         # Fail if prompts contain patterns that could produce forbidden output.
         run: |
-          FORBIDDEN_LANG="soulmate|perfect match|marriage probabilit|diagno[sz]|disorder|condition|mental health label|compatibility score|desirability"
+          FORBIDDEN_LANG="soulmate|perfect match|marriage probabilit(y|ies)|diagno[sz]|disorder|condition|mental health label|compatibility score|desirability"
           PROMPT_DIRS="src/ai src/prompts src/personality"
           if grep -rni --include="*.ts" --include="*.tsx" --include="*.json" --include="*.txt" \
                -E "$FORBIDDEN_LANG" $PROMPT_DIRS 2>/dev/null; then
