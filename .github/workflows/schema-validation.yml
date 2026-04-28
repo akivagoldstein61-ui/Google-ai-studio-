@@ -1,0 +1,39 @@
+name: Schema Validation
+
+on:
+  pull_request:
+    paths:
+      - "src/ai/schemas.ts"
+      - "src/types/**"
+      - "scripts/test-personality-schemas.mjs"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/ai/schemas.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-schemas:
+    name: "Validate – Personality Schemas"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Validate personality schemas
+        run: node scripts/test-personality-schemas.mjs
+
+      - name: Upload schema validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-validation-${{ github.run_id }}
+          path: /tmp/schema-validation-report.json
+          if-no-files-found: ignore
+          retention-days: 30

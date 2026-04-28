@@ -1,0 +1,106 @@
+name: Personality CI
+
+on:
+  pull_request:
+    paths:
+      - "src/ai/**"
+      - "src/features/personality/**"
+      - "src/features/settings/**"
+      - "src/features/discovery/**"
+      - "src/components/discovery/**"
+      - "src/types/**"
+      - "server/**"
+      - "server.ts"
+      - "scripts/**"
+      - "docs/personality/**"
+      - "package.json"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/ai/**"
+      - "src/features/personality/**"
+      - "scripts/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  forbidden-fields:
+    name: "Scan – Forbidden Fields"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Scan for forbidden personality fields
+        run: node scripts/scan-forbidden-fields.mjs
+
+  log-scan:
+    name: "Scan – Log Hygiene"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Scan logs for sensitive personality data
+        run: node scripts/scan-logs.mjs
+
+  schema-validation:
+    name: "Test – Personality Schemas"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Validate personality schemas
+        run: node scripts/test-personality-schemas.mjs
+
+  scoring-tests:
+    name: "Test – Personality Scoring"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Test personality scoring contracts
+        run: node scripts/test-personality-scoring.mjs
+
+  smoke-tests:
+    name: "Test – Personality Smoke Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Run personality smoke tests
+        run: node scripts/personality-smoke-tests.mjs
+
+  typecheck:
+    name: "TypeScript – No-emit check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
