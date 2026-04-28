@@ -1,126 +1,100 @@
-name: AI Red-Team Finding
-description: Report a red-team or adversarial finding in Kesher Personality AI features
+name: "AI Red-Team Finding"
+description: "Report a finding from AI red-teaming of the Personality Dimension"
 title: "[Red-Team] "
-labels: ["red-team", "ai-safety", "needs-triage"]
-assignees: []
+labels: ["red-team", "ai-safety", "personality", "needs-review"]
 body:
   - type: markdown
     attributes:
       value: |
         ## AI Red-Team Finding
-        Use this template to document findings from personality AI red-teaming sessions.
-        Mark the issue **confidential** until remediation is confirmed.
 
-  - type: input
-    id: finding-title
+        Use this template to report findings from adversarial testing of Kesher's AI-assisted
+        Personality Dimension features. This includes prompt injection, jailbreaks, policy
+        circumvention, hallucination risks, and output safety violations.
+
+        Run `npm run redteam:personality` locally before filing if possible.
+
+  - type: dropdown
+    id: finding-type
     attributes:
-      label: Finding title
-      placeholder: e.g. "AI generates diagnosis-adjacent language in match explanation"
+      label: "Finding Type"
+      options:
+        - "Prompt injection or jailbreak"
+        - "Policy bypass (forbidden output produced)"
+        - "Hallucination or false scientific claim"
+        - "Compatibility or scoring language leaked"
+        - "Clinical or diagnostic language produced"
+        - "Protected-trait inference from proxy"
+        - "AI impersonation risk"
+        - "AI auto-send risk"
+        - "Hidden ranking or throttling signal"
+        - "Schema validation bypass"
+        - "Other"
     validations:
       required: true
 
   - type: dropdown
     id: severity
     attributes:
-      label: Severity
+      label: "Severity"
       options:
-        - Critical — immediate ship-blocker
-        - High — must fix before next release
-        - Medium — fix in current sprint
-        - Low — track for backlog
-    validations:
-      required: true
-
-  - type: dropdown
-    id: category
-    attributes:
-      label: Finding category
-      multiple: true
-      options:
-        - privacy-leakage
-        - hidden-ranking-leakage
-        - overclaiming
-        - raw-score-exposure
-        - diagnosis-language
-        - protected-trait-inference
-        - ai-autosend-path
-        - missing-consent-gate
-        - missing-revoke-delete-export
-        - hebrew-rtl-regression
-        - other
+        - "Critical – active policy violation with real users"
+        - "High – reproducible violation, not yet in production"
+        - "Medium – edge case, requires specific prompt"
+        - "Low – theoretical or informational"
     validations:
       required: true
 
   - type: textarea
-    id: description
+    id: prompt-used
     attributes:
-      label: Description
-      description: Describe the finding with enough detail to reproduce it.
+      label: "Prompt / Input Used"
+      description: "Paste the prompt or inputs that triggered the finding. Redact real user data."
     validations:
       required: true
 
   - type: textarea
-    id: prompt-payload
+    id: model-output
     attributes:
-      label: Prompt / payload used
-      description: Paste the adversarial prompt or input payload (redact any PII).
-      render: text
-
-  - type: textarea
-    id: ai-output
-    attributes:
-      label: AI output observed
-      description: Paste the problematic AI output (redact any PII).
-      render: text
+      label: "Model Output"
+      description: "Paste the problematic output. Redact any real user data."
     validations:
       required: true
 
   - type: textarea
-    id: expected-behavior
+    id: policy-violated
     attributes:
-      label: Expected behavior
-      description: What should the system have done instead?
+      label: "Policy / Rule Violated"
+      description: |
+        Which rule from `docs/personality/forbidden-patterns.md` or `docs/personality/release-gates.md`
+        was violated? Quote the relevant rule.
     validations:
       required: true
 
   - type: textarea
-    id: affected-code
+    id: reproduction-steps
     attributes:
-      label: Affected prompt, schema, or code path
-      description: File path(s) or function name(s) involved.
-    validations:
-      required: true
-
-  - type: dropdown
-    id: forbidden-field-involved
-    attributes:
-      label: Does this involve a forbidden field or forbidden language pattern?
-      options:
-        - "Yes"
-        - "No"
-        - "Unsure"
-    validations:
-      required: true
+      label: "Reproduction Steps"
+      description: "How reliably can this be reproduced? List steps."
 
   - type: textarea
-    id: proposed-mitigation
+    id: proposed-fix
     attributes:
-      label: Proposed mitigation or guard
-      description: Suggested prompt constraint, schema rule, or output filter.
+      label: "Proposed Fix"
+      description: "Suggested prompt patch, schema constraint, or output validator change."
 
-  - type: textarea
-    id: test-case
+  - type: input
+    id: prompt-version
     attributes:
-      label: Proposed regression test case
-      description: Describe or paste the automated test that should catch this in future.
+      label: "Prompt Version (if known)"
+      description: "Which prompt template was active? e.g. personality-reflection-v1.2"
 
   - type: checkboxes
-    id: notifications
+    id: disclosure
     attributes:
-      label: Notifications sent
+      label: "Disclosure"
       options:
-        - label: Safety / Trust & Safety team notified
+        - label: "I have NOT included real user data in this report"
           required: true
-        - label: Privacy / Legal team notified
-        - label: Engineering lead notified
+        - label: "This finding has been shared with the safety reviewer before public disclosure"
           required: true

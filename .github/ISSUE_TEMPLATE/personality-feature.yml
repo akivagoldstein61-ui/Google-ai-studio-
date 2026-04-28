@@ -1,150 +1,133 @@
-name: Personality Feature
-description: Propose or track a new Kesher Personality Dimension feature
-title: "[Personality Feature] "
-labels: ["personality", "needs-triage"]
-assignees: []
+name: "Personality Feature Request"
+description: "Propose a new feature or change to Kesher's Personality Dimension"
+title: "[Personality] "
+labels: ["personality", "needs-review"]
 body:
   - type: markdown
     attributes:
       value: |
-        ## Kesher Personality Feature Request
-        Complete every section. Incomplete submissions will be closed.
+        ## Personality Feature Request
 
-  - type: input
-    id: feature-name
-    attributes:
-      label: Feature name
-      placeholder: e.g. "Trait Compatibility Widget"
-    validations:
-      required: true
+        All personality-related features must satisfy Kesher's safety, privacy, and psychometric contracts.
+        Read `docs/personality/release-gates.md` before submitting.
 
   - type: textarea
     id: summary
     attributes:
-      label: Summary
-      description: One-paragraph description of the feature and its user-facing goal.
-    validations:
-      required: true
-
-  - type: dropdown
-    id: data-classes
-    attributes:
-      label: Data classes touched
-      description: Select all that apply.
-      multiple: true
-      options:
-        - trait_scores
-        - compatibility_indicators
-        - assessment_responses
-        - messaging_behavior
-        - session_metadata
-        - consent_records
-        - export_payload
-        - none
-    validations:
-      required: true
-
-  - type: dropdown
-    id: consent-required
-    attributes:
-      label: Consent required?
-      options:
-        - "Yes — new explicit consent gate needed"
-        - "Yes — existing consent gate covers this"
-        - "No — no personal data processed"
+      label: "Feature Summary"
+      description: "Describe the feature in 1–3 sentences."
     validations:
       required: true
 
   - type: textarea
-    id: consent-detail
+    id: user-value
     attributes:
-      label: Consent gate detail
-      description: Describe the consent flow, including revoke and re-consent paths.
-    validations:
-      required: true
-
-  - type: dropdown
-    id: ai-involved
-    attributes:
-      label: Does AI touch this feature?
-      options:
-        - "Yes"
-        - "No"
-    validations:
-      required: true
-
-  - type: textarea
-    id: deterministic-boundary
-    attributes:
-      label: Deterministic boundary
-      description: What hard rule or schema prevents AI from producing unconstrained output?
-    validations:
-      required: true
-
-  - type: textarea
-    id: forbidden-fields
-    attributes:
-      label: Forbidden fields audit
-      description: |
-        Confirm none of these appear in member-facing output or schemas:
-        `compatibility_score`, `soulmate_score`, `marriage_probability`,
-        `desirability_score`, `public_trait_rank`, `raw_trait_public`,
-        `hidden_personality_rank`, `diagnosis`, `protected_trait_inference`,
-        `auto_send`, `perfect_match`.
-      placeholder: "Confirmed: none of the above fields are used."
-    validations:
-      required: true
-
-  - type: dropdown
-    id: visibility
-    attributes:
-      label: Visibility
-      options:
-        - internal-only
-        - user-visible-private
-        - user-visible-public
-        - aggregated-anonymous
-    validations:
-      required: true
-
-  - type: textarea
-    id: revoke-delete-export
-    attributes:
-      label: Revoke / Reset / Delete / Export path
-      description: How does a user revoke consent, reset their profile, delete data, or export data?
-    validations:
-      required: true
-
-  - type: textarea
-    id: rtl-impact
-    attributes:
-      label: Hebrew RTL impact
-      description: Which UI strings or layouts are affected? What RTL checks are planned?
-    validations:
-      required: true
-
-  - type: textarea
-    id: claim-registry
-    attributes:
-      label: UI claim and evidence label
-      description: |
-        State any claim the UI makes (e.g. "People with similar openness report higher satisfaction")
-        and the evidence label that will appear next to it.
+      label: "User Value"
+      description: "What is the user benefit? How does it serve connection, not scoring?"
     validations:
       required: true
 
   - type: checkboxes
-    id: approvals
+    id: forbidden-patterns
     attributes:
-      label: Required approvals
+      label: "Forbidden Patterns Check"
+      description: "Confirm none of the following apply. See `docs/personality/forbidden-patterns.md`."
       options:
-        - label: Privacy / Legal review requested
+        - label: "No compatibility score"
           required: true
-        - label: Psychometric / Research review requested
+        - label: "No soulmate score"
           required: true
-        - label: Localization review requested (Hebrew)
+        - label: "No marriage probability"
           required: true
-        - label: Safety / Trust & Safety review requested
+        - label: "No desirability score"
           required: true
-        - label: Red-team tests added or updated
+        - label: "No public trait rank"
           required: true
+        - label: "No raw trait public exposure"
+          required: true
+        - label: "No hidden personality ranking"
+          required: true
+        - label: "No diagnosis or clinical inference"
+          required: true
+        - label: "No protected-trait inference from photos, writing style, names, location, or other proxies"
+          required: true
+        - label: "No AI auto-send"
+          required: true
+        - label: "No AI impersonation"
+          required: true
+        - label: "No public attractiveness scoring"
+          required: true
+        - label: "No hidden throttling or ranking manipulation"
+          required: true
+        - label: "No raw inferred personality dossier sharing"
+          required: true
+        - label: "No coercive mutual unlock"
+          required: true
+        - label: "Privacy, deletion, reset, revoke, export, safety, and consent controls are never paywalled"
+          required: true
+
+  - type: textarea
+    id: privacy-impact
+    attributes:
+      label: "Privacy Impact"
+      description: |
+        Does this feature collect, infer, store, or expose personality data?
+        Describe what data is involved and whether it is private by default.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-classification
+    attributes:
+      label: "Data Classification"
+      description: "Classify the most sensitive data this feature touches. See `docs/personality/data-classification.md`."
+      options:
+        - "P0 – Critical (inferred traits, raw scores)"
+        - "P1 – Sensitive (user-authored reflections, assessments)"
+        - "P2 – Internal (aggregated anonymized signals)"
+        - "P3 – Non-sensitive (UI preferences)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: psychometric-notes
+    attributes:
+      label: "Psychometric / Research Notes"
+      description: |
+        Does this feature involve a measurement instrument, scoring algorithm, or scientific claim?
+        If so, describe the instrument, cite sources, and confirm it is licensed/open.
+        See `docs/personality/claim-registry.md`.
+
+  - type: checkboxes
+    id: claim-labels
+    attributes:
+      label: "Claim Evidence Labels"
+      description: "All user-facing claims must carry one of these labels."
+      options:
+        - label: "VERIFIED – based on validated, peer-reviewed instrument"
+        - label: "INFERRED – derived from behavioral signals with uncertainty disclosure"
+        - label: "HEURISTIC – rule-based, no validation study"
+        - label: "UNKNOWN – not yet classified"
+
+  - type: checkboxes
+    id: rtl-hebrew
+    attributes:
+      label: "Hebrew / RTL Readiness"
+      description: "Hebrew-first and RTL layout are release gates."
+      options:
+        - label: "All new strings have Hebrew translations or are blocked pending localization review"
+          required: true
+        - label: "RTL layout is tested or has a tracking issue"
+          required: true
+
+  - type: checkboxes
+    id: reviewers
+    attributes:
+      label: "Required Reviewers"
+      description: "Tag the appropriate teams before merging."
+      options:
+        - label: "@privacy-reviewers have been notified"
+          required: true
+        - label: "@psychometric-reviewers have been notified (if measurement or scoring is involved)"
+        - label: "@safety-reviewers have been notified"
+        - label: "@l10n-reviewers have been notified for new strings"

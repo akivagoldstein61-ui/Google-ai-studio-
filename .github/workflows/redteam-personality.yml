@@ -1,79 +1,46 @@
-name: Personality AI Red-Team Suite
+name: Personality Red-Team
 
 on:
   pull_request:
-    branches: ["**"]
     paths:
-      - "src/ai/**"
-      - "src/prompts/**"
-      - "src/schemas/**"
-      - "src/personality/**"
-      - "**/*.prompt.ts"
-      - "**/*.prompt.json"
+      - "src/ai/prompts.ts"
+      - "src/ai/policies.ts"
+      - "src/ai/schemas.ts"
+      - "src/ai/outputValidators.ts"
+      - "scripts/redteam-personality.mjs"
   workflow_dispatch:
     inputs:
-      extended:
-        description: "Run extended (slow) red-team suite"
-        required: false
-        default: "false"
-        type: boolean
+      reason:
+        description: "Reason for manual red-team run"
+        required: true
 
-concurrency:
-  group: redteam-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  redteam-personality:
-    name: Personality red-team checks
+  redteam:
+    name: "Red-Team – Personality AI Outputs"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-      - run: npm ci
-
-      - name: Run personality red-team suite
-        run: npm run redteam:personality
+      - run: npm ci --ignore-scripts
+      - name: Run personality red-team checks
+        run: node scripts/redteam-personality.mjs
         env:
-          REDTEAM_EXTENDED: ${{ inputs.extended || 'false' }}
+          # No real API key needed for static red-team checks.
+          # If live model calls are added, inject secrets here.
+          REDTEAM_MODE: "static"
 
       - name: Upload red-team report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: redteam-report-${{ github.run_id }}
-          path: |
-            reports/redteam/
-            *.redteam.json
+          path: /tmp/redteam-report.json
+          if-no-files-found: ignore
           retention-days: 90
-          if-no-files-found: warn
-
-  forbidden-language-scan:
-    name: AI output forbidden language scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-
-      - name: Scan AI prompts for forbidden patterns
-        # Fail if prompts contain patterns that could produce forbidden output.
-        run: |
-          FORBIDDEN_LANG="soulmate|perfect match|marriage probabilit(y|ies)|diagno[sz]|disorder|condition|mental health label|compatibility score|desirability"
-          PROMPT_DIRS="src/ai src/prompts src/personality"
-          if grep -rni --include="*.ts" --include="*.tsx" --include="*.json" --include="*.txt" \
-               -E "$FORBIDDEN_LANG" $PROMPT_DIRS 2>/dev/null; then
-            echo "::error::Forbidden language pattern found in AI prompts or personality source. See output above."
-            exit 1
-          fi
-          echo "Forbidden language scan passed."

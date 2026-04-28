@@ -2,65 +2,37 @@ name: RTL Snapshots
 
 on:
   pull_request:
-    branches: ["**"]
     paths:
-      - "src/i18n/**"
-      - "src/locales/**"
-      - "src/personality/**"
-      - "**/*.he.*"
-      - "**/*rtl*"
-      - "**/*hebrew*"
-  workflow_dispatch: {}
+      - "src/features/personality/**"
+      - "src/features/settings/**"
+      - "src/features/discovery/**"
+      - "src/components/**"
+      - "src/index.css"
+      - "scripts/test-rtl.mjs"
 
-concurrency:
-  group: rtl-snapshots-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  rtl-snapshot-tests:
-    name: Hebrew RTL snapshot tests
+  rtl-check:
+    name: "RTL – Hebrew Layout Checks"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - name: Run RTL layout checks
+        run: node scripts/test-rtl.mjs
 
-      - name: Install Puppeteer browser
-        run: npx puppeteer browsers install chrome
-        env:
-          PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-
-      - name: Run RTL tests
-        run: npm run test:rtl
-        env:
-          PUPPETEER_CACHE_DIR: ${{ runner.temp }}/puppeteer
-
-      - name: Upload RTL snapshot artifacts
+      - name: Upload RTL report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rtl-snapshots-${{ github.run_id }}
-          path: |
-            reports/rtl/
-            snapshots/rtl/
+          name: rtl-report-${{ github.run_id }}
+          path: /tmp/rtl-report.json
+          if-no-files-found: ignore
           retention-days: 30
-          if-no-files-found: warn
-
-      - name: Comment RTL diff on PR
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **RTL snapshot test failed.** Please review Hebrew RTL layout changes. Download the `rtl-snapshots` artifact from this workflow run to inspect diffs.'
-            })

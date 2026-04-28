@@ -1,68 +1,210 @@
-# Personality Dimension — Forbidden Patterns
+# Personality Dimension – Forbidden Patterns
 
-This document defines field names, language patterns, and code patterns that must never appear in member-facing code, schemas, AI prompts, or UI copy.
-
-CI will fail if any of these patterns are detected. See `.github/workflows/personality-ci.yml` and `.github/workflows/redteam-personality.yml`.
+> **Status:** Normative. These patterns are prohibited in all personality-related code, schemas, prompts, API responses, and UI.
 
 ---
 
-## Forbidden field names
+## Overview
 
-These field names must not appear in any member-facing API response, schema, or client-side code.
+This document defines patterns that are permanently forbidden in Kesher's Personality Dimension. These rules exist to protect users from harm, preserve scientific integrity, and prevent the system from becoming a ranking or sorting engine disguised as a connection tool.
 
-| Field name | Reason forbidden |
-|---|---|
-| `compatibility_score` | Implies deterministic romantic compatibility — overclaims what personality data can predict |
-| `soulmate_score` | Same as above; additionally uses harmful romantic absolutism language |
-| `marriage_probability` | Highly overclaiming; implies predictive validity not supported by evidence |
-| `desirability_score` | Hidden ranking of people; dehumanising and privacy-violating |
-| `public_trait_rank` | Exposes relative ranking of users to others; violates user expectation |
-| `raw_trait_public` | Exposes raw psychometric scores not intended for user-facing display |
-| `hidden_personality_rank` | Same as `public_trait_rank`; hidden ranking leakage |
-| `diagnosis` | Implies clinical or medical assessment; not appropriate for a social platform |
-| `protected_trait_inference` | Inferring protected characteristics (religion, health, etc.) from personality data |
-| `auto_send` | AI-triggered automatic message sending without explicit user action |
-| `perfect_match` | Absolutist compatibility claim not supported by evidence |
+CI script `scripts/scan-forbidden-fields.mjs` scans source code for known field names and string patterns associated with these rules.
 
 ---
 
-## Forbidden language patterns (AI prompts and UI copy)
+## Forbidden Pattern Catalogue
 
-These patterns must not appear in AI prompt templates, AI output, or UI strings.
+### FP-01 – Compatibility Score
 
-| Pattern | Reason forbidden |
-|---|---|
-| "soulmate" | Absolutist romantic claim |
-| "perfect match" | Absolutist compatibility claim |
-| "marriage probability" / "marriage score" | Overclaiming predictive validity |
-| "diagnosis" / "diagnose" | Clinical language inappropriate for social platform |
-| "disorder" (in personality context) | Clinical language |
-| "mental health label" | Clinical language |
-| "compatibility score" (as a number) | Overclaiming |
-| "desirability" (as a ranking) | Hidden ranking / dehumanising |
-| Any inferred protected attribute (e.g. inferred religion, inferred health status) | Protected-trait inference |
+**Rule:** No feature may compute, store, display, or imply a numeric compatibility score between two users based on personality, behavioral signals, or any combination thereof.
+
+**Why:** Reduces complex humans to a number. Creates false certainty. Encourages gaming the system.
+
+**Forbidden field names / patterns:**
+- `compatibilityScore`, `compatibility_score`, `matchScore`, `match_score`
+- `compatibilityPercentage`, `compatibility_percentage`
+- `isCompatible` (as a public-facing signal)
+- Any UI text containing "% compatible", "compatibility rating", "match rating"
 
 ---
 
-## Forbidden code patterns
+### FP-02 – Soulmate Score
 
-| Pattern | Reason forbidden |
-|---|---|
-| Auto-sending a message without a discrete user action | Removes user agency; autosend path |
-| Returning raw assessment item responses to the client | Raw score exposure |
-| Logging trait scores or assessment responses | Privacy / data minimisation |
-| Exposing relative rank of user among other users | Hidden ranking leakage |
-| Calling AI inference on protected attributes | Protected-trait inference |
-| Displaying AI output without a deterministic schema constraint | Unconstrained AI output |
-| Skipping consent gate for new data uses | Missing consent gate |
-| No revoke/delete path for a new data class | Missing data lifecycle |
+**Rule:** No feature may compute, store, display, or imply a "soulmate" designation or score.
+
+**Forbidden patterns:**
+- `soulmateScore`, `soulmate_score`, `isSoulmate`
+- Any UI text containing "soulmate", "bashert score", "perfect match"
 
 ---
 
-## How to add a new forbidden pattern
+### FP-03 – Marriage Probability
 
-1. Raise a [Privacy Risk issue](.github/ISSUE_TEMPLATE/privacy-risk.yml) or [Red-Team Finding issue](.github/ISSUE_TEMPLATE/ai-redteam-finding.yml).
-2. Get Privacy/Legal and Safety approval.
-3. Add the pattern to this document.
-4. Update the grep pattern in `.github/workflows/personality-ci.yml` (`scan-forbidden-fields` job) and `.github/workflows/redteam-personality.yml` (`forbidden-language-scan` job).
-5. Update `npm run scan:forbidden-fields` script to cover the new pattern.
+**Rule:** No feature may compute, store, display, or imply a probability or likelihood of marriage.
+
+**Forbidden patterns:**
+- `marriageProbability`, `marriage_probability`, `weddingProbability`
+- Any UI text containing "marriage probability", "% likely to marry", "wedding likelihood"
+
+---
+
+### FP-04 – Desirability Score
+
+**Rule:** No feature may compute, store, display, or imply a desirability ranking or score.
+
+**Forbidden patterns:**
+- `desirabilityScore`, `desirability_score`, `attractivenessScore`, `attractiveness_score`
+- `hotScore`, `popularityScore`, `likeabilityScore`
+- Any UI text containing "desirability", "attractiveness score", "popularity score"
+
+---
+
+### FP-05 – Public Trait Rank
+
+**Rule:** Personality trait scores or dimensions must never be ranked relative to other users or displayed as a comparative ranking.
+
+**Forbidden patterns:**
+- `traitRank`, `trait_rank`, `personalityRank`, `personality_rank`
+- `bigFiveRank`, `opennessRank`, `conscientiousnessRank`
+- Any UI text containing "you rank #", "top X% in", "higher than average"
+
+---
+
+### FP-06 – Raw Trait Public Exposure
+
+**Rule:** Raw numeric trait scores (e.g., O=72, C=58) must never be displayed publicly or shared with other users without explicit user-controlled permissioning through reviewed summaries.
+
+**Forbidden patterns:**
+- `rawTraitScore`, `raw_trait_score`, `traitVector`, `trait_vector`
+- Direct exposure of `{ openness: number, conscientiousness: number, ... }` to the public profile API
+
+---
+
+### FP-07 – Hidden Personality Ranking Leakage
+
+**Rule:** Personality data must not be used as a hidden ranking or sorting signal in discovery, feed, or match algorithms without explicit disclosure and consent.
+
+**Forbidden patterns:**
+- `personalityBoost`, `personality_boost`, `traitWeightedRank`
+- Using personality scores silently in `sort()`, `score()`, or feed-ranking logic without disclosure
+
+---
+
+### FP-08 – Diagnosis or Clinical Inference
+
+**Rule:** No feature may produce, imply, or suggest a psychological diagnosis, clinical label, or pathology indicator.
+
+**Why:** The app is not a clinical tool. Misuse could cause real psychological harm.
+
+**Forbidden patterns:**
+- `diagnosis`, `clinicalLabel`, `clinical_label`, `mentalHealthScore`
+- Any UI text containing "disorder", "clinical", "diagnosis", "pathology", "symptom"
+- MBTI-like type labels used as clinical categories
+
+---
+
+### FP-09 – Protected-Trait Inference from Proxies
+
+**Rule:** No feature may infer protected characteristics (religion, ethnicity, politics, sexuality, disability, health status, etc.) from proxies such as photos, writing style, names, location, observance signals, or behavioral patterns.
+
+**Why:** Proxy-based inference of protected traits is discriminatory and legally high-risk.
+
+**Forbidden patterns:**
+- `inferredReligion`, `inferred_religion`, `inferredEthnicity`, `inferred_ethnicity`
+- `inferredSexuality`, `inferred_sexuality`, `inferredPolitics`
+- Any model prompt instructing inference of protected characteristics from profile signals
+
+---
+
+### FP-10 – AI Auto-Send
+
+**Rule:** AI may never automatically send a message, match request, or any user-attributed communication without explicit human review and confirmation.
+
+**Forbidden patterns:**
+- `autoSend`, `auto_send`, `automaticMessage`, `automaticallySend`
+- Any code path where an AI-generated message is submitted without a user confirmation step
+
+---
+
+### FP-11 – AI Impersonation
+
+**Rule:** AI-generated content must always be clearly labeled as AI-assisted. The system must never present AI-generated text as if it were written by the user.
+
+**Forbidden patterns:**
+- Sending AI-generated message drafts without a visible "AI-assisted" disclosure label
+- Storing AI-generated text in user message history without an `aiGenerated: true` flag
+
+---
+
+### FP-12 – Public Attractiveness Scoring
+
+**Rule:** No feature may compute, store, or display an attractiveness score derived from photos or any other signal.
+
+**Forbidden patterns:**
+- `attractivenessScore`, `photoScore`, `photo_score`, `lookScore`
+- Any model prompt instructing photo-based attractiveness scoring
+
+---
+
+### FP-13 – Hidden Throttling or Ranking Manipulation
+
+**Rule:** If personality data influences discovery ranking or message delivery, this must be disclosed to users. Hidden algorithmic manipulation based on personality signals is prohibited.
+
+**Forbidden patterns:**
+- Undisclosed personality-based throttling of message delivery
+- Undisclosed personality-based suppression of profiles in discovery
+
+---
+
+### FP-14 – Raw Inferred Personality Dossier Sharing
+
+**Rule:** The full inferred personality profile (all traits, scores, and signals) must never be shared with another user, exported to a third party, or used in inter-user comparison without explicit user consent and a reviewed permissioned summary.
+
+**Forbidden patterns:**
+- `exportFullDossier`, `sharePersonalityDossier`, `fullPersonalityExport` (without consent gate)
+
+---
+
+### FP-15 – Coercive Mutual Unlock
+
+**Rule:** Users must not be coerced into sharing personality data to unlock basic app functionality. Mutual personality disclosure must be entirely optional and clearly labeled.
+
+**Forbidden patterns:**
+- Blocking messaging or profile viewing based on personality data sharing
+- Requiring personality assessment completion before match access
+
+---
+
+### FP-16 – Paywalled Privacy and Safety Controls
+
+**Rule:** The following must always be free and immediately accessible regardless of subscription status:
+- Data deletion
+- Data reset
+- Data export
+- Consent revocation
+- Personality data visibility controls
+- Safety reporting
+
+**Forbidden patterns:**
+- `isPremiumFeature: true` on any deletion, reset, export, revoke, or safety control
+- Any paywall gate on the above controls
+
+---
+
+## Scanning
+
+CI runs `scripts/scan-forbidden-fields.mjs` on every PR touching personality-related paths. The script scans TypeScript, JavaScript, and JSON files for the field names and string patterns listed above.
+
+To run locally:
+
+```bash
+npm run scan:forbidden-fields
+```
+
+---
+
+## Version History
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-04-28 | Governance scaffold | Initial draft |

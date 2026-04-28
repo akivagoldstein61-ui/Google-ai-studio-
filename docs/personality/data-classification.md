@@ -1,80 +1,106 @@
-# Personality Dimension — Data Classification
+# Personality Dimension – Data Classification
 
-This document classifies every data field used by the Kesher Personality Dimension according to sensitivity, visibility, retention, and consent requirements.
-
----
-
-## Classification tiers
-
-| Tier | Label | Description |
-|---|---|---|
-| T1 | **Highly Sensitive** | Raw psychometric scores, assessment item responses. Must never be exposed to members or third parties. |
-| T2 | **Sensitive** | Derived trait labels, compatibility indicators, messaging behavior patterns. Visible only to the owning user under explicit consent. |
-| T3 | **Internal** | Aggregated, anonymised analytics. No individual linkage. No consent required for use. |
-| T4 | **Public** | Only data the user has explicitly chosen to make visible to other users. |
+> **Status:** Normative. All personality-related data fields must be classified before use in production.
 
 ---
 
-## Field inventory
+## Classification Levels
 
-| Field name | Tier | Visible to owner? | Visible to matches? | Logged? | Exported? | Retention | Consent required? | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `trait_scores` | T1 | No (derived summary only) | No | No | Yes (owner only) | Until revoked | Yes — explicit | Raw scores never exposed |
-| `trait_labels` | T2 | Yes | Configurable by user | No | Yes (owner only) | Until revoked | Yes — explicit | Summary labels only |
-| `compatibility_indicators` | T2 | Yes (as qualitative labels) | No | No | Yes (owner only) | Until revoked | Yes — explicit | No numeric score exposed |
-| `assessment_responses` | T1 | No | No | No | Yes (owner only) | Until revoked | Yes — explicit | Item-level responses are T1 |
-| `messaging_behavior` | T2 | No | No | No | Yes (owner only) | 90 days rolling | Yes — explicit | Aggregate patterns only |
-| `session_metadata` | T3 | No | No | No | No | 30 days | No | Anonymised |
-| `consent_records` | T2 | Yes | No | Yes (audit log) | Yes (owner only) | 7 years | N/A — this IS the consent | Required for regulatory compliance |
-| `export_payload` | T2 | Yes | No | No | N/A — this IS the export | Generated on demand | Yes — triggered by user action | Must include all T2 fields |
+### P0 – Critical
 
----
+**Definition:** Data that, if exposed, would cause direct harm to the user or violate core privacy contracts.
 
-## Forbidden fields
+**Examples:**
+- Inferred raw personality trait scores (e.g., `{ openness: 72, conscientiousness: 58, ... }`)
+- Full inferred personality dossier
+- Behavioral signals used to derive personality scores (raw interaction logs)
+- Assessment item responses
 
-The following fields must **never** be created or stored. See `docs/personality/forbidden-patterns.md`.
-
-- `compatibility_score`
-- `soulmate_score`
-- `marriage_probability`
-- `desirability_score`
-- `public_trait_rank`
-- `raw_trait_public`
-- `hidden_personality_rank`
-- `diagnosis`
-- `protected_trait_inference`
+**Controls required:**
+- Private by default. Never exposed to other users without explicit user-initiated permissioned summary.
+- Encrypted at rest and in transit.
+- Accessible only to the data subject and authorized internal systems.
+- Audit log on every access.
+- Deletable and resettable on demand, with confirmation.
+- Exportable on demand in a structured format.
+- Retention period must be defined, disclosed, and enforced.
+- No third-party sharing without explicit, revocable consent.
 
 ---
 
-## Data lifecycle
+### P1 – Sensitive
 
-### Consent
-- All T1 and T2 fields require an explicit, informed consent gate before collection or use.
-- Consent must be versioned. Any material change to data use requires fresh consent.
+**Definition:** User-authored or user-consented data directly related to personality that is less critical than raw inferred scores but still deserves strong protection.
 
-### Revoke
-- Users can revoke consent at any time from their profile settings.
-- Revocation stops all future processing and triggers deletion of T1 and T2 fields within 30 days.
+**Examples:**
+- User-authored personality reflection text
+- Completed assessment responses (before scoring)
+- User-selected personality sharing preferences
+- User-authored "about me" text that feeds into personality signals
 
-### Reset
-- Users can reset their personality profile, which deletes all T1 and T2 fields and restores them to the pre-assessment state.
-- Re-assessment requires fresh consent.
-
-### Delete
-- Account deletion triggers deletion of all T1 and T2 fields within 30 days.
-- `consent_records` are retained for the regulatory retention period (7 years) after deletion.
-
-### Export
-- Users can request a full data export at any time.
-- The export payload includes all T1 and T2 fields in a machine-readable format (JSON).
-- Export requests must be fulfilled within 30 days.
+**Controls required:**
+- Private by default.
+- Visible to the user in their profile/settings.
+- Deletable and resettable on demand.
+- Exportable on demand.
+- Shareable only with explicit user consent on a per-recipient basis.
+- Not used as a hidden ranking signal without disclosure.
 
 ---
 
-## Adding a new field
+### P2 – Internal
 
-1. Raise a [Personality Feature issue](.github/ISSUE_TEMPLATE/personality-feature.yml).
-2. Determine the classification tier.
-3. Add the field to the inventory table above.
-4. Obtain Privacy / Legal approval.
-5. Implement the field with appropriate consent gate, revoke, delete, and export paths.
+**Definition:** Aggregated, anonymized, or de-identified signals derived from personality data for research, analytics, or system improvement purposes.
+
+**Examples:**
+- Anonymized aggregate trait distribution statistics
+- Model performance metrics derived from anonymized data
+- Feature engagement rates (e.g., % of users who completed assessment)
+
+**Controls required:**
+- Must be genuinely de-identified (k-anonymity ≥ 5 at minimum; higher for sensitive dimensions).
+- Must not be re-linkable to individual users.
+- Not exposed to end users in raw form.
+- Governed by internal data policy.
+
+---
+
+### P3 – Non-Sensitive
+
+**Definition:** Personality-adjacent preferences or settings that do not reveal trait information.
+
+**Examples:**
+- Whether a user has enabled personality features (boolean toggle, not the data itself)
+- UI display preferences for personality cards
+- Opt-in/opt-out status for personality-based discovery (binary, no trait detail)
+
+**Controls required:**
+- Standard access controls.
+- Deletable with account deletion.
+
+---
+
+## Field Classification Table
+
+_Fields will be added as personality features are developed. No personality fields are active in production yet._
+
+| Field Name | Classification | Description | Retention | Exposed To |
+|------------|---------------|-------------|-----------|-----------|
+| _(none yet)_ | | | | |
+
+---
+
+## Classification Change Process
+
+1. Propose a new field or reclassification via a Personality Feature Issue.
+2. Tag @privacy-reviewers for classification review.
+3. Add the approved classification to the table above in the PR.
+4. Update any schema or policy files that reference the field.
+
+---
+
+## Version History
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-04-28 | Governance scaffold | Initial draft |

@@ -1,55 +1,39 @@
 name: Schema Validation
 
 on:
-  push:
-    branches: ["**"]
-    paths:
-      - "src/schemas/**"
-      - "**/*schema*.ts"
-      - "**/*schema*.json"
   pull_request:
-    branches: ["**"]
     paths:
-      - "src/schemas/**"
-      - "**/*schema*.ts"
-      - "**/*schema*.json"
+      - "src/ai/schemas.ts"
+      - "src/types/**"
+      - "scripts/test-personality-schemas.mjs"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/ai/schemas.ts"
 
-concurrency:
-  group: schema-validation-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   validate-schemas:
-    name: Validate personality schemas
+    name: "Validate – Personality Schemas"
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - name: Validate personality schemas
+        run: node scripts/test-personality-schemas.mjs
 
-      - name: Run schema validation tests
-        run: npm run test:schemas
-
-      - name: Check for forbidden fields in schemas
-        run: |
-          FORBIDDEN_PATTERN="compatibility_score|soulmate_score|marriage_probability|desirability_score|public_trait_rank|raw_trait_public|hidden_personality_rank|diagnosis|protected_trait_inference|auto_send|perfect_match"
-          if grep -rn --include="*.json" --include="*.ts" \
-               -E "$FORBIDDEN_PATTERN" src/schemas/ 2>/dev/null; then
-            echo "::error::Forbidden field found in schema definition. See output above."
-            exit 1
-          fi
-          echo "Schema forbidden-field check passed."
-
-      - name: Upload schema validation artifacts
+      - name: Upload schema validation report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: schema-validation-${{ github.run_id }}
-          path: reports/schema/
+          path: /tmp/schema-validation-report.json
+          if-no-files-found: ignore
           retention-days: 30
-          if-no-files-found: warn

@@ -1,70 +1,49 @@
-# CODEOWNERS — Kesher Personality Dimension
-# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# CODEOWNERS
 #
-# Rules are evaluated bottom-up; the last matching rule wins.
-# Replace placeholder team/user slugs with real GitHub handles before merging.
+# Kesher Personality Dimension – Governance Owners
 #
-# Placeholder slugs used below:
-#   @org/ai-platform          — AI & platform engineers who own prompts and inference
-#   @org/psychometric-research — Psychometric / research team
-#   @org/privacy-legal        — Privacy & legal reviewers
-#   @org/localization         — Localization / Hebrew RTL team
-#   @org/ml-product           — ML / product owners (recommender, Why This Match)
-#   @org/trust-safety         — Trust & Safety / moderation owners
-#   @org/engineering-leads    — Engineering leads (catch-all for unowned files)
+# These owners are automatically requested for review on any PR
+# that modifies the paths listed below.
+#
+# Teams must be created in the GitHub organization before these rules
+# take effect. Placeholder team names are prefixed with @org/ — replace
+# "org" with the actual GitHub organization name.
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# ── Default owner (catch-all) ────────────────────────────────────────────────
-*                                   @org/engineering-leads
+# ── Global fallback ──────────────────────────────────────────────────────────
+*                               @org/engineering-reviewers
 
-# ── CI / GitHub configuration ────────────────────────────────────────────────
-.github/                            @org/engineering-leads @org/privacy-legal
+# ── Personality Dimension – AI / prompts / schemas ───────────────────────────
+src/ai/**                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+src/ai/schemas.ts               @org/privacy-reviewers @org/psychometric-reviewers @org/engineering-reviewers
+src/ai/policies.ts              @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+src/ai/prompts.ts               @org/safety-reviewers @org/engineering-reviewers
 
-# ── AI prompts and schemas ───────────────────────────────────────────────────
-src/ai/                             @org/ai-platform
-src/prompts/                        @org/ai-platform
-src/schemas/                        @org/ai-platform
-**/*.prompt.ts                      @org/ai-platform
-**/*.prompt.json                    @org/ai-platform
-**/*schema*.ts                      @org/ai-platform
-**/*schema*.json                    @org/ai-platform
+# ── Personality Dimension – features ─────────────────────────────────────────
+src/features/personality/**     @org/privacy-reviewers @org/psychometric-reviewers @org/safety-reviewers @org/engineering-reviewers
 
-# ── Assessment and scoring ───────────────────────────────────────────────────
-src/personality/assessment/         @org/psychometric-research
-src/personality/scoring/            @org/psychometric-research
-src/personality/interpretation/     @org/psychometric-research @org/ai-platform
-**/*scoring*                        @org/psychometric-research
-**/*assessment*                     @org/psychometric-research
+# ── Settings – trust, privacy profile ────────────────────────────────────────
+src/features/settings/**        @org/privacy-reviewers @org/engineering-reviewers
 
-# ── Privacy, consent, sharing, deletion, export ─────────────────────────────
-src/privacy/                        @org/privacy-legal
-src/consent/                        @org/privacy-legal
-src/data/                           @org/privacy-legal @org/engineering-leads
-**/*consent*                        @org/privacy-legal
-**/*privacy*                        @org/privacy-legal
-**/*deletion*                       @org/privacy-legal
-**/*export*                         @org/privacy-legal
-**/*retention*                      @org/privacy-legal
-firestore.rules                     @org/privacy-legal @org/engineering-leads
+# ── Discovery – daily picks, profile detail ──────────────────────────────────
+src/features/discovery/**       @org/privacy-reviewers @org/engineering-reviewers
+src/components/discovery/**     @org/privacy-reviewers @org/engineering-reviewers
 
-# ── Hebrew copy and RTL layouts ──────────────────────────────────────────────
-src/i18n/                           @org/localization
-src/locales/                        @org/localization
-**/*.he.*                           @org/localization
-**/*rtl*                            @org/localization
-**/*hebrew*                         @org/localization
+# ── Types (may encode data shapes) ───────────────────────────────────────────
+src/types/**                    @org/privacy-reviewers @org/engineering-reviewers
 
-# ── Recommender and Why This Match ──────────────────────────────────────────
-src/recommender/                    @org/ml-product
-src/personality/why-this-match/     @org/ml-product @org/ai-platform
-**/*recommender*                    @org/ml-product
-**/*why-this-match*                 @org/ml-product
+# ── Server routes ────────────────────────────────────────────────────────────
+server/**                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+server.ts                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
 
-# ── Safety / moderation-adjacent features ───────────────────────────────────
-src/safety/                         @org/trust-safety
-src/moderation/                     @org/trust-safety
-**/*safety*                         @org/trust-safety
-**/*moderation*                     @org/trust-safety
-**/*flagging*                       @org/trust-safety
+# ── Governance docs ───────────────────────────────────────────────────────────
+docs/personality/**             @org/privacy-reviewers @org/psychometric-reviewers @org/safety-reviewers @org/engineering-reviewers
 
-# ── Governance docs ──────────────────────────────────────────────────────────
-docs/personality/                   @org/privacy-legal @org/psychometric-research @org/engineering-leads
+# ── CI / Governance scripts ───────────────────────────────────────────────────
+scripts/**                      @org/engineering-reviewers @org/safety-reviewers
+.github/**                      @org/engineering-reviewers @org/privacy-reviewers
+
+# ── Localization ──────────────────────────────────────────────────────────────
+src/i18n/**                     @org/l10n-reviewers @org/engineering-reviewers
+public/locales/**               @org/l10n-reviewers

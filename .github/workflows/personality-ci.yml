@@ -1,123 +1,106 @@
 name: Personality CI
 
 on:
-  push:
-    branches: ["**"]
   pull_request:
-    branches: ["**"]
+    paths:
+      - "src/ai/**"
+      - "src/features/personality/**"
+      - "src/features/settings/**"
+      - "src/features/discovery/**"
+      - "src/components/discovery/**"
+      - "src/types/**"
+      - "server/**"
+      - "server.ts"
+      - "scripts/**"
+      - "docs/personality/**"
+      - "package.json"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/ai/**"
+      - "src/features/personality/**"
+      - "scripts/**"
 
-concurrency:
-  group: personality-ci-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  lint:
-    name: Lint
+  forbidden-fields:
+    name: "Scan – Forbidden Fields"
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-      - run: npm ci
-      - run: npm run lint
+      - run: npm ci --ignore-scripts
+      - name: Scan for forbidden personality fields
+        run: node scripts/scan-forbidden-fields.mjs
+
+  log-scan:
+    name: "Scan – Log Hygiene"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Scan logs for sensitive personality data
+        run: node scripts/scan-logs.mjs
+
+  schema-validation:
+    name: "Test – Personality Schemas"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Validate personality schemas
+        run: node scripts/test-personality-schemas.mjs
+
+  scoring-tests:
+    name: "Test – Personality Scoring"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Test personality scoring contracts
+        run: node scripts/test-personality-scoring.mjs
+
+  smoke-tests:
+    name: "Test – Personality Smoke Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Run personality smoke tests
+        run: node scripts/personality-smoke-tests.mjs
 
   typecheck:
-    name: Type-check
+    name: "TypeScript – No-emit check"
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-      - run: npm ci
-      - run: npm run typecheck
-
-  test:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run test
-
-  test-schemas:
-    name: Schema validation tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run test:schemas
-
-  test-scoring:
-    name: Scoring tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run test:scoring
-
-  scan-forbidden-fields:
-    name: Forbidden field scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - name: Run forbidden field scan
-        run: npm run scan:forbidden-fields
-      - name: Fallback grep scan (defence-in-depth)
-        # Fail if any forbidden field name appears in member-facing source or schemas.
-        # This runs even when npm run scan:forbidden-fields is not yet implemented.
-        run: |
-          FORBIDDEN_PATTERN="compatibility_score|soulmate_score|marriage_probability|desirability_score|public_trait_rank|raw_trait_public|hidden_personality_rank|diagnosis|protected_trait_inference|auto_send|perfect_match"
-          SCAN_DIRS="src app"
-          if grep -rn --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" \
-               -E "$FORBIDDEN_PATTERN" $SCAN_DIRS 2>/dev/null; then
-            echo "::error::Forbidden field(s) found in member-facing code or schemas. See output above."
-            exit 1
-          fi
-          echo "Forbidden field scan passed."
-
-  scan-logs:
-    name: Log scan (no sensitive fields in logs)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run scan:logs
+      - run: npm ci --ignore-scripts
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit

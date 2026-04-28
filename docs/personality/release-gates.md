@@ -1,77 +1,138 @@
-# Personality Dimension — Release Gates
+# Personality Dimension – Release Gates
 
-This document defines the mandatory checks that must pass before any personality feature is shipped to production.
-
----
-
-## Automated gates (CI — must be green)
-
-| Check | Command | Blocks merge? |
-|---|---|---|
-| Lint | `npm run lint` | ✅ Yes |
-| Type-check | `npm run typecheck` | ✅ Yes |
-| Unit tests | `npm run test` | ✅ Yes |
-| Schema validation | `npm run test:schemas` | ✅ Yes |
-| Scoring tests | `npm run test:scoring` | ✅ Yes |
-| Forbidden field scan | `npm run scan:forbidden-fields` | ✅ Yes |
-| Log scan | `npm run scan:logs` | ✅ Yes |
-| Red-team suite | `npm run redteam:personality` | ✅ Yes |
-| RTL snapshot tests | `npm run test:rtl` | ✅ Yes (when Hebrew copy or RTL layout changed) |
+> **Status:** Governance scaffold. No personality feature ships without passing all gates below.
 
 ---
 
-## Human approval gates (CODEOWNERS — required before merge)
+## Overview
 
-| Scope of change | Required approver |
-|---|---|
-| AI prompts, inference schemas | `@org/ai-platform` |
-| Assessment copy, scoring logic, interpretation text | `@org/psychometric-research` |
-| Consent flows, data sharing, retention, deletion, export | `@org/privacy-legal` |
-| Hebrew copy, RTL layout | `@org/localization` |
-| Recommender logic, Why This Match | `@org/ml-product` |
-| AI messaging, moderation-adjacent features | `@org/trust-safety` |
-| All unowned files | `@org/engineering-leads` |
+The Kesher Personality Dimension is trust-forward, privacy-preserving, Hebrew-first, and scientifically humble. Features must pass each gate category before merging into `main` and before any production deployment.
 
-> **Note:** CODEOWNERS approval is enforced via GitHub branch protection "Require review from Code Owners". Each team above must approve changes in their area before the PR can merge.
+Gates are enforced by:
+
+1. CI workflows (`.github/workflows/personality-ci.yml`, `redteam-personality.yml`, `schema-validation.yml`, `rtl-snapshots.yml`)
+2. CODEOWNERS review requirements (`.github/CODEOWNERS`)
+3. PR template self-certification (`.github/pull_request_template.md`)
+4. Local validation scripts (`scripts/`)
 
 ---
 
-## Branch protection settings (configure in GitHub → Settings → Branches)
+## Gate Categories
 
-Apply to `main` (and any release branches):
+### Gate 1 – Privacy & Consent
 
-- [x] Require a pull request before merging
-- [x] Require approvals — minimum **2**
-- [x] Dismiss stale pull request approvals when new commits are pushed
-- [x] Require review from Code Owners
-- [x] Require status checks to pass before merging
-  - `Lint`
-  - `Type-check`
-  - `Unit tests`
-  - `Schema validation tests`
-  - `Scoring tests`
-  - `Forbidden field scan`
-  - `Log scan (no sensitive fields in logs)`
-  - `Personality red-team checks`
-  - `AI output forbidden language scan`
-  - `Validate personality schemas`
-- [x] Require branches to be up to date before merging
-- [x] Require linear history
-- [x] Do not allow bypassing the above settings
+**Owner:** @privacy-reviewers
+
+| Requirement | CI Script | Status |
+|-------------|-----------|--------|
+| Personality data private by default | `scan-forbidden-fields.mjs` | 🔴 required |
+| User owns, can inspect, reset, delete, and export personality data | Manual review | 🔴 required |
+| Permissioned summaries only — no raw dossier sharing | `scan-forbidden-fields.mjs` | 🔴 required |
+| No coercive mutual unlock | Manual review | 🔴 required |
+| Privacy/deletion/export controls are never paywalled | Manual review | 🔴 required |
+| Consent gate present before first personality data collection | Manual review | 🔴 required |
+
+### Gate 2 – Forbidden Patterns
+
+**Owner:** @privacy-reviewers @safety-reviewers
+
+These must never appear in any personality-related code, schema, prompt, or output:
+
+- No compatibility score
+- No soulmate score
+- No marriage probability
+- No desirability score
+- No public trait rank
+- No raw trait public exposure
+- No hidden personality ranking leakage
+- No diagnosis or clinical inference
+- No protected-trait inference from proxies (photos, writing style, names, location, observance, ethnicity, religion, politics, sexuality)
+- No AI auto-send
+- No AI impersonation
+- No public attractiveness scoring
+- No hidden throttling or ranking manipulation
+- No raw inferred personality dossier sharing
+
+See `docs/personality/forbidden-patterns.md` for full definitions and code-level patterns.
+
+CI: `scan-forbidden-fields.mjs` scans source for known forbidden field names and patterns.
+
+### Gate 3 – Psychometric / Scientific Integrity
+
+**Owner:** @psychometric-reviewers
+
+| Requirement | CI Script | Status |
+|-------------|-----------|--------|
+| No LLM-generated personality scores | `test-personality-scoring.mjs` | 🔴 required |
+| Scoring code is deterministic, versioned, testable | `test-personality-scoring.mjs` | 🔴 required |
+| Scoring is separated from model-generated interpretation | Manual review | 🔴 required |
+| No proprietary assessment item text committed | Manual review | 🔴 required |
+| All user-facing claims carry evidence label (VERIFIED / INFERRED / HEURISTIC / UNKNOWN) | Manual review | 🔴 required |
+| Instrument license reviewed before activation | Manual review | 🔴 required |
+| Hebrew localization and cultural adaptation reviewed | Manual review | 🟡 deferred to instrument activation |
+
+### Gate 4 – AI Safety & Prompt Integrity
+
+**Owner:** @safety-reviewers
+
+| Requirement | CI Script | Status |
+|-------------|-----------|--------|
+| Output schema enforced for all personality AI responses | `test-personality-schemas.mjs` | 🔴 required |
+| Prompt version bumped on any prompt change | Manual review | 🔴 required |
+| Red-team scenarios pass | `redteam-personality.mjs` | 🔴 required |
+| No deterministic scoring delegated to LLM | `test-personality-scoring.mjs` | 🔴 required |
+| Uncertainty language present in AI interpretations | Manual review + `redteam-personality.mjs` | 🔴 required |
+| Log hygiene — no raw personality scores or inferred traits in logs | `scan-logs.mjs` | 🔴 required |
+
+### Gate 5 – Hebrew / RTL
+
+**Owner:** @l10n-reviewers @engineering-reviewers
+
+| Requirement | CI Script | Status |
+|-------------|-----------|--------|
+| All new user-facing strings have Hebrew translations | `test-rtl.mjs` | 🔴 required |
+| RTL layout does not break in Hebrew locale | `test-rtl.mjs` | 🔴 required |
+| `dir="rtl"` applied correctly to personality UI components | `test-rtl.mjs` | 🔴 required |
+
+### Gate 6 – Engineering
+
+**Owner:** @engineering-reviewers
+
+| Requirement | CI Script | Status |
+|-------------|-----------|--------|
+| TypeScript typechecks pass (`tsc --noEmit`) | `personality-ci.yml` | 🔴 required |
+| Smoke tests pass | `personality-smoke-tests.mjs` | 🔴 required |
+| Schema tests pass | `test-personality-schemas.mjs` | 🔴 required |
+| No new third-party dependencies unless approved | Manual review | 🔴 required |
+| Rollback plan documented in PR | PR template | 🔴 required |
 
 ---
 
-## Pre-release checklist
+## Deployment / Release Approval
 
-Before deploying to production, the release manager must confirm:
+In addition to CI gates, personality features require:
 
-- [ ] All CI gates pass on the release commit
-- [ ] All required CODEOWNERS approvals are on record
-- [ ] Privacy / Legal sign-off documented (link to approval issue or comment)
-- [ ] Psychometric / Research sign-off documented (if assessment/scoring changed)
-- [ ] Localization sign-off documented (if Hebrew copy or RTL changed)
-- [ ] Safety sign-off documented (if AI messaging or moderation features changed)
-- [ ] Claim registry updated (`docs/personality/claim-registry.md`)
-- [ ] Data classification updated (`docs/personality/data-classification.md`) if new data fields introduced
-- [ ] Incident response runbook updated if new failure mode introduced
-- [ ] Rollback plan documented
+1. Written sign-off comment from @privacy-reviewers on the PR.
+2. Written sign-off comment from @safety-reviewers on the PR.
+3. Written sign-off or explicit deferral from @psychometric-reviewers if any scoring or measurement change is included.
+4. Written sign-off from @l10n-reviewers confirming Hebrew translations are complete or explicitly deferred with a tracked issue.
+
+**No merge without all required sign-offs.** CODEOWNERS enforces review requests; humans enforce approval.
+
+---
+
+## Gate Failure Handling
+
+If a CI gate fails:
+
+1. The PR author is responsible for resolving the failure.
+2. Gate bypass requires a written exception approved by all required reviewers and recorded in the PR.
+3. Exception comments must explain: what gate failed, why bypass is safe, what compensating control exists, and when the gate will be restored.
+
+---
+
+## Version History
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-04-28 | Governance scaffold | Initial draft |

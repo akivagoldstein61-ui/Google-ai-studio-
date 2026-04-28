@@ -1,103 +1,83 @@
-name: Privacy Risk
-description: Report a privacy concern related to Kesher Personality Dimension
+name: "Privacy Risk"
+description: "Report a privacy concern or potential violation in the Personality Dimension"
 title: "[Privacy Risk] "
-labels: ["privacy", "risk", "needs-triage"]
-assignees: []
+labels: ["privacy", "security", "personality", "urgent"]
 body:
   - type: markdown
     attributes:
       value: |
         ## Privacy Risk Report
-        Use this template to raise a privacy concern about personality data handling.
-        Tag `@privacy-legal` immediately for any severity ≥ High.
 
-  - type: input
-    id: risk-title
-    attributes:
-      label: Risk title
-      placeholder: e.g. "Trait score exposed in API response without consent check"
-    validations:
-      required: true
+        Use this template to report privacy concerns related to Kesher's Personality Dimension.
+        This includes data collection, inference, storage, exposure, or consent issues.
+
+        For general security vulnerabilities, use GitHub's private security advisory instead.
 
   - type: dropdown
     id: severity
     attributes:
-      label: Severity
+      label: "Severity"
       options:
-        - Critical — potential regulatory violation or mass exposure
-        - High — individual exposure or missing consent gate
-        - Medium — data minimisation gap or ambiguous boundary
-        - Low — logging or observability concern
+        - "Critical – active or imminent data exposure"
+        - "High – policy violation, no immediate exposure"
+        - "Medium – edge case or potential future violation"
+        - "Low – documentation gap or advisory"
     validations:
       required: true
 
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: Describe the risk, including what data is exposed and to whom.
-    validations:
-      required: true
-
-  - type: dropdown
-    id: data-classes
-    attributes:
-      label: Data classes involved
-      multiple: true
-      options:
-        - trait_scores
-        - compatibility_indicators
-        - assessment_responses
-        - messaging_behavior
-        - session_metadata
-        - consent_records
-        - export_payload
-        - other
+      label: "Risk Description"
+      description: "Describe the privacy risk. Be specific about what data is involved."
     validations:
       required: true
 
   - type: textarea
-    id: affected-code
+    id: affected-components
     attributes:
-      label: Affected code path or schema
-      description: File path(s), function name(s), or schema field(s) involved.
-    validations:
-      required: true
-
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Steps to reproduce / observe
-    validations:
-      required: true
-
-  - type: textarea
-    id: proposed-mitigation
-    attributes:
-      label: Proposed mitigation
-      description: Suggested fix or control if known.
-
-  - type: dropdown
-    id: forbidden-field-involved
-    attributes:
-      label: Does this involve a forbidden field?
-      description: |
-        Forbidden fields: `compatibility_score`, `soulmate_score`, `marriage_probability`,
-        `desirability_score`, `public_trait_rank`, `raw_trait_public`,
-        `hidden_personality_rank`, `diagnosis`, `protected_trait_inference`,
-        `auto_send`, `perfect_match`.
-      options:
-        - "Yes"
-        - "No"
-        - "Unsure"
+      label: "Affected Components"
+      description: "Which files, APIs, schemas, or UI flows are affected?"
     validations:
       required: true
 
   - type: checkboxes
-    id: notifications
+    id: risk-category
     attributes:
-      label: Notifications sent
+      label: "Risk Category"
       options:
-        - label: Privacy / Legal team notified
+        - label: "Inferred trait exposed without user consent"
+        - label: "Raw personality score exposed publicly"
+        - label: "Protected-trait inference from proxies (photo, name, location, etc.)"
+        - label: "Personality data shared without explicit permissioned summary"
+        - label: "Missing or insufficient data deletion/reset path"
+        - label: "Missing or insufficient data export path"
+        - label: "Coercive mutual unlock pattern"
+        - label: "Consent gate bypassed or missing"
+        - label: "Paywall on privacy control (deletion, export, reset, revoke)"
+        - label: "Hidden ranking or throttling manipulation"
+        - label: "AI auto-send without human review"
+        - label: "AI impersonation of user"
+        - label: "Other"
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to Reproduce (if applicable)"
+      description: "How can this risk be observed or triggered?"
+
+  - type: textarea
+    id: proposed-mitigation
+    attributes:
+      label: "Proposed Mitigation"
+      description: "What change would resolve or reduce this risk?"
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: "Disclosure"
+      options:
+        - label: "I have NOT included any real user data in this report"
           required: true
-        - label: Engineering lead notified
+        - label: "I have NOT published this risk publicly before tagging the privacy team"
+          required: true
