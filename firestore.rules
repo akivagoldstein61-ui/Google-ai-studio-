@@ -27,6 +27,10 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update: if isOwner(uid) || isAdmin();
       allow delete: if isAdmin();
+      
+      match /private/{docId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
     }
 
     match /likes/{likeId} {
@@ -35,6 +39,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.fromId || isAdmin());
     }
 
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow delete: if isAdmin();
+    }
     match /matches/{matchId} {
       allow read: if isAuthenticated() && (request.auth.uid in resource.data.users || isAdmin());
       allow create: if isAuthenticated();
@@ -45,6 +55,30 @@ service cloud.firestore {
         allow read, create: if isMatchParticipant(matchId) || isAdmin();
         allow update, delete: if isAdmin();
       }
+    }
+    match /reports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /blocks/{blockId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /unmatches/{unmatchId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /support_requests/{requestId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /delete_requests/{requestId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
     }
   }
 }

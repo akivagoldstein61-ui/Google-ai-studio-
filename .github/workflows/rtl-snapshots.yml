@@ -1,0 +1,38 @@
+name: RTL Snapshots
+
+on:
+  pull_request:
+    paths:
+      - "src/features/personality/**"
+      - "src/features/settings/**"
+      - "src/features/discovery/**"
+      - "src/components/**"
+      - "src/index.css"
+      - "scripts/test-rtl.mjs"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  rtl-check:
+    name: "RTL – Hebrew Layout Checks"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Run RTL layout checks
+        run: node scripts/test-rtl.mjs
+
+      - name: Upload RTL report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtl-report-${{ github.run_id }}
+          path: /tmp/rtl-report.json
+          if-no-files-found: ignore
+          retention-days: 30

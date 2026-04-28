@@ -21,7 +21,7 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
     prompts: [],
     bio: ''
   });
-  const { language, verifyAge, acceptTerms } = useApp();
+  const { language, verifyAge, acceptTerms, user, setUser } = useApp();
 
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
@@ -308,7 +308,41 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
                 exit={{ opacity: 0, x: -30 }}
               >
                 <ProfileBuilder 
-                  onComplete={() => onComplete()}
+                  onComplete={async (data) => {
+                    if (user) {
+                      const updatedUser = {
+                        ...user,
+                        displayName: formData.displayName,
+                        age: parseInt(formData.age),
+                        city: formData.city,
+                        photos: data.photos.map((p: any) => p.url),
+                        bio: data.bio,
+                        prompts: data.prompts,
+                        observance: formData.observance as any,
+                        intent: formData.goal as any,
+                        personalityScores: data.personalityScores,
+                        isVerified: data.isVerified
+                      };
+                      
+                      try {
+                        const { doc, setDoc } = await import('firebase/firestore');
+                        const { db } = await import('@/firebase');
+                        await setDoc(doc(db, 'users', user.uid), updatedUser);
+                        
+                        if (data.personalityScores) {
+                          await setDoc(doc(db, `users/${user.uid}/private/personality`), {
+                            scores: data.personalityScores,
+                            updatedAt: new Date().toISOString()
+                          });
+                        }
+                        
+                        setUser(updatedUser);
+                      } catch (error) {
+                        console.error("Error saving profile to Firestore:", error);
+                      }
+                    }
+                    onComplete();
+                  }}
                 />
               </motion.div>
             )}

@@ -29,17 +29,35 @@ function mockRes() {
 }
 
 async function runMiddleware(req: AuthenticatedRequest, nodeEnv: string, verifier?: (token: string) => Promise<any>) {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousMockAuth = process.env.KESHER_ENABLE_MOCK_AUTH;
+
   process.env.NODE_ENV = nodeEnv;
   process.env.KESHER_ENABLE_MOCK_AUTH = 'true';
-  const middleware = createAuthMiddleware(verifier || (async () => ({ uid: 'verified-user', source: 'firebase' })));
-  const { res, state } = mockRes();
-  let nextCalled = false;
-  const next: NextFunction = () => {
-    nextCalled = true;
-  };
 
-  await middleware(req, res, next);
-  return { req, nextCalled, state };
+  try {
+    const middleware = createAuthMiddleware(verifier || (async () => ({ uid: 'verified-user', source: 'firebase' })));
+    const { res, state } = mockRes();
+    let nextCalled = false;
+    const next: NextFunction = () => {
+      nextCalled = true;
+    };
+
+    await middleware(req, res, next);
+    return { req, nextCalled, state };
+  } finally {
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+
+    if (previousMockAuth === undefined) {
+      delete process.env.KESHER_ENABLE_MOCK_AUTH;
+    } else {
+      process.env.KESHER_ENABLE_MOCK_AUTH = previousMockAuth;
+    }
+  }
 }
 
 test('accepts valid bearer token and sets firebase auth context', async () => {

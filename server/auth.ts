@@ -20,11 +20,11 @@ export type TokenVerifier = (idToken: string) => Promise<VerifiedAuth>;
 const LOCAL_DEV_MOCK_HEADER = "x-kesher-mock-auth";
 
 function isLocalDev(): boolean {
-  return process.env.NODE_ENV !== "production";
+  return process.env.NODE_ENV === "development";
 }
 
 function isMockAuthEnabled(): boolean {
-  return isLocalDev() && process.env.KESHER_ENABLE_MOCK_AUTH !== "false";
+  return isLocalDev() && process.env.KESHER_ENABLE_MOCK_AUTH === "true";
 }
 
 function getBearerToken(req: Request): string | null {
@@ -81,12 +81,18 @@ export function createAuthMiddleware(verifier: TokenVerifier = verifyFirebaseIdT
     }
 
     if (isMockAuthEnabled()) {
-      const hintedUser = req.header(LOCAL_DEV_MOCK_HEADER)?.trim();
-      req.auth = {
-        uid: hintedUser || "local-dev-user",
-        source: "mock",
-      };
-      return next();
+      const mockAuthHeader = req.header(LOCAL_DEV_MOCK_HEADER);
+      if (mockAuthHeader !== undefined) {
+        const hintedUser = mockAuthHeader.trim();
+        if (!hintedUser) {
+          return void res.status(401).json({ error: "Invalid mock auth header" });
+        }
+        req.auth = {
+          uid: hintedUser,
+          source: "mock",
+        };
+        return next();
+      }
     }
 
     return void res.status(401).json({ error: "Authentication required" });

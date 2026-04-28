@@ -65,3 +65,24 @@ export interface AIFeatureStatus {
   enabled: boolean;
   optedIn: boolean;
 }
+
+export type PersonalityDomain = 'extraversion' | 'neuroticism' | 'agreeableness' | 'conscientiousness' | 'openness_to_experience';
+export type PersonalityAspect = 'enthusiasm' | 'assertiveness' | 'withdrawal' | 'volatility' | 'compassion' | 'politeness' | 'industriousness' | 'orderliness' | 'openness' | 'intellect';
+
+export interface PersonalityScore {
+  domain: PersonalityDomain;
+  percentile: number;
+  aspects: {
+    name: PersonalityAspect;
+    percentile: number;
+  }[];
+}
+
+export interface PersonalityAssessmentSession {
+  id: string;
+  userId: string;
+  startedAt: string;
+  completedAt?: string;
+  answers: Record<string, number>;
+  scores?: PersonalityScore[];
+}
