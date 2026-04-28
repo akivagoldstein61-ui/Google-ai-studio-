@@ -1,0 +1,103 @@
+name: Privacy Risk
+description: Report a privacy concern related to Kesher Personality Dimension
+title: "[Privacy Risk] "
+labels: ["privacy", "risk", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Privacy Risk Report
+        Use this template to raise a privacy concern about personality data handling.
+        Tag `@privacy-legal` immediately for any severity ≥ High.
+
+  - type: input
+    id: risk-title
+    attributes:
+      label: Risk title
+      placeholder: e.g. "Trait score exposed in API response without consent check"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical — potential regulatory violation or mass exposure
+        - High — individual exposure or missing consent gate
+        - Medium — data minimisation gap or ambiguous boundary
+        - Low — logging or observability concern
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the risk, including what data is exposed and to whom.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-classes
+    attributes:
+      label: Data classes involved
+      multiple: true
+      options:
+        - trait_scores
+        - compatibility_indicators
+        - assessment_responses
+        - messaging_behavior
+        - session_metadata
+        - consent_records
+        - export_payload
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-code
+    attributes:
+      label: Affected code path or schema
+      description: File path(s), function name(s), or schema field(s) involved.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / observe
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-mitigation
+    attributes:
+      label: Proposed mitigation
+      description: Suggested fix or control if known.
+
+  - type: dropdown
+    id: forbidden-field-involved
+    attributes:
+      label: Does this involve a forbidden field?
+      description: |
+        Forbidden fields: `compatibility_score`, `soulmate_score`, `marriage_probability`,
+        `desirability_score`, `public_trait_rank`, `raw_trait_public`,
+        `hidden_personality_rank`, `diagnosis`, `protected_trait_inference`,
+        `auto_send`, `perfect_match`.
+      options:
+        - "Yes"
+        - "No"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: notifications
+    attributes:
+      label: Notifications sent
+      options:
+        - label: Privacy / Legal team notified
+          required: true
+        - label: Engineering lead notified

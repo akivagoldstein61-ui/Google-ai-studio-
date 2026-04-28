@@ -1,0 +1,53 @@
+name: Schema Validation
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/schemas/**"
+      - "**/*schema*.ts"
+      - "**/*schema*.json"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "src/schemas/**"
+      - "**/*schema*.ts"
+      - "**/*schema*.json"
+
+concurrency:
+  group: schema-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-schemas:
+    name: Validate personality schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Run schema validation tests
+        run: npm run test:schemas
+
+      - name: Check for forbidden fields in schemas
+        run: |
+          FORBIDDEN_PATTERN="compatibility_score|soulmate_score|marriage_probability|desirability_score|public_trait_rank|raw_trait_public|hidden_personality_rank|diagnosis|protected_trait_inference|auto_send|perfect_match"
+          if grep -rn --include="*.json" --include="*.ts" \
+               -E "$FORBIDDEN_PATTERN" src/schemas/ 2>/dev/null; then
+            echo "::error::Forbidden field found in schema definition. See output above."
+            exit 1
+          fi
+          echo "Schema forbidden-field check passed."
+
+      - name: Upload schema validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-validation-${{ github.run_id }}
+          path: reports/schema/
+          retention-days: 30
+          if-no-files-found: warn

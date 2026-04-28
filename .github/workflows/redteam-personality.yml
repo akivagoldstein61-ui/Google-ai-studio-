@@ -1,0 +1,75 @@
+name: Personality AI Red-Team Suite
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "src/ai/**"
+      - "src/prompts/**"
+      - "src/schemas/**"
+      - "src/personality/**"
+      - "**/*.prompt.ts"
+      - "**/*.prompt.json"
+  workflow_dispatch:
+    inputs:
+      extended:
+        description: "Run extended (slow) red-team suite"
+        required: false
+        default: "false"
+        type: boolean
+
+concurrency:
+  group: redteam-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  redteam-personality:
+    name: Personality red-team checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Run personality red-team suite
+        run: npm run redteam:personality
+        env:
+          REDTEAM_EXTENDED: ${{ inputs.extended || 'false' }}
+
+      - name: Upload red-team report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-report-${{ github.run_id }}
+          path: |
+            reports/redteam/
+            *.redteam.json
+          retention-days: 90
+          if-no-files-found: warn
+
+  forbidden-language-scan:
+    name: AI output forbidden language scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Scan AI prompts for forbidden patterns
+        # Fail if prompts contain patterns that could produce forbidden output.
+        run: |
+          FORBIDDEN_LANG="soulmate|perfect match|marriage probabilit|diagno[sz]|disorder|condition|mental health label|compatibility score|desirability"
+          PROMPT_DIRS="src/ai src/prompts src/personality"
+          if grep -rni --include="*.ts" --include="*.tsx" --include="*.json" --include="*.txt" \
+               -E "$FORBIDDEN_LANG" $PROMPT_DIRS 2>/dev/null; then
+            echo "::error::Forbidden language pattern found in AI prompts or personality source. See output above."
+            exit 1
+          fi
+          echo "Forbidden language scan passed."

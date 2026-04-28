@@ -1,0 +1,70 @@
+# CODEOWNERS — Kesher Personality Dimension
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Rules are evaluated bottom-up; the last matching rule wins.
+# Replace placeholder team/user slugs with real GitHub handles before merging.
+#
+# Placeholder slugs used below:
+#   @org/ai-platform          — AI & platform engineers who own prompts and inference
+#   @org/psychometric-research — Psychometric / research team
+#   @org/privacy-legal        — Privacy & legal reviewers
+#   @org/localization         — Localization / Hebrew RTL team
+#   @org/ml-product           — ML / product owners (recommender, Why This Match)
+#   @org/trust-safety         — Trust & Safety / moderation owners
+#   @org/engineering-leads    — Engineering leads (catch-all for unowned files)
+
+# ── Default owner (catch-all) ────────────────────────────────────────────────
+*                                   @org/engineering-leads
+
+# ── CI / GitHub configuration ────────────────────────────────────────────────
+.github/                            @org/engineering-leads @org/privacy-legal
+
+# ── AI prompts and schemas ───────────────────────────────────────────────────
+src/ai/                             @org/ai-platform
+src/prompts/                        @org/ai-platform
+src/schemas/                        @org/ai-platform
+**/*.prompt.ts                      @org/ai-platform
+**/*.prompt.json                    @org/ai-platform
+**/*schema*.ts                      @org/ai-platform
+**/*schema*.json                    @org/ai-platform
+
+# ── Assessment and scoring ───────────────────────────────────────────────────
+src/personality/assessment/         @org/psychometric-research
+src/personality/scoring/            @org/psychometric-research
+src/personality/interpretation/     @org/psychometric-research @org/ai-platform
+**/*scoring*                        @org/psychometric-research
+**/*assessment*                     @org/psychometric-research
+
+# ── Privacy, consent, sharing, deletion, export ─────────────────────────────
+src/privacy/                        @org/privacy-legal
+src/consent/                        @org/privacy-legal
+src/data/                           @org/privacy-legal @org/engineering-leads
+**/*consent*                        @org/privacy-legal
+**/*privacy*                        @org/privacy-legal
+**/*deletion*                       @org/privacy-legal
+**/*export*                         @org/privacy-legal
+**/*retention*                      @org/privacy-legal
+firestore.rules                     @org/privacy-legal @org/engineering-leads
+
+# ── Hebrew copy and RTL layouts ──────────────────────────────────────────────
+src/i18n/                           @org/localization
+src/locales/                        @org/localization
+**/*.he.*                           @org/localization
+**/*rtl*                            @org/localization
+**/*hebrew*                         @org/localization
+
+# ── Recommender and Why This Match ──────────────────────────────────────────
+src/recommender/                    @org/ml-product
+src/personality/why-this-match/     @org/ml-product @org/ai-platform
+**/*recommender*                    @org/ml-product
+**/*why-this-match*                 @org/ml-product
+
+# ── Safety / moderation-adjacent features ───────────────────────────────────
+src/safety/                         @org/trust-safety
+src/moderation/                     @org/trust-safety
+**/*safety*                         @org/trust-safety
+**/*moderation*                     @org/trust-safety
+**/*flagging*                       @org/trust-safety
+
+# ── Governance docs ──────────────────────────────────────────────────────────
+docs/personality/                   @org/privacy-legal @org/psychometric-research @org/engineering-leads

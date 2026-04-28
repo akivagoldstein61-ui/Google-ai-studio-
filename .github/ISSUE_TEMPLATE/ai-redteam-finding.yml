@@ -1,0 +1,126 @@
+name: AI Red-Team Finding
+description: Report a red-team or adversarial finding in Kesher Personality AI features
+title: "[Red-Team] "
+labels: ["red-team", "ai-safety", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## AI Red-Team Finding
+        Use this template to document findings from personality AI red-teaming sessions.
+        Mark the issue **confidential** until remediation is confirmed.
+
+  - type: input
+    id: finding-title
+    attributes:
+      label: Finding title
+      placeholder: e.g. "AI generates diagnosis-adjacent language in match explanation"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical — immediate ship-blocker
+        - High — must fix before next release
+        - Medium — fix in current sprint
+        - Low — track for backlog
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Finding category
+      multiple: true
+      options:
+        - privacy-leakage
+        - hidden-ranking-leakage
+        - overclaiming
+        - raw-score-exposure
+        - diagnosis-language
+        - protected-trait-inference
+        - ai-autosend-path
+        - missing-consent-gate
+        - missing-revoke-delete-export
+        - hebrew-rtl-regression
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the finding with enough detail to reproduce it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt-payload
+    attributes:
+      label: Prompt / payload used
+      description: Paste the adversarial prompt or input payload (redact any PII).
+      render: text
+
+  - type: textarea
+    id: ai-output
+    attributes:
+      label: AI output observed
+      description: Paste the problematic AI output (redact any PII).
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should the system have done instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-code
+    attributes:
+      label: Affected prompt, schema, or code path
+      description: File path(s) or function name(s) involved.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: forbidden-field-involved
+    attributes:
+      label: Does this involve a forbidden field or forbidden language pattern?
+      options:
+        - "Yes"
+        - "No"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-mitigation
+    attributes:
+      label: Proposed mitigation or guard
+      description: Suggested prompt constraint, schema rule, or output filter.
+
+  - type: textarea
+    id: test-case
+    attributes:
+      label: Proposed regression test case
+      description: Describe or paste the automated test that should catch this in future.
+
+  - type: checkboxes
+    id: notifications
+    attributes:
+      label: Notifications sent
+      options:
+        - label: Safety / Trust & Safety team notified
+          required: true
+        - label: Privacy / Legal team notified
+        - label: Engineering lead notified
+          required: true

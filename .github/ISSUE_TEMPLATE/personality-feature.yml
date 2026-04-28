@@ -1,0 +1,150 @@
+name: Personality Feature
+description: Propose or track a new Kesher Personality Dimension feature
+title: "[Personality Feature] "
+labels: ["personality", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Kesher Personality Feature Request
+        Complete every section. Incomplete submissions will be closed.
+
+  - type: input
+    id: feature-name
+    attributes:
+      label: Feature name
+      placeholder: e.g. "Trait Compatibility Widget"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-paragraph description of the feature and its user-facing goal.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-classes
+    attributes:
+      label: Data classes touched
+      description: Select all that apply.
+      multiple: true
+      options:
+        - trait_scores
+        - compatibility_indicators
+        - assessment_responses
+        - messaging_behavior
+        - session_metadata
+        - consent_records
+        - export_payload
+        - none
+    validations:
+      required: true
+
+  - type: dropdown
+    id: consent-required
+    attributes:
+      label: Consent required?
+      options:
+        - "Yes — new explicit consent gate needed"
+        - "Yes — existing consent gate covers this"
+        - "No — no personal data processed"
+    validations:
+      required: true
+
+  - type: textarea
+    id: consent-detail
+    attributes:
+      label: Consent gate detail
+      description: Describe the consent flow, including revoke and re-consent paths.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-involved
+    attributes:
+      label: Does AI touch this feature?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: textarea
+    id: deterministic-boundary
+    attributes:
+      label: Deterministic boundary
+      description: What hard rule or schema prevents AI from producing unconstrained output?
+    validations:
+      required: true
+
+  - type: textarea
+    id: forbidden-fields
+    attributes:
+      label: Forbidden fields audit
+      description: |
+        Confirm none of these appear in member-facing output or schemas:
+        `compatibility_score`, `soulmate_score`, `marriage_probability`,
+        `desirability_score`, `public_trait_rank`, `raw_trait_public`,
+        `hidden_personality_rank`, `diagnosis`, `protected_trait_inference`,
+        `auto_send`, `perfect_match`.
+      placeholder: "Confirmed: none of the above fields are used."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: visibility
+    attributes:
+      label: Visibility
+      options:
+        - internal-only
+        - user-visible-private
+        - user-visible-public
+        - aggregated-anonymous
+    validations:
+      required: true
+
+  - type: textarea
+    id: revoke-delete-export
+    attributes:
+      label: Revoke / Reset / Delete / Export path
+      description: How does a user revoke consent, reset their profile, delete data, or export data?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rtl-impact
+    attributes:
+      label: Hebrew RTL impact
+      description: Which UI strings or layouts are affected? What RTL checks are planned?
+    validations:
+      required: true
+
+  - type: textarea
+    id: claim-registry
+    attributes:
+      label: UI claim and evidence label
+      description: |
+        State any claim the UI makes (e.g. "People with similar openness report higher satisfaction")
+        and the evidence label that will appear next to it.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: approvals
+    attributes:
+      label: Required approvals
+      options:
+        - label: Privacy / Legal review requested
+          required: true
+        - label: Psychometric / Research review requested
+          required: true
+        - label: Localization review requested (Hebrew)
+          required: true
+        - label: Safety / Trust & Safety review requested
+          required: true
+        - label: Red-team tests added or updated
+          required: true
