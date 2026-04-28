@@ -10,16 +10,40 @@ import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
   const { language, setLanguage } = useApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   const handleSignIn = async () => {
     setIsSigningIn(true);
+    setSignInError(null);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       // AppContext will handle the auth state change and call onNext if needed,
       // but since AppContext sets user and re-renders, this component will unmount.
-    } catch (error) {
-      console.error("Sign in failed", error);
+    } catch (error: any) {
+      const code: string = error?.code ?? 'unknown';
+      console.error("Sign in failed", code, error);
+      let message =
+        language === 'en'
+          ? 'Sign in failed. Please try again.'
+          : 'ההתחברות נכשלה. אנא נסה שנית.';
+      if (code === 'auth/unauthorized-domain') {
+        message =
+          language === 'en'
+            ? 'This domain is not authorized for sign-in. Please contact support.'
+            : 'הדומיין הזה אינו מורשה להתחברות. אנא צור קשר עם התמיכה.';
+      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        message =
+          language === 'en'
+            ? 'Sign in was cancelled. Please try again.'
+            : 'ההתחברות בוטלה. אנא נסה שנית.';
+      } else if (code === 'auth/network-request-failed') {
+        message =
+          language === 'en'
+            ? 'Network error. Please check your connection and try again.'
+            : 'שגיאת רשת. אנא בדוק את החיבור שלך ונסה שנית.';
+      }
+      setSignInError(message);
       setIsSigningIn(false);
     }
   };
@@ -134,6 +158,11 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
           >
             {language === 'en' ? 'Sign In' : 'התחבר'}
           </Button>
+          {signInError && (
+            <p className="text-sm text-red-600 text-center px-4" role="alert">
+              {signInError}
+            </p>
+          )}
         </motion.div>
       </main>
 
