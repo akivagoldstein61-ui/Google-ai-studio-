@@ -1,0 +1,100 @@
+name: "AI Red-Team Finding"
+description: "Report a finding from AI red-teaming of the Personality Dimension"
+title: "[Red-Team] "
+labels: ["red-team", "ai-safety", "personality", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## AI Red-Team Finding
+
+        Use this template to report findings from adversarial testing of Kesher's AI-assisted
+        Personality Dimension features. This includes prompt injection, jailbreaks, policy
+        circumvention, hallucination risks, and output safety violations.
+
+        Run `npm run redteam:personality` locally before filing if possible.
+
+  - type: dropdown
+    id: finding-type
+    attributes:
+      label: "Finding Type"
+      options:
+        - "Prompt injection or jailbreak"
+        - "Policy bypass (forbidden output produced)"
+        - "Hallucination or false scientific claim"
+        - "Compatibility or scoring language leaked"
+        - "Clinical or diagnostic language produced"
+        - "Protected-trait inference from proxy"
+        - "AI impersonation risk"
+        - "AI auto-send risk"
+        - "Hidden ranking or throttling signal"
+        - "Schema validation bypass"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity"
+      options:
+        - "Critical – active policy violation with real users"
+        - "High – reproducible violation, not yet in production"
+        - "Medium – edge case, requires specific prompt"
+        - "Low – theoretical or informational"
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt-used
+    attributes:
+      label: "Prompt / Input Used"
+      description: "Paste the prompt or inputs that triggered the finding. Redact real user data."
+    validations:
+      required: true
+
+  - type: textarea
+    id: model-output
+    attributes:
+      label: "Model Output"
+      description: "Paste the problematic output. Redact any real user data."
+    validations:
+      required: true
+
+  - type: textarea
+    id: policy-violated
+    attributes:
+      label: "Policy / Rule Violated"
+      description: |
+        Which rule from `docs/personality/forbidden-patterns.md` or `docs/personality/release-gates.md`
+        was violated? Quote the relevant rule.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "Reproduction Steps"
+      description: "How reliably can this be reproduced? List steps."
+
+  - type: textarea
+    id: proposed-fix
+    attributes:
+      label: "Proposed Fix"
+      description: "Suggested prompt patch, schema constraint, or output validator change."
+
+  - type: input
+    id: prompt-version
+    attributes:
+      label: "Prompt Version (if known)"
+      description: "Which prompt template was active? e.g. personality-reflection-v1.2"
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: "Disclosure"
+      options:
+        - label: "I have NOT included real user data in this report"
+          required: true
+        - label: "This finding has been shared with the safety reviewer before public disclosure"
+          required: true
