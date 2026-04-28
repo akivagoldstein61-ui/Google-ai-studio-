@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { aiRouter } from "./server/aiRoutes.ts";
+import { aiRouter, apiLimiter } from "./server/aiRoutes.ts";
 import trustRoutes from "./server/trustRoutes.ts";
 import { authMiddleware } from "./server/auth.ts";
 
@@ -20,8 +20,8 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // AI Routes — authenticated
-  app.use("/api/ai", authMiddleware, aiRouter);
+  // AI Routes — rate-limited and authenticated
+  app.use("/api/ai", apiLimiter, authMiddleware, aiRouter);
 
   // Trust & Safety Routes
   app.use("/api/safety", trustRoutes);
