@@ -10,9 +10,11 @@ import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
   const { language, setLanguage } = useApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   const handleSignIn = async () => {
     setIsSigningIn(true);
+    setSignInError(null);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
@@ -20,6 +22,8 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
       // but since AppContext sets user and re-renders, this component will unmount.
     } catch (error) {
       console.error("Sign in failed", error);
+      const message = error instanceof Error ? error.message : "Sign in failed. Please try again.";
+      setSignInError(message);
       setIsSigningIn(false);
     }
   };
@@ -119,6 +123,9 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
               {language === 'en' ? 'Private AI • You stay in control' : 'בינה מלאכותית פרטית • אתה בשליטה'}
             </span>
           </div>
+          {signInError && (
+            <p className="text-sm text-red-500 text-center px-2">{signInError}</p>
+          )}
           <Button 
             className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all active:scale-[0.98]" 
             onClick={handleSignIn}
