@@ -20,9 +20,31 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
       await signInWithPopup(auth, provider);
       // AppContext will handle the auth state change and call onNext if needed,
       // but since AppContext sets user and re-renders, this component will unmount.
-    } catch (error) {
-      console.error("Sign in failed", error);
-      const message = error instanceof Error ? error.message : "Sign in failed. Please try again.";
+    } catch (error: unknown) {
+      const code: string = (error !== null && typeof error === 'object' && 'code' in error)
+        ? String((error as { code: unknown }).code)
+        : 'unknown';
+      console.error("Sign in failed", code, error);
+      let message =
+        language === 'en'
+          ? 'Sign in failed. Please try again.'
+          : 'ההתחברות נכשלה. אנא נסה שנית.';
+      if (code === 'auth/unauthorized-domain') {
+        message =
+          language === 'en'
+            ? 'This domain is not authorized for sign-in. Please contact support.'
+            : 'הדומיין הזה אינו מורשה להתחברות. אנא צור קשר עם התמיכה.';
+      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        message =
+          language === 'en'
+            ? 'Sign in was cancelled. Please try again.'
+            : 'ההתחברות בוטלה. אנא נסה שנית.';
+      } else if (code === 'auth/network-request-failed') {
+        message =
+          language === 'en'
+            ? 'Network error. Please check your connection and try again.'
+            : 'שגיאת רשת. אנא בדוק את החיבור שלך ונסה שנית.';
+      }
       setSignInError(message);
       setIsSigningIn(false);
     }
@@ -123,9 +145,6 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
               {language === 'en' ? 'Private AI • You stay in control' : 'בינה מלאכותית פרטית • אתה בשליטה'}
             </span>
           </div>
-          {signInError && (
-            <p className="text-sm text-red-500 text-center px-2">{signInError}</p>
-          )}
           <Button 
             className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all active:scale-[0.98]" 
             onClick={handleSignIn}
@@ -141,6 +160,11 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
           >
             {language === 'en' ? 'Sign In' : 'התחבר'}
           </Button>
+          {signInError && (
+            <p className="text-sm text-red-600 text-center px-4" role="alert">
+              {signInError}
+            </p>
+          )}
         </motion.div>
       </main>
 
