@@ -1,18 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Shield, Heart, Globe, Sparkles, Loader2 } from 'lucide-react';
+import { Shield, Heart, Globe, Sparkles, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { auth } from '@/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+
+// The stable production URL that is registered in Firebase Authorized Domains.
+// All other Vercel preview/branch URLs are redirected here before sign-in.
+const CANONICAL_ORIGIN = 'https://google-ai-studio-sage-sigma.vercel.app';
+
+// Domains that are known to be authorized in Firebase (in addition to localhost).
+const AUTHORIZED_HOSTNAMES = new Set([
+  'google-ai-studio-sage-sigma.vercel.app',
+  'gen-lang-client-0904321862.firebaseapp.com',
+  'localhost',
+  '127.0.0.1',
+]);
+
+function isCurrentDomainAuthorized(): boolean {
+  const hostname = window.location.hostname;
+  return AUTHORIZED_HOSTNAMES.has(hostname);
+}
+
+function redirectToCanonical(): void {
+  const { pathname, search, hash } = window.location;
+  window.location.replace(`${CANONICAL_ORIGIN}${pathname}${search}${hash}`);
+}
 
 export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
   const { language, setLanguage } = useApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [domainWarning, setDomainWarning] = useState(false);
+
+  // Detect unauthorized deployment domains on mount so the user is warned
+  // before they even attempt to sign in.
+  useEffect(() => {
+    if (!isCurrentDomainAuthorized()) {
+      setDomainWarning(true);
+    }
+  }, []);
 
   const handleSignIn = async () => {
+    // Guard: if we're on a domain that isn't in Firebase's authorized list,
+    // redirect to the canonical production URL instead of letting the popup fail.
+    if (!isCurrentDomainAuthorized()) {
+      redirectToCanonical();
+      return;
+    }
+
     setIsSigningIn(true);
     setSignInError(null);
     try {
@@ -23,16 +61,19 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
     } catch (error: any) {
       const code: string = error?.code ?? 'unknown';
       console.error("Sign in failed", code, error);
+
+      if (code === 'auth/unauthorized-domain') {
+        // Domain wasn't caught by the pre-check (e.g. list out of date).
+        // Redirect silently to the canonical URL so the error never shows.
+        redirectToCanonical();
+        return;
+      }
+
       let message =
         language === 'en'
           ? 'Sign in failed. Please try again.'
           : 'ההתחברות נכשלה. אנא נסה שנית.';
-      if (code === 'auth/unauthorized-domain') {
-        message =
-          language === 'en'
-            ? 'This domain is not authorized for sign-in. Please contact support.'
-            : 'הדומיין הזה אינו מורשה להתחברות. אנא צור קשר עם התמיכה.';
-      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         message =
           language === 'en'
             ? 'Sign in was cancelled. Please try again.'
@@ -68,6 +109,37 @@ export const WelcomeScreen: React.FC<{ onNext: () => void }> = ({ onNext }) => {
         <div className="absolute bottom-0 left-0 w-full h-[40%] bg-gradient-to-t from-[#FDFCFB] to-transparent" />
       </div>
       
+      {/* Domain warning banner — shown when deployed on an unauthorized domain */}
+      {domainWarning && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 mb-4 flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800"
+          role="alert"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <p className="font-semibold leading-snug">
+              {language === 'en'
+                ? 'Sign-in not available on this URL'
+                : 'ההתחברות אינה זמינה בכתובת זו'}
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700 leading-relaxed">
+              {language === 'en'
+                ? 'This preview URL is not authorized for Firebase Authentication. Tap below to go to the official app.'
+                : 'כתובת תצוגה מקדימה זו אינה מורשית ל-Firebase Authentication. לחץ למטה כדי לעבור לאפליקציה הרשמית.'}
+            </p>
+            <button
+              onClick={redirectToCanonical}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 underline underline-offset-2 hover:text-amber-700"
+            >
+              {language === 'en' ? 'Open official app' : 'פתח את האפליקציה הרשמית'}
+              <ExternalLink size={11} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       <header className="flex justify-between items-center relative z-10">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
