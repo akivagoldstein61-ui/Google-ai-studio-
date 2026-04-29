@@ -8,6 +8,53 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/bd65b2e7-1010-405f-8e3a-13786c313892
 
+---
+
+## 🚀 Prototype (always-up-to-date `main` build)
+
+| | |
+|---|---|
+| **Stable prototype URL** | **<https://google-ai-studio-sage-sigma.vercel.app>** |
+| **Prototype info page** | <https://google-ai-studio-sage-sigma.vercel.app/prototype> |
+
+Every push to `main` automatically triggers a new Vercel production deployment.  
+The stable URL above always serves the latest `main` build — use it for demos, QA, and design reviews.
+
+### How it works
+
+1. **CI** (`.github/workflows/ci.yml`) — runs on every push to `main` and on every PR:
+   - TypeScript type-check (`tsc --noEmit`)
+   - Personality smoke tests
+   - `vite build` (injects `VITE_COMMIT_SHA` and `VITE_BUILD_TIME`)
+   - Uploads `dist/` as a build artifact
+2. **Deploy** (`.github/workflows/deploy.yml`) — runs on push to `main` only:
+   - Calls `vercel build --prod` then `vercel deploy --prebuilt --prod`
+   - Uses Vercel CLI authenticated via repository secrets
+
+### Required GitHub repository secrets
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Where to get it |
+|---|---|
+| `VERCEL_TOKEN` | Vercel dashboard → Account → Tokens |
+| `VERCEL_ORG_ID` | `vercel link` output or Project → Settings |
+| `VERCEL_PROJECT_ID` | `vercel link` output or Project → Settings |
+
+### Optional runtime environment variables (set in Vercel dashboard)
+
+| Variable | Required | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | Yes | Gemini API key from Google AI Studio |
+| `FIREBASE_PROJECT_ID` | Server only | Firebase project ID |
+| `FIREBASE_CLIENT_EMAIL` | Server only | Firebase service account email |
+| `FIREBASE_PRIVATE_KEY` | Server only | Firebase service account private key |
+| `APP_URL` | Server only | Canonical URL of the deployment |
+
+> **Never commit secrets to the repository.** Set them in Vercel's environment variable UI or as GitHub Actions secrets.
+
+---
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
@@ -49,9 +96,9 @@ To change the canonical (production) URL, update `CANONICAL_ORIGIN` at the top o
 
 ## Deployment options
 
-### Option 1 — Vercel (current setup)
+### Option 1 — Vercel (current setup, CI/CD enabled)
 
-The repository includes a `vercel.json` that configures the SPA rewrite rule and security headers. Simply connect the repository to a Vercel project and deploy.
+The repository includes a `vercel.json` that configures the SPA rewrite rule and security headers. The CI/CD workflows (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) handle automated builds and deployments on every push to `main`. See the [Prototype section](#-prototype-always-up-to-date-main-build) above for setup instructions.
 
 **Important:** only the **Production** deployment URL needs to be in Firebase's authorized domains list. All preview/branch URLs are automatically redirected to the production URL by the app.
 
