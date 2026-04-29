@@ -17,6 +17,7 @@ import { ProfileDetail } from './components/discovery/ProfileDetail';
 import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
+import { PrototypeScreen } from './features/prototype/PrototypeScreen';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -175,6 +176,9 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
+  if (typeof window !== 'undefined' && window.location.pathname === '/prototype') {
+    return <PrototypeScreen />;
+  }
   return (
     <AppProvider>
       <AppContent />
