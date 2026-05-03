@@ -212,7 +212,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               console.error('Error fetching data:', error);
             }
           } else {
-            setUser(null);
+            // New user: signed in via Firebase Auth but no Firestore profile yet.
+            // Seed a minimal profile so OnboardingFlow can render and save the full profile.
+            setUser({
+              id: firebaseUser.uid,
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName ?? '',
+              age: 0,
+              gender: 'male',
+              city: '',
+              photos: firebaseUser.photoURL ? [firebaseUser.photoURL] : [],
+              bio: '',
+              observance: 'secular',
+              intent: 'serious_relationship',
+              prompts: [],
+              isVerified: firebaseUser.emailVerified,
+              isPremium: false,
+              tags: [],
+            });
             setOnboarding(true);
           }
         } catch (error) {
