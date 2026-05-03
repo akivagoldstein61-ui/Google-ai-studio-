@@ -11,6 +11,8 @@ jobs:
   deploy:
     name: Deploy (Production)
     runs-on: ubuntu-latest
+    # Skip this job if Vercel secrets are not configured in the repository
+    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
     environment:
       name: production
       url: https://google-ai-studio-sage-sigma.vercel.app
