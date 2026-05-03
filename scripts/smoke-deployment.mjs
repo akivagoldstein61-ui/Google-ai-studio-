@@ -66,10 +66,10 @@ function assertNoSecrets(label, text) {
     checks.push('commit marker verified on /prototype');
   }
 
-  if (!/Demo mode/i.test(demo.text)) {
-    throw new Error('/demo?demo=1 did not render expected Demo mode banner text');
+  if (!/data-demo-mode="true"/i.test(demo.text)) {
+    throw new Error('/demo?demo=1 did not render expected demo mode marker');
   }
-  checks.push('demo mode banner verified');
+  checks.push('demo mode marker verified');
 
   assertNoSecrets('root page', root.text);
   assertNoSecrets('prototype page', prototype.text);

@@ -57,7 +57,10 @@ const AppContent: React.FC = () => {
   return (
     <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
       {isDemoMode && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[120] rounded-full bg-amber-100 border border-amber-300 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-900">
+        <div
+          data-demo-mode="true"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-[120] rounded-full bg-amber-100 border border-amber-300 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-900"
+        >
           Demo mode · Mock data only
         </div>
       )}

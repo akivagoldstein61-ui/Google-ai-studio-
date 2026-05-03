@@ -9,7 +9,6 @@ const DEPLOY_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/deploy.yml/badge.
 const env = import.meta.env;
 
 const COMMIT_SHA = env.VITE_VERCEL_GIT_COMMIT_SHA || env.VITE_COMMIT_SHA || '';
-const SHORT_SHA = COMMIT_SHA ? COMMIT_SHA.slice(0, 7) : '';
 const BRANCH = env.VITE_VERCEL_GIT_COMMIT_REF || env.VITE_GIT_BRANCH || 'unknown';
 const BUILD_TIME = env.VITE_BUILD_TIME || '';
 const DEPLOYMENT_URL = env.VITE_VERCEL_URL ? `https://${env.VITE_VERCEL_URL}` : 'unknown';
@@ -101,7 +100,7 @@ export const PrototypeScreen: React.FC = () => {
             This page confirms what commit and environment are currently running on the stable prototype URL.
           </p>
           <p className="text-xs font-mono text-[#2D2926]" data-testid="prototype-commit-marker">
-            Commit marker: {COMMIT_SHA || SHORT_SHA || 'unknown'}
+            Commit marker: {COMMIT_SHA || 'unknown'}
           </p>
         </section>
 

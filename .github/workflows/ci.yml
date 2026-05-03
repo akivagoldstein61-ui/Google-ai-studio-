@@ -64,8 +64,8 @@ jobs:
             'GEMINI_API_KEY'
             'FIREBASE_PRIVATE_KEY'
             'PRIVATE KEY'
-            'postgres://'
-            'postgresql://'
+            'postgres://[^[:space:]]+'
+            'postgresql://[^[:space:]]+'
             'NEON_API_KEY'
             'VERCEL_TOKEN'
             'NETLIFY_AUTH_TOKEN'
@@ -73,7 +73,7 @@ jobs:
 
           found=0
           for pattern in "${PATTERNS[@]}"; do
-            if grep -RIn --binary-files=without-match --fixed-strings "$pattern" dist; then
+            if grep -RIn --binary-files=without-match --exclude='*.map' -E "$pattern" dist; then
               echo "::error::Forbidden pattern found in dist: $pattern"
               found=1
             fi

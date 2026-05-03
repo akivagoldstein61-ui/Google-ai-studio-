@@ -45,7 +45,7 @@ export const shareCardService = {
         ownerUid: 'demo-user',
         recipientUid: 'demo-recipient',
         scope: ['summary'],
-        payload: { summary_he: 'דמו בלבד, ללא מידע רגיש.' },
+        payload: { summary_he: 'מצב הדגמה בלבד, ללא מידע רגיש.' },
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         revokedAt: null,
