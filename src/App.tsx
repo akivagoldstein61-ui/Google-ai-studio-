@@ -24,7 +24,7 @@ import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
 
 const AppContent: React.FC = () => {
-  const { user, isOnboarding, setUser, setOnboarding, likeProfile, passProfile } = useApp();
+  const { user, isOnboarding, setUser, setOnboarding, likeProfile, passProfile, isDemoMode } = useApp();
   const [activeTab, setActiveTab] = useState<'daily' | 'explore' | 'matches' | 'profile'>('daily');
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -56,6 +56,11 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
+      {isDemoMode && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[120] rounded-full bg-amber-100 border border-amber-300 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-900">
+          Demo mode · Mock data only
+        </div>
+      )}
       <AnimatePresence mode="wait">
         <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full relative overflow-hidden">
           {showSafety ? (
@@ -183,7 +188,7 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  if (typeof window !== 'undefined' && window.location.pathname === '/prototype') {
+  if (typeof window !== 'undefined' && (window.location.pathname === '/prototype' || window.location.pathname === '/status')) {
     return <PrototypeScreen />;
   }
   return (

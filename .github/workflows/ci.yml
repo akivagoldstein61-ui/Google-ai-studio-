@@ -19,23 +19,69 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
+          node-version: '22'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
       - name: TypeScript typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
-      - name: Smoke tests
-        run: node scripts/personality-smoke-tests.mjs
+      - name: Scan forbidden fields
+        run: npm run scan:forbidden-fields
+
+      - name: Scan logs
+        run: npm run scan:logs
+
+      - name: Personality smoke tests
+        run: npm run test
+
+      - name: Personality schema tests
+        run: npm run test:schemas
+
+      - name: Personality scoring tests
+        run: npm run test:scoring
+
+      - name: RTL tests
+        run: npm run test:rtl
 
       - name: Build
         run: npm run build
         env:
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}
+          VITE_GIT_BRANCH: ${{ github.ref_name }}
+          VITE_DEPLOY_ENV: ci
+
+      - name: Client bundle secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          PATTERNS=(
+            'DATABASE_URL'
+            'DIRECT_DATABASE_URL'
+            'GEMINI_API_KEY'
+            'FIREBASE_PRIVATE_KEY'
+            'PRIVATE KEY'
+            'postgres://'
+            'postgresql://'
+            'NEON_API_KEY'
+            'VERCEL_TOKEN'
+            'NETLIFY_AUTH_TOKEN'
+          )
+
+          found=0
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -RIn --binary-files=without-match --fixed-strings "$pattern" dist; then
+              echo "::error::Forbidden pattern found in dist: $pattern"
+              found=1
+            fi
+          done
+
+          if [ "$found" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

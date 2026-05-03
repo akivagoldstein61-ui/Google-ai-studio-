@@ -17,7 +17,8 @@
     "redteam:personality": "node scripts/redteam-personality.mjs",
     "test:rtl": "node scripts/test-rtl.mjs",
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
-    "scan:logs": "node scripts/scan-logs.mjs"
+    "scan:logs": "node scripts/scan-logs.mjs",
+    "smoke:deployment": "node scripts/smoke-deployment.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.46.0",
