@@ -9,6 +9,7 @@ import { InboxScreen } from './features/chat/InboxScreen';
 import { ChatThread } from './features/chat/ChatThread';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { PersonalityProfileScreen } from './features/settings/PersonalityProfileScreen';
+import { PersonalityVisibilitySettings } from './features/settings/PersonalityVisibilitySettings';
 import { AITrustHub } from './features/settings/AITrustHub';
 import { PrivateTasteProfile } from './features/settings/PrivateTasteProfile';
 import { AIOpsScreen } from './features/admin/AIOpsScreen';
@@ -31,6 +32,7 @@ const AppContent: React.FC = () => {
   const [showAITrust, setShowAITrust] = useState(false);
   const [showTasteProfile, setShowTasteProfile] = useState(false);
   const [showPersonalityProfile, setShowPersonalityProfile] = useState(false);
+  const [showPersonalityVisibility, setShowPersonalityVisibility] = useState(false);
   const [showAIOps, setShowAIOps] = useState(false);
   const [showExperiments, setShowExperiments] = useState(false);
   const [showMatch, setShowMatch] = useState<Profile | null>(null);
@@ -59,10 +61,13 @@ const AppContent: React.FC = () => {
           {showSafety ? (
             <SafetyCenter onBack={() => setShowSafety(false)} />
           ) : showAITrust ? (
-            <AITrustHub 
-              onBack={() => setShowAITrust(false)} 
+            <AITrustHub
+              onBack={() => setShowAITrust(false)}
               onShowTasteProfile={() => setShowTasteProfile(true)}
+              onShowPersonalityVisibility={() => setShowPersonalityVisibility(true)}
             />
+          ) : showPersonalityVisibility ? (
+            <PersonalityVisibilitySettings onBack={() => setShowPersonalityVisibility(false)} />
           ) : showTasteProfile ? (
             <PrivateTasteProfile onBack={() => setShowTasteProfile(false)} />
           ) : showPersonalityProfile ? (
@@ -102,6 +107,8 @@ const AppContent: React.FC = () => {
                         if (data.personalityScores) {
                           await setDoc(doc(db, `users/${user.uid}/private/personality`), {
                             scores: data.personalityScores,
+                            scoringVersion: data.personalityMeta?.scoringVersion ?? 'bfas-mvp-v1',
+                            completedAt: data.personalityMeta?.completedAt ?? new Date().toISOString(),
                             updatedAt: new Date().toISOString()
                           });
                         }

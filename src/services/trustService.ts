@@ -100,4 +100,34 @@ export const trustService = {
     if (!response.ok) throw new Error('Failed to delete personality data');
     return response.json();
   },
+
+  async exportPersonalityData(userId: string) {
+    const response = await fetch('/api/profile/personality/export', {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ userId }),
+    });
+    if (!response.ok) throw new Error('Failed to export personality data');
+    return response.json();
+  },
+
+  async getPersonalityVisibility(userId: string) {
+    const response = await fetch('/api/profile/personality/visibility', {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ userId }),
+    });
+    if (!response.ok) throw new Error('Failed to load personality visibility');
+    return response.json();
+  },
+
+  async updatePersonalityVisibility(userId: string, fields: Record<string, 'private' | 'public' | 'mutual'>) {
+    const response = await fetch('/api/profile/personality/visibility/update', {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ userId, fields }),
+    });
+    if (!response.ok) throw new Error('Failed to update personality visibility');
+    return response.json();
+  },
 };

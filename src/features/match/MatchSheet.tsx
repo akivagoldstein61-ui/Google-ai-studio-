@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/Button";
 import { aiService } from "@/services/aiService";
 import { useApp } from "@/context/AppContext";
 import { DatePlannerModal } from "./DatePlannerModal";
+import { CompatibilityReflectionPanel } from "./CompatibilityReflectionPanel";
+import { ShareCardModal } from "./ShareCardModal";
+import { Share2, Users } from "lucide-react";
 
 const SIGNAL_LABELS: Record<string, string> = {
   visible_values: "Shared values",
@@ -43,6 +46,8 @@ export const MatchSheet: React.FC<{
   const [matchExplanation, setMatchExplanation] = useState<any>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [showDatePlanner, setShowDatePlanner] = useState(false);
+  const [showReflectionPanel, setShowReflectionPanel] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
 
   useEffect(() => {
     const fetchExplanation = async () => {
@@ -250,6 +255,14 @@ export const MatchSheet: React.FC<{
         </div>
 
         <div className="space-y-4 pt-4">
+          {showReflectionPanel && user && (
+            <CompatibilityReflectionPanel
+              user={user}
+              candidate={profile}
+              bothOptedIn={true}
+            />
+          )}
+
           <Button
             onClick={onMessage}
             className="w-full h-16 text-lg font-bold rounded-[24px] bg-white text-[#2D2926] hover:bg-[#F7F2EE] shadow-xl shadow-black/20 transition-all active:scale-[0.98] gap-3"
@@ -263,6 +276,24 @@ export const MatchSheet: React.FC<{
           >
             <Calendar size={24} />
             Plan a Date
+          </Button>
+          {!showReflectionPanel && (
+            <Button
+              onClick={() => setShowReflectionPanel(true)}
+              variant="outline"
+              className="w-full h-14 text-base font-bold rounded-[24px] border-white/20 bg-white/5 text-white hover:bg-white/10 transition-all gap-3"
+            >
+              <Users size={20} />
+              Reflect together
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowShareCard(true)}
+            variant="outline"
+            className="w-full h-14 text-base font-bold rounded-[24px] border-white/20 bg-white/5 text-white hover:bg-white/10 transition-all gap-3"
+          >
+            <Share2 size={20} />
+            Share a personality card
           </Button>
           <Button
             variant="ghost"
@@ -280,6 +311,17 @@ export const MatchSheet: React.FC<{
           <DatePlannerModal
             onClose={() => setShowDatePlanner(false)}
             partnerName={profile.displayName}
+          />
+        )}
+        {showShareCard && (
+          <ShareCardModal
+            candidate={profile}
+            payload={{
+              summary_he: matchExplanation?.uncertainty_he,
+              strengths_he: matchExplanation?.reasons_he,
+              communication_notes_he: matchExplanation?.gentle_clarification_he,
+            }}
+            onClose={() => setShowShareCard(false)}
           />
         )}
       </AnimatePresence>

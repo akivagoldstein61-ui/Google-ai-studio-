@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { aiRouter } from "./server/aiRoutes.ts";
 import trustRoutes from "./server/trustRoutes.ts";
+import shareRoutes from "./server/shareRoutes.ts";
 
 async function startServer() {
   const app = express();
@@ -27,6 +28,9 @@ async function startServer() {
   app.use("/api/profile", trustRoutes);
   app.use("/api/account", trustRoutes);
   app.use("/api/support", trustRoutes);
+
+  // Permissioned share-card Routes
+  app.use("/api/share", shareRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

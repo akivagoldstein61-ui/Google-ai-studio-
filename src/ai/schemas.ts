@@ -640,3 +640,58 @@ export const PacingInterventionSchema = {
   },
   required: ["message_he", "reflection_prompt_he"],
 };
+
+export const SHARE_CARD_SCOPES = [
+  "summary",
+  "strengths",
+  "watch_outs",
+  "communication_notes",
+  "compatibility_reflection",
+] as const;
+
+export type ShareCardScope = (typeof SHARE_CARD_SCOPES)[number];
+
+export interface ShareCardRecord {
+  cardId: string;
+  ownerUid: string;
+  recipientUid: string;
+  scope: ShareCardScope[];
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+  lastViewedAt: string | null;
+  payload: {
+    summary_he?: string;
+    strengths_he?: string[];
+    watch_outs_he?: string[];
+    communication_notes_he?: string;
+    compatibility_reflection_he?: string;
+  };
+}
+
+export const PERSONALITY_VISIBILITY_FIELDS = [
+  "trait_summary",
+  "strengths",
+  "watch_outs",
+  "communication_notes",
+] as const;
+
+export type PersonalityVisibilityField =
+  (typeof PERSONALITY_VISIBILITY_FIELDS)[number];
+
+export type PersonalityVisibilityScope = "private" | "public" | "mutual";
+
+export interface PersonalityVisibilityRecord {
+  fields: Record<PersonalityVisibilityField, PersonalityVisibilityScope>;
+  updatedAt: string;
+}
+
+export const DEFAULT_PERSONALITY_VISIBILITY: PersonalityVisibilityRecord = {
+  fields: {
+    trait_summary: "private",
+    strengths: "private",
+    watch_outs: "private",
+    communication_notes: "private",
+  },
+  updatedAt: new Date(0).toISOString(),
+};

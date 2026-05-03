@@ -170,11 +170,19 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
         <section className="space-y-4 pt-8 border-t border-[#F3EFEA]" dir="ltr">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2 text-center">Privacy & Data Controls</h4>
           <div className="space-y-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full h-14 border-[#F3EFEA] text-[#2D2926] font-bold rounded-full flex items-center justify-center gap-2"
-              onClick={() => {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(profile, null, 2));
+              onClick={async () => {
+                if (!user) return;
+                let exportPayload: any;
+                try {
+                  exportPayload = await trustService.exportPersonalityData(user.uid);
+                } catch (error) {
+                  console.error('export via trustService failed, falling back to local profile', error);
+                  exportPayload = { profile, exportedAt: new Date().toISOString() };
+                }
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
                 const downloadAnchorNode = document.createElement('a');
                 downloadAnchorNode.setAttribute("href", dataStr);
                 downloadAnchorNode.setAttribute("download", "kesher_personality_data.json");
