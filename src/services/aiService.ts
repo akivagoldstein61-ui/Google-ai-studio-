@@ -13,7 +13,7 @@ import {
 } from "@/ai/schemas";
 
 import { auth } from "@/firebase";
-
+import { isPrototypeDemoMode } from "@/lib/prototypeMode";
 
 const getHeaders = async () => {
   const headers: Record<string, string> = {
@@ -28,6 +28,9 @@ const getHeaders = async () => {
 
 
 const safeApiFetch = async (url: string, bodyObj: any) => {
+  if (isPrototypeDemoMode()) {
+    throw new Error("DEMO_MODE_API_DISABLED");
+  }
   const response = await fetch(url, {
     method: "POST",
     headers: await getHeaders(),
@@ -176,9 +179,16 @@ export const aiService = {
     }
   },
 
-  async getCompatibilityReflection(userA: any, userB: any) {
+  async getCompatibilityReflection(
+    sharedInputs: any,
+    consent: { mutualConsent: boolean; bothOptedIn: boolean },
+  ) {
     try {
-      return await safeApiFetch("/api/ai/compatibility-reflection", { userA, userB });
+      return await safeApiFetch("/api/ai/compatibility-reflection", {
+        sharedInputs,
+        mutualConsent: consent.mutualConsent,
+        bothOptedIn: consent.bothOptedIn,
+      });
     } catch (e: any) {
       if (e?.message !== "INVALID_JSON_RESPONSE") {
         console.error("Compatibility reflection API call failed", e);

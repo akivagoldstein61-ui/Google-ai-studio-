@@ -14,6 +14,28 @@ import { Button } from "@/components/ui/Button";
 import { aiService } from "@/services/aiService";
 import { useApp } from "@/context/AppContext";
 import { DatePlannerModal } from "./DatePlannerModal";
+import { CompatibilityReflectionPanel } from "./CompatibilityReflectionPanel";
+import { ShareCardModal } from "./ShareCardModal";
+import { Share2, Users } from "lucide-react";
+
+const SIGNAL_LABELS: Record<string, string> = {
+  visible_values: "Shared values",
+  visible_intent: "Visible intent",
+  visible_observance: "Visible observance",
+  visible_lifestyle: "Visible lifestyle",
+  visible_interests: "Visible interests",
+  visible_prompts: "Profile prompts",
+  self_declared_profile_fields: "Public profile fields",
+  private_taste_profile: "Private taste",
+  hidden_dealbreakers: "Hidden dealbreakers",
+  hidden_ranking_signals: "Hidden ranking",
+  raw_personality_scores: "Raw personality scores",
+  private_messages: "Private messages",
+  exact_location: "Exact location",
+  protected_trait_inference: "Sensitive inferences",
+};
+
+const labelSignal = (signal: string) => SIGNAL_LABELS[signal] || signal;
 
 export const MatchSheet: React.FC<{
   profile: Profile;
@@ -24,6 +46,8 @@ export const MatchSheet: React.FC<{
   const [matchExplanation, setMatchExplanation] = useState<any>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [showDatePlanner, setShowDatePlanner] = useState(false);
+  const [showReflectionPanel, setShowReflectionPanel] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
 
   useEffect(() => {
     const fetchExplanation = async () => {
@@ -37,6 +61,7 @@ export const MatchSheet: React.FC<{
             observance: user.observance,
             intent: user.intent,
             tags: user.tags,
+            prompts: user.prompts,
           },
           candidate_profile: {
             age: profile.age,
@@ -44,8 +69,15 @@ export const MatchSheet: React.FC<{
             observance: profile.observance,
             intent: profile.intent,
             tags: profile.tags,
+            prompts: profile.prompts,
           },
-          signals: ["Shared values", "Similar observance level", "Proximity"],
+          signals: [
+            "visible_values",
+            "visible_intent",
+            "visible_observance",
+            "visible_interests",
+            "visible_prompts",
+          ],
         });
         setMatchExplanation(explanation);
       } catch (error) {
@@ -161,17 +193,76 @@ export const MatchSheet: React.FC<{
                   </p>
                 </div>
               )}
+
+              {matchExplanation.uncertainty_he && (
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                    Note
+                  </p>
+                  <p className="text-xs text-white/60 italic leading-relaxed">
+                    {matchExplanation.uncertainty_he}
+                  </p>
+                </div>
+              )}
+
+              {(matchExplanation.signals_used?.length > 0 ||
+                matchExplanation.signals_not_used?.length > 0) && (
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  {matchExplanation.signals_used?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        Used
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {matchExplanation.signals_used.map((signal: string) => (
+                          <span
+                            key={signal}
+                            className="px-2 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/25 text-[10px] font-bold text-[#D4AF37]"
+                          >
+                            {labelSignal(signal)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {matchExplanation.signals_not_used?.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                        Not Used
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {matchExplanation.signals_not_used.map((signal: string) => (
+                          <span
+                            key={signal}
+                            className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/55"
+                          >
+                            {labelSignal(signal)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-white/80 leading-relaxed italic font-serif text-center">
               "You both prioritize {profile.tags?.[0]?.toLowerCase() || 'similar values'} and have
-              verified your identities. A great foundation for a first
-              conversation."
+              visible profile details that can be a useful start for a first
+              conversation. Private taste and hidden ranking signals are not used here."
             </p>
           )}
         </div>
 
         <div className="space-y-4 pt-4">
+          {showReflectionPanel && user && (
+            <CompatibilityReflectionPanel
+              user={user}
+              candidate={profile}
+              bothOptedIn={true}
+            />
+          )}
+
           <Button
             onClick={onMessage}
             className="w-full h-16 text-lg font-bold rounded-[24px] bg-white text-[#2D2926] hover:bg-[#F7F2EE] shadow-xl shadow-black/20 transition-all active:scale-[0.98] gap-3"
@@ -185,6 +276,24 @@ export const MatchSheet: React.FC<{
           >
             <Calendar size={24} />
             Plan a Date
+          </Button>
+          {!showReflectionPanel && (
+            <Button
+              onClick={() => setShowReflectionPanel(true)}
+              variant="outline"
+              className="w-full h-14 text-base font-bold rounded-[24px] border-white/20 bg-white/5 text-white hover:bg-white/10 transition-all gap-3"
+            >
+              <Users size={20} />
+              Reflect together
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowShareCard(true)}
+            variant="outline"
+            className="w-full h-14 text-base font-bold rounded-[24px] border-white/20 bg-white/5 text-white hover:bg-white/10 transition-all gap-3"
+          >
+            <Share2 size={20} />
+            Share a personality card
           </Button>
           <Button
             variant="ghost"
@@ -202,6 +311,17 @@ export const MatchSheet: React.FC<{
           <DatePlannerModal
             onClose={() => setShowDatePlanner(false)}
             partnerName={profile.displayName}
+          />
+        )}
+        {showShareCard && (
+          <ShareCardModal
+            candidate={profile}
+            payload={{
+              summary_he: matchExplanation?.uncertainty_he,
+              strengths_he: matchExplanation?.reasons_he,
+              communication_notes_he: matchExplanation?.gentle_clarification_he,
+            }}
+            onClose={() => setShowShareCard(false)}
           />
         )}
       </AnimatePresence>

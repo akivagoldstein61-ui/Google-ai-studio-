@@ -1,4 +1,5 @@
 import { auth } from '@/firebase';
+import { isPrototypeDemoMode } from '@/lib/prototypeMode';
 
 const getHeaders = async () => {
   const headers: Record<string, string> = {
@@ -7,7 +8,6 @@ const getHeaders = async () => {
   if (auth.currentUser) {
     const token = await auth.currentUser.getIdToken();
     headers['Authorization'] = `Bearer ${token}`;
-
   }
   return headers;
 };
@@ -23,6 +23,10 @@ export const aiDatePlannerService = {
     constraints: string; 
   }) {
     try {
+      if (isPrototypeDemoMode()) {
+        return { venues: [], how_to_choose_tip: 'Demo mode: date planner is mocked and does not call the API.' };
+      }
+
       const response = await fetch('/api/ai/plan-date', {
         method: 'POST',
         headers: await getHeaders(),

@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/Button';
 import { Brain, ChevronRight, Check, AlertCircle } from 'lucide-react';
 
+// Versioned questionnaire — bump SCORING_VERSION when items, reverse-keys, or aggregation change.
+export const SCORING_VERSION = 'bfas-mvp-v1';
+
 // Using public domain IPIP items for a short-form Big Five + 10 Aspects assessment.
 const QUESTIONS = [
   // Extraversion
@@ -40,7 +43,13 @@ const OPTIONS = [
   { value: 5, label: 'Strongly Agree' },
 ];
 
-export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<string, number>) => void }> = ({ onComplete }) => {
+export interface PersonalityAssessmentResult {
+  scores: Record<string, number>;
+  scoringVersion: string;
+  completedAt: string;
+}
+
+export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<string, number>, meta?: PersonalityAssessmentResult) => void }> = ({ onComplete }) => {
   const [hasStarted, setHasStarted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -77,7 +86,7 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
       }
     });
 
-    // Convert to 0-100 percentile approximation
+    // Convert to 0-100 approximate display value (NOT a validated percentile — see SKILL contract).
     const finalScores: Record<string, number> = {};
     Object.keys(scores).forEach(key => {
       const avg = scores[key] / counts[key];
@@ -85,7 +94,11 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
       finalScores[key] = Math.round(((avg - 1) / 4) * 100);
     });
 
-    onComplete(finalScores);
+    onComplete(finalScores, {
+      scores: finalScores,
+      scoringVersion: SCORING_VERSION,
+      completedAt: new Date().toISOString(),
+    });
   };
 
   if (!hasStarted) {

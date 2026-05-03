@@ -21,7 +21,10 @@ import {
   PhotoAnalysisSchema,
 } from "../src/ai/schemas.ts";
 import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
-import { outputValidators } from "../src/ai/outputValidators.ts";
+import {
+  outputValidators,
+  sanitizeWhyMatchSignals,
+} from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
 
 export const aiRouter = express.Router();
@@ -36,6 +39,38 @@ const getAI = () => {
   
   return new GoogleGenAI({ apiKey });
 };
+
+const toStringArray = (value: unknown) =>
+  Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+
+const pickVisibleMatchProfile = (profile: any) => ({
+  age: typeof profile?.age === "number" ? profile.age : undefined,
+  city: typeof profile?.city === "string" ? profile.city : undefined,
+  observance: typeof profile?.observance === "string" ? profile.observance : undefined,
+  intent: typeof profile?.intent === "string" ? profile.intent : undefined,
+  tags: toStringArray(profile?.tags).slice(0, 12),
+  prompts: Array.isArray(profile?.prompts)
+    ? profile.prompts.slice(0, 4).map((prompt: any) => ({
+        question: typeof prompt?.question === "string" ? prompt.question : undefined,
+        answer: typeof prompt?.answer === "string" ? prompt.answer : undefined,
+      }))
+    : [],
+});
+
+const pickSharedCompatibilityInputs = (sharedInputs: any) => ({
+  values: toStringArray(sharedInputs?.values).slice(0, 8),
+  intent: typeof sharedInputs?.intent === "string" ? sharedInputs.intent : undefined,
+  observance: typeof sharedInputs?.observance === "string" ? sharedInputs.observance : undefined,
+  lifestyle: toStringArray(sharedInputs?.lifestyle).slice(0, 8),
+  interests: toStringArray(sharedInputs?.interests).slice(0, 12),
+  prompts: Array.isArray(sharedInputs?.prompts)
+    ? sharedInputs.prompts.slice(0, 6).map((prompt: any) => ({
+        question: typeof prompt?.question === "string" ? prompt.question : undefined,
+        answer: typeof prompt?.answer === "string" ? prompt.answer : undefined,
+      }))
+    : [],
+  approvedShareCard: typeof sharedInputs?.approvedShareCard === "string" ? sharedInputs.approvedShareCard : undefined,
+});
 
 // Rate limiting middleware
 export const apiLimiter = rateLimit({
@@ -398,11 +433,19 @@ aiRouter.post("/explain-match", async (req, res) => {
   res.locals.ai_metadata.prompt_version = "v1.0";
   try {
     const { params } = req.body;
+    if (!params) {
+      return res.status(400).json({ error: "Missing params" });
+    }
+    const safeParams = {
+      user_profile: pickVisibleMatchProfile(params.user_profile),
+      candidate_profile: pickVisibleMatchProfile(params.candidate_profile),
+      signals: sanitizeWhyMatchSignals(params.signals),
+    };
 
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: capabilityRouter.getRoute("why_match"),
-      contents: PROMPT_TEMPLATES.WHY_MATCH(params),
+      contents: PROMPT_TEMPLATES.WHY_MATCH(safeParams),
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
         responseMimeType: "application/json",
@@ -573,12 +616,22 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
   res.locals.ai_metadata.feature_id = "compatibility_reflection";
   res.locals.ai_metadata.prompt_version = "v1.0";
   try {
-    const { userA, userB } = req.body;
+    const { sharedInputs, mutualConsent, bothOptedIn } = req.body;
+
+    if (mutualConsent !== true || bothOptedIn !== true) {
+      return res.status(403).json({ error: "MUTUAL_CONSENT_REQUIRED" });
+    }
+
+    if (!sharedInputs) {
+      return res.status(400).json({ error: "Missing sharedInputs" });
+    }
 
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: capabilityRouter.getRoute("compatibility_reflection"),
-      contents: PROMPT_TEMPLATES.COMPATIBILITY_REFLECTION(userA, userB),
+      contents: PROMPT_TEMPLATES.COMPATIBILITY_REFLECTION(
+        pickSharedCompatibilityInputs(sharedInputs),
+      ),
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.COMPATIBILITY_REFLECTION,
         responseMimeType: "application/json",

@@ -9,7 +9,7 @@ import { db, auth } from '@/firebase';
 
 import { useApp } from '@/context/AppContext';
 
-export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void }> = ({ onBack, onShowTasteProfile }) => {
+export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void, onShowPersonalityVisibility?: () => void }> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility }) => {
   const { resetTasteProfile, user } = useApp();
   const [enabledFeatures, setEnabledFeatures] = useState<string[]>(
     AI_FEATURE_REGISTRY.filter(f => f.default_enabled).map(f => f.id)
@@ -162,7 +162,7 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
         <section className="space-y-6">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">Data & Privacy</h4>
           <div className="bg-white border border-[#F3EFEA] rounded-[32px] overflow-hidden shadow-sm">
-            <button 
+            <button
               onClick={() => onShowTasteProfile && onShowTasteProfile()}
               className="w-full p-6 flex items-center justify-between hover:bg-[#F7F2EE] transition-all border-b border-[#F3EFEA]"
             >
@@ -173,6 +173,20 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
                 <div className="space-y-0.5">
                   <span className="font-bold text-sm text-[#2D2926]">Manage Private Taste Profile</span>
                   <p className="text-[10px] text-[#8C7E6E] italic">View, edit, or reset your AI preferences</p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => onShowPersonalityVisibility && onShowPersonalityVisibility()}
+              className="w-full p-6 flex items-center justify-between hover:bg-[#F7F2EE] transition-all border-b border-[#F3EFEA]"
+            >
+              <div className="flex items-center gap-4 text-left">
+                <div className="w-10 h-10 bg-[#F7F2EE] rounded-full flex items-center justify-center text-[#2D2926]">
+                  <Eye size={18} />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-sm text-[#2D2926]">Personality Visibility</span>
+                  <p className="text-[10px] text-[#8C7E6E] italic">Choose what stays private, mutual-consent, or public</p>
                 </div>
               </div>
             </button>
