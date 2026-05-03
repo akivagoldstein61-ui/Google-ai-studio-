@@ -24,9 +24,6 @@ async function startServer() {
   // AI Routes — rate-limited and authenticated
   app.use("/api/ai", apiLimiter, authMiddleware, aiRouter);
 
-  // AI Routes
-  app.use("/api/ai", aiRouter);
-  
   // Trust & Safety Routes
   app.use("/api/safety", trustRoutes);
   app.use("/api/profile", trustRoutes);
