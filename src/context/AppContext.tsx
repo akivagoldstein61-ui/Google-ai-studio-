@@ -213,18 +213,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           } else {
             // New user: signed in via Firebase Auth but no Firestore profile yet.
-            // Seed a minimal profile so OnboardingFlow can render and save the full profile.
+            // Seed a minimal profile so OnboardingFlow can render and use user.uid
+            // to save the completed profile. The user cannot access discovery or
+            // matching screens while isOnboarding is true, so these placeholder
+            // values are never used for matching or personality scoring — they will
+            // be replaced by the values the user explicitly provides during onboarding.
             setUser({
               id: firebaseUser.uid,
               uid: firebaseUser.uid,
               displayName: firebaseUser.displayName ?? '',
-              age: 0,
-              gender: 'male',
-              city: '',
+              age: 0,           // placeholder – collected in onboarding step 4
+              gender: 'male',   // placeholder – collected in onboarding step 2
+              city: '',         // placeholder – collected in onboarding step 4
               photos: firebaseUser.photoURL ? [firebaseUser.photoURL] : [],
               bio: '',
-              observance: 'secular',
-              intent: 'serious_relationship',
+              observance: 'secular',             // placeholder – collected in onboarding step 3
+              intent: 'serious_relationship',    // placeholder – collected in onboarding step 1
               prompts: [],
               isVerified: firebaseUser.emailVerified,
               isPremium: false,
