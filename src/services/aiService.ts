@@ -13,6 +13,7 @@ import {
 } from "@/ai/schemas";
 
 import { auth } from "@/firebase";
+import { isPrototypeDemoMode } from "@/lib/prototypeMode";
 
 const getHeaders = async () => {
   const headers: Record<string, string> = {
@@ -27,6 +28,9 @@ const getHeaders = async () => {
 
 
 const safeApiFetch = async (url: string, bodyObj: any) => {
+  if (isPrototypeDemoMode()) {
+    throw new Error("DEMO_MODE_API_DISABLED");
+  }
   const response = await fetch(url, {
     method: "POST",
     headers: await getHeaders(),
