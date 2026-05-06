@@ -1,0 +1,49 @@
+# CODEOWNERS
+#
+# Kesher Personality Dimension – Governance Owners
+#
+# These owners are automatically requested for review on any PR
+# that modifies the paths listed below.
+#
+# Teams must be created in the GitHub organization before these rules
+# take effect. Placeholder team names are prefixed with @org/ — replace
+# "org" with the actual GitHub organization name.
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ── Global fallback ──────────────────────────────────────────────────────────
+*                               @org/engineering-reviewers
+
+# ── Personality Dimension – AI / prompts / schemas ───────────────────────────
+src/ai/**                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+src/ai/schemas.ts               @org/privacy-reviewers @org/psychometric-reviewers @org/engineering-reviewers
+src/ai/policies.ts              @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+src/ai/prompts.ts               @org/safety-reviewers @org/engineering-reviewers
+
+# ── Personality Dimension – features ─────────────────────────────────────────
+src/features/personality/**     @org/privacy-reviewers @org/psychometric-reviewers @org/safety-reviewers @org/engineering-reviewers
+
+# ── Settings – trust, privacy profile ────────────────────────────────────────
+src/features/settings/**        @org/privacy-reviewers @org/engineering-reviewers
+
+# ── Discovery – daily picks, profile detail ──────────────────────────────────
+src/features/discovery/**       @org/privacy-reviewers @org/engineering-reviewers
+src/components/discovery/**     @org/privacy-reviewers @org/engineering-reviewers
+
+# ── Types (may encode data shapes) ───────────────────────────────────────────
+src/types/**                    @org/privacy-reviewers @org/engineering-reviewers
+
+# ── Server routes ────────────────────────────────────────────────────────────
+server/**                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+server.ts                       @org/privacy-reviewers @org/safety-reviewers @org/engineering-reviewers
+
+# ── Governance docs ───────────────────────────────────────────────────────────
+docs/personality/**             @org/privacy-reviewers @org/psychometric-reviewers @org/safety-reviewers @org/engineering-reviewers
+
+# ── CI / Governance scripts ───────────────────────────────────────────────────
+scripts/**                      @org/engineering-reviewers @org/safety-reviewers
+.github/**                      @org/engineering-reviewers @org/privacy-reviewers
+
+# ── Localization ──────────────────────────────────────────────────────────────
+src/i18n/**                     @org/l10n-reviewers @org/engineering-reviewers
+public/locales/**               @org/l10n-reviewers

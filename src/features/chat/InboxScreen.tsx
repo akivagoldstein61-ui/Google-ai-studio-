@@ -41,9 +41,9 @@ export const InboxScreen: React.FC<{ onSelect: (conv: Conversation) => void }> =
               >
                 <div className="relative shrink-0">
                   <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#F7F2EE] group-hover:border-[#D4AF37]/30 transition-all">
-                    <img src={conv.participants[0].photos[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={conv.participants?.[0]?.photos?.[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
-                  {conv.participants[0].isVerified && (
+                  {conv.participants?.[0]?.isVerified && (
                     <div className="absolute -bottom-1 -right-1 bg-[#D4AF37] text-white p-1 rounded-full border-2 border-white">
                       <ShieldCheck size={10} />
                     </div>
@@ -52,7 +52,7 @@ export const InboxScreen: React.FC<{ onSelect: (conv: Conversation) => void }> =
 
                 <div className="flex-1 text-left space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-[#2D2926]">{conv.participants[0].displayName}</span>
+                    <span className="font-bold text-[#2D2926]">{conv.participants?.[0]?.displayName}</span>
                     <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">
                       {conv.lastMessage ? new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                     </span>

@@ -1,118 +1,83 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
-import { Shield, Heart, Globe, Loader2, ArrowLeft, Phone, Mail } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  ConfirmationResult,
-} from 'firebase/auth';
+import { Shield, Heart, Globe, Sparkles, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { motion } from 'motion/react';
 import { auth } from '@/firebase';
-
-type AuthStep = 'welcome' | 'phone' | 'otp' | 'email';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import {
+  getPrototypeDemoUrl,
+  isCurrentDomainFirebaseAuthorized,
+  redirectToCanonical,
+} from '@/lib/prototypeMode';
 
 export const WelcomeScreen: React.FC = () => {
   const { language, setLanguage } = useApp();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [domainWarning, setDomainWarning] = useState(false);
 
-  const [step, setStep] = useState<AuthStep>('welcome');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
-  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // Clean up recaptcha on unmount
   useEffect(() => {
-    return () => {
-      if (recaptchaRef.current) {
-        recaptchaRef.current.clear();
-        recaptchaRef.current = null;
-      }
-    };
+    if (!isCurrentDomainFirebaseAuthorized()) {
+      setDomainWarning(true);
+    }
   }, []);
 
-  const handlePhoneSubmit = async () => {
-    if (!phone.trim()) return;
-    setLoading(true);
-    setError('');
-
-    try {
-      // Create invisible recaptcha verifier
-      if (!recaptchaRef.current && recaptchaContainerRef.current) {
-        recaptchaRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-          size: 'invisible',
-        });
-      }
-
-      const confirmation = await signInWithPhoneNumber(auth, phone, recaptchaRef.current!);
-      confirmationRef.current = confirmation;
-      setStep('otp');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code. Please try again.');
-    } finally {
-      setLoading(false);
+  const handleSignIn = async () => {
+    if (!isCurrentDomainFirebaseAuthorized()) {
+      redirectToCanonical();
+      return;
     }
-  };
 
-  const handleOtpSubmit = async () => {
-    if (!otp.trim() || !confirmationRef.current) return;
-    setLoading(true);
-    setError('');
-
+    setIsSigningIn(true);
+    setSignInError(null);
     try {
-      await confirmationRef.current.confirm(otp);
-      // onAuthStateChanged in AppContext handles the rest
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code. Please try again.');
-      setLoading(false);
-    }
-  };
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      const code: string = error?.code ?? 'unknown';
+      console.error('Sign in failed', code, error);
 
-  const handleEmailSubmit = async () => {
-    if (!email.trim() || !password.trim()) return;
-    setLoading(true);
-    setError('');
-
-    try {
-      // Try sign-in first, fall back to sign-up for new users
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (signInErr: any) {
-      if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-        } catch (signUpErr: any) {
-          setError(signUpErr.message || 'Failed to create account. Please try again.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        setError(signInErr.message || 'Sign-in failed. Please try again.');
-        setLoading(false);
+      if (code === 'auth/unauthorized-domain') {
+        redirectToCanonical();
         return;
       }
+
+      let message =
+        language === 'en'
+          ? 'Sign in failed. Please try again.'
+          : 'ההתחברות נכשלה. אנא נסה שנית.';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        message =
+          language === 'en'
+            ? 'Sign in was cancelled. Please try again.'
+            : 'ההתחברות בוטלה. אנא נסה שנית.';
+      } else if (code === 'auth/network-request-failed') {
+        message =
+          language === 'en'
+            ? 'Network error. Please check your connection and try again.'
+            : 'שגיאת רשת. אנא בדוק את החיבור שלך ונסה שנית.';
+      }
+      setSignInError(message);
+      setIsSigningIn(false);
     }
-    // onAuthStateChanged in AppContext handles the rest
+  };
+
+  const handleDemoMode = () => {
+    if (typeof window === 'undefined') return;
+    const localDemoUrl = new URL('/demo', window.location.origin);
+    localDemoUrl.searchParams.set('demo', '1');
+    window.location.assign(localDemoUrl.toString());
   };
 
   return (
     <div className="flex flex-col min-h-screen px-8 py-14 justify-between bg-[#FDFCFB] overflow-hidden relative">
-      {/* Invisible recaptcha container */}
-      <div ref={recaptchaContainerRef} />
-
-      {/* Background Elements */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-0 w-full h-[60%] bg-gradient-to-b from-[#F7F2EE] to-transparent" />
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 0.15 }}
-          transition={{ duration: 3, ease: "easeOut" }}
+          transition={{ duration: 3, ease: 'easeOut' }}
           className="absolute inset-0"
         >
           <img
@@ -124,24 +89,53 @@ export const WelcomeScreen: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-full h-[40%] bg-gradient-to-t from-[#FDFCFB] to-transparent" />
       </div>
 
+      {domainWarning && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 mb-4 flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800"
+          role="alert"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <p className="font-semibold leading-snug">
+              {language === 'en'
+                ? 'Sign-in not available on this URL'
+                : 'ההתחברות אינה זמינה בכתובת זו'}
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700 leading-relaxed">
+              {language === 'en'
+                ? 'This preview URL is not authorized for Firebase Authentication. Open the official app or continue in demo mode.'
+                : 'כתובת תצוגה מקדימה זו אינה מורשית ל-Firebase Authentication. פתח את האפליקציה הרשמית או המשך במצב דמו.'}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <button
+                onClick={redirectToCanonical}
+                className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 underline underline-offset-2 hover:text-amber-700"
+              >
+                {language === 'en' ? 'Open official app' : 'פתח את האפליקציה הרשמית'}
+                <ExternalLink size={11} />
+              </button>
+              <button
+                onClick={handleDemoMode}
+                className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 underline underline-offset-2 hover:text-amber-700"
+              >
+                {language === 'en' ? 'View prototype demo' : 'צפה בדמו של הפרוטוטייפ'}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <header className="flex justify-between items-center relative z-10">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-3"
         >
-          {step !== 'welcome' ? (
-            <button
-              onClick={() => { setStep('welcome'); setError(''); }}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F7F2EE] transition-all"
-            >
-              <ArrowLeft size={20} className="text-[#2D2926]" />
-            </button>
-          ) : (
-            <div className="w-10 h-10 bg-[#2D2926] rounded-[14px] flex items-center justify-center shadow-lg shadow-black/10">
-              <Heart className="text-[#D4AF37]" size={20} fill="currentColor" />
-            </div>
-          )}
+          <div className="w-10 h-10 bg-[#2D2926] rounded-[14px] flex items-center justify-center shadow-lg shadow-black/10">
+            <Heart className="text-[#D4AF37]" size={20} fill="currentColor" />
+          </div>
           <h1 className="text-2xl font-bold tracking-tighter text-[#2D2926]">KESHER</h1>
         </motion.div>
 
@@ -162,196 +156,87 @@ export const WelcomeScreen: React.FC = () => {
       </header>
 
       <main className="space-y-16 relative z-10">
-        <AnimatePresence mode="wait">
-          {step === 'welcome' && (
-            <motion.div
-              key="welcome"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-8"
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-8"
+        >
+          <div className="space-y-2">
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-[11px] font-bold uppercase tracking-[0.4em] text-[#D4AF37]"
             >
-              <div className="space-y-2">
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-[11px] font-bold uppercase tracking-[0.4em] text-[#D4AF37]"
-                >
-                  {language === 'en' ? 'Welcome to Kesher' : 'ברוכים הבאים לקשר'}
-                </motion.span>
-                <h2 className="text-[72px] font-serif italic leading-[0.85] tracking-tight text-[#2D2926]">
-                  {language === 'en' ? 'Dating with intent.' : 'היכרויות עם כוונה.'}
-                </h2>
-              </div>
-              <div className="h-px w-16 bg-[#2D2926] opacity-10" />
-              <p className="text-xl text-[#8C7E6E] leading-relaxed max-w-[320px] font-medium italic">
-                {language === 'en'
-                  ? 'A refined space for serious Jewish singles in Israel.'
-                  : 'מרחב מעודן לרווקים ורווקות יהודים בישראל.'}
-              </p>
-            </motion.div>
-          )}
+              {language === 'en' ? 'Welcome to Kesher' : 'ברוכים הבאים לקשר'}
+            </motion.span>
+            <h2 className="text-[72px] font-serif italic leading-[0.85] tracking-tight text-[#2D2926]">
+              {language === 'en' ? 'Dating with intent.' : 'היכרויות עם כוונה.'}
+            </h2>
+          </div>
+          <div className="h-px w-16 bg-[#2D2926] opacity-10" />
+          <div className="space-y-4">
+            <p className="text-xl text-[#8C7E6E] leading-relaxed max-w-[320px] font-medium italic">
+              {language === 'en'
+                ? 'A refined space for serious Jewish singles in Israel.'
+                : 'מרחב מעודן לרווקים ורווקות יהודים בישראל.'}
+            </p>
+            <p className="text-sm text-[#8C7E6E] leading-relaxed max-w-[320px]">
+              {language === 'en'
+                ? 'Fewer, more intentional introductions. Guided by your private taste profile.'
+                : 'פחות היכרויות, יותר כוונה. מודרך על ידי פרופיל הטעם הפרטי שלך.'}
+            </p>
+          </div>
+        </motion.div>
 
-          {step === 'phone' && (
-            <motion.div
-              key="phone"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="space-y-8"
-            >
-              <div className="space-y-4">
-                <div className="w-14 h-14 bg-[#F7F2EE] text-[#D4AF37] rounded-[24px] flex items-center justify-center shadow-sm">
-                  <Phone size={28} />
-                </div>
-                <h2 className="text-3xl font-serif italic tracking-tight text-[#2D2926]">
-                  {language === 'en' ? 'Enter your phone number' : 'הזינו מספר טלפון'}
-                </h2>
-                <p className="text-[#8C7E6E] leading-relaxed italic">
-                  {language === 'en' ? "We'll send you a verification code." : 'נשלח לך קוד אימות.'}
-                </p>
-              </div>
-              <div className="space-y-4">
-                <input
-                  type="tel"
-                  placeholder="+972 50 000 0000"
-                  value={phone}
-                  onChange={(e) => { setPhone(e.target.value); setError(''); }}
-                  className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                />
-                {error && <p className="text-red-500 text-sm px-2">{error}</p>}
-              </div>
-            </motion.div>
-          )}
-
-          {step === 'otp' && (
-            <motion.div
-              key="otp"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="space-y-8"
-            >
-              <div className="space-y-4">
-                <h2 className="text-3xl font-serif italic tracking-tight text-[#2D2926]">
-                  {language === 'en' ? 'Enter verification code' : 'הזינו קוד אימות'}
-                </h2>
-                <p className="text-[#8C7E6E] leading-relaxed italic">
-                  {language === 'en' ? `Code sent to ${phone}` : `קוד נשלח ל${phone}`}
-                </p>
-              </div>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="000000"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); setError(''); }}
-                  className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg text-center tracking-[0.5em] focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                />
-                {error && <p className="text-red-500 text-sm px-2">{error}</p>}
-              </div>
-            </motion.div>
-          )}
-
-          {step === 'email' && (
-            <motion.div
-              key="email"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="space-y-8"
-            >
-              <div className="space-y-4">
-                <div className="w-14 h-14 bg-[#F7F2EE] text-[#D4AF37] rounded-[24px] flex items-center justify-center shadow-sm">
-                  <Mail size={28} />
-                </div>
-                <h2 className="text-3xl font-serif italic tracking-tight text-[#2D2926]">
-                  {language === 'en' ? 'Sign in with email' : 'התחבר עם אימייל'}
-                </h2>
-                <p className="text-[#8C7E6E] leading-relaxed italic">
-                  {language === 'en' ? 'Enter your email and password. New users will be registered automatically.' : 'הזינו אימייל וסיסמה.'}
-                </p>
-              </div>
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  placeholder={language === 'en' ? 'Email address' : 'כתובת אימייל'}
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                />
-                <input
-                  type="password"
-                  placeholder={language === 'en' ? 'Password' : 'סיסמה'}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                  className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                />
-                {error && <p className="text-red-500 text-sm px-2">{error}</p>}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Action buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="space-y-4"
         >
-          {step === 'welcome' && (
-            <>
-              <Button
-                className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-                onClick={() => setStep('phone')}
-              >
-                <Phone size={20} />
-                {language === 'en' ? 'Begin with phone' : 'התחל עם טלפון'}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full h-16 text-lg text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all flex items-center justify-center gap-3"
-                onClick={() => setStep('email')}
-              >
-                <Mail size={20} />
-                {language === 'en' ? 'Sign in with email' : 'התחבר עם אימייל'}
-              </Button>
-            </>
-          )}
-
-          {step === 'phone' && (
-            <Button
-              className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all"
-              onClick={handlePhoneSubmit}
-              disabled={!phone.trim() || loading}
+          <div className="flex items-center justify-center gap-2 text-[#8C7E6E] pb-2">
+            <Sparkles size={14} className="text-[#D4AF37]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              {language === 'en' ? 'Private AI • You stay in control' : 'בינה מלאכותית פרטית • אתה בשליטה'}
+            </span>
+          </div>
+          <Button
+            className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all active:scale-[0.98]"
+            onClick={handleSignIn}
+            disabled={isSigningIn}
+          >
+            {isSigningIn ? <Loader2 className="animate-spin" /> : (language === 'en' ? 'Begin your journey' : 'התחל את המסע')}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full h-16 text-lg text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all"
+            onClick={handleSignIn}
+            disabled={isSigningIn}
+          >
+            {language === 'en' ? 'Sign In' : 'התחבר'}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full h-12 text-sm text-[#8C7E6E] hover:bg-[#F7F2EE] rounded-[24px] transition-all border border-[#F3EFEA]"
+            onClick={handleDemoMode}
+            disabled={isSigningIn}
+          >
+            {language === 'en' ? 'View prototype demo' : 'צפה בדמו של הפרוטוטייפ'}
+          </Button>
+          {domainWarning && (
+            <a
+              href={getPrototypeDemoUrl()}
+              className="block text-center text-xs font-semibold text-[#8C7E6E] hover:text-[#2D2926] underline underline-offset-2"
             >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : (language === 'en' ? 'Send verification code' : 'שלח קוד אימות')}
-            </Button>
+              {language === 'en' ? 'Preview URL? Open canonical demo mode instead' : 'בכתובת תצוגה מקדימה? פתח מצב דמו בכתובת הרשמית'}
+            </a>
           )}
-
-          {step === 'otp' && (
-            <Button
-              className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all"
-              onClick={handleOtpSubmit}
-              disabled={otp.length < 6 || loading}
-            >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : (language === 'en' ? 'Verify' : 'אמת')}
-            </Button>
-          )}
-
-          {step === 'email' && (
-            <Button
-              className="w-full h-16 text-lg bg-[#2D2926] text-white hover:bg-[#1A1816] rounded-[24px] shadow-xl shadow-black/10 transition-all"
-              onClick={handleEmailSubmit}
-              disabled={!email.trim() || !password.trim() || loading}
-            >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : (language === 'en' ? 'Continue' : 'המשך')}
-            </Button>
+          {signInError && (
+            <p className="text-sm text-red-600 text-center px-4" role="alert">
+              {signInError}
+            </p>
           )}
         </motion.div>
       </main>

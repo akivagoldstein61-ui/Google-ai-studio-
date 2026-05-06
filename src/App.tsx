@@ -9,15 +9,19 @@ import { ExploreScreen } from './features/discovery/ExploreScreen';
 import { InboxScreen } from './features/chat/InboxScreen';
 import { ChatThread } from './features/chat/ChatThread';
 import { SettingsScreen } from './features/settings/SettingsScreen';
+import { PersonalityProfileScreen } from './features/settings/PersonalityProfileScreen';
+import { PersonalityVisibilitySettings } from './features/settings/PersonalityVisibilitySettings';
 import { AITrustHub } from './features/settings/AITrustHub';
 import { PrivateTasteProfile } from './features/settings/PrivateTasteProfile';
 import { AIOpsScreen } from './features/admin/AIOpsScreen';
 import { ExperimentsScreen } from './features/admin/ExperimentsScreen';
 import { ProfileDetail } from './components/discovery/ProfileDetail';
+import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
+import { PrototypeScreen } from './features/prototype/PrototypeScreen';
 import { AnimatePresence, motion } from 'motion/react';
-import { Profile, Conversation } from '@/types';
+import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
 
 // ---------------------------------------------------------------------------
@@ -136,8 +140,10 @@ const SettingsRoute: React.FC = () => {
     <SettingsScreen
       onShowSafety={() => navigate('/settings/safety')}
       onShowAITrust={() => navigate('/settings/ai-trust')}
+      onShowPersonalityProfile={() => navigate('/settings/personality')}
       onShowAIOps={() => navigate('/admin/ai-ops')}
       onShowExperiments={() => navigate('/admin/experiments')}
+      onEditProfile={() => navigate('/profile/edit')}
     />
   );
 };
@@ -252,6 +258,9 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
+  if (typeof window !== 'undefined' && (window.location.pathname === '/prototype' || window.location.pathname === '/status')) {
+    return <PrototypeScreen />;
+  }
   return (
     <BrowserRouter>
       <AppProvider>

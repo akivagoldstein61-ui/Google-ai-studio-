@@ -57,7 +57,13 @@ Return risk level, categories, recommended action, and short rationale.`,
 - Preferences: ${sanitize.short(params.preferences)}
 - Budget: ${sanitize.short(params.budget)}
 
-Output venues with name, why_good, safety_note, and meeting window.`,
+CRITICAL RULES:
+- Use Google Maps grounding to find real, open venues.
+- Use Google Search grounding ONLY if freshness matters (e.g., "what's happening this weekend").
+- Return exactly 3 venues (2 recommended, 1 backup).
+- Include a source_url for each venue if available from grounding.
+- Keep safety notes calm and practical.
+- Do not invent places that don't exist.`,
 
   TASTE_PROFILE: (interactions: any, currentProfile: any) => `Analyze these recent interactions and update the user's private taste profile.
 Current Profile: ${sanitize.profile(currentProfile)}
@@ -65,7 +71,7 @@ Recent Interactions: ${sanitize.profile(interactions)}`,
 
   PROFILE_COMPLETENESS: (profile: any) => `Analyze this profile for completeness and quality: ${sanitize.profile(profile)}`,
 
-  REPHRASE_MESSAGE: (text: string) => `The user wrote a draft message and is asking for help rephrasing it. They will choose whether to send anything; you NEVER send on their behalf.
+  REPHRASE_MESSAGE: (text: string) => `The user wrote a draft message and is asking for help rephrasing it. They will choose whether to send anything; you NEVER send on their behalf and there is no autosend mechanism.
 
 User draft: "${sanitize.message(text)}"
 
@@ -83,5 +89,49 @@ Return a JSON object with:
 
   SAFETY_ADVICE: (topic: string) => `Provide brief, practical safety advice for online dating regarding: ${sanitize.topic(topic)}`,
 
-  MOD_SUMMARIZER: (reports: any[]) => `Summarize these user reports for a moderator: ${sanitize.reports(reports)}`
+  MOD_SUMMARIZER: (reports: any[]) => `Summarize these user reports for a moderator: ${sanitize.reports(reports)}`,
+
+  PERSONALITY_INTERPRETER: (percentiles: any) => `Translate these deterministic BFAS percentiles into a warm, Hebrew-first user profile.
+User BFAS percentiles: ${JSON.stringify(percentiles)}
+
+CRITICAL RULES:
+- NEVER use clinical, diagnostic, or pathology language (e.g., "diagnosis", "disorder", "ADHD", "narcissist", "bipolar", "toxic").
+- NEVER use deterministic compatibility claims (e.g., "doomed", "incompatible").
+- NEVER use ranking or tier language (e.g., "alpha", "beta", "high value").
+- Frame everything as reflective tendencies, not fixed destiny.
+- Focus on how these traits manifest in dating and relationships.
+
+Output a personality_profile JSON.`,
+
+  PERSONALITY_ASPECT_CARD: (aspectName: string, percentile: number) => `Explain this aspect's impact on dating.
+Aspect: ${aspectName}
+Percentile: ${percentile}
+
+CRITICAL RULES:
+- NEVER use clinical, diagnostic, or pathology language.
+- NEVER use deterministic compatibility claims.
+- Frame friction points gently as "growth areas" or "things to be aware of".
+
+Output a personality_aspect_card JSON.`,
+
+  COMPATIBILITY_REFLECTION: (sharedInputs: any) => `Create a mutual compatibility reflection from mutually shared inputs only.
+Shared inputs approved for both users: ${JSON.stringify(sharedInputs)}
+
+CRITICAL RULES:
+- NEVER use deterministic compatibility claims (e.g., "perfect match", "doomed", "incompatible").
+- NEVER use a match score, match percentage, rating, ranking, or tier.
+- NEVER use clinical or diagnostic language.
+- NEVER mention private taste, hidden dealbreakers, hidden ranking, raw personality scores, private messages, exact location, or protected traits.
+- Frame differences as possible friction to navigate, not dealbreakers.
+- Frame similarities as shared strengths.
+- Include one question to explore, one micro-habit, one gentle boundary, and signals_used.
+
+Allowed signals_used values: ["mutually_shared_values","mutually_visible_intent","mutually_visible_observance","mutually_visible_lifestyle","mutually_visible_interests","mutually_visible_prompts","mutually_approved_share_card"]
+Output a compatibility_reflection JSON.`,
+
+  PACING_INTERVENTION: (sessionLength: number, swipeVelocity: number) => `Generate a gentle prompt to take a break.
+Session length: ${sessionLength} minutes
+Swipe velocity: ${swipeVelocity} swipes/minute
+Output a pacing_intervention JSON.`
+
 };

@@ -1,0 +1,46 @@
+name: Personality Red-Team
+
+on:
+  pull_request:
+    paths:
+      - "src/ai/prompts.ts"
+      - "src/ai/policies.ts"
+      - "src/ai/schemas.ts"
+      - "src/ai/outputValidators.ts"
+      - "scripts/redteam-personality.mjs"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual red-team run"
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  redteam:
+    name: "Red-Team – Personality AI Outputs"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Run personality red-team checks
+        run: node scripts/redteam-personality.mjs
+        env:
+          # No real API key needed for static red-team checks.
+          # If live model calls are added, inject secrets here.
+          REDTEAM_MODE: "static"
+
+      - name: Upload red-team report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-report-${{ github.run_id }}
+          path: /tmp/redteam-report.json
+          if-no-files-found: ignore
+          retention-days: 90

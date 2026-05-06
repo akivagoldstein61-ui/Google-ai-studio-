@@ -1,9 +1,12 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createAIRoutes } from "./server/aiRoutes.js";
-import { authMiddleware } from "./server/authMiddleware.js";
+import { aiRouter } from "./server/aiRoutes.ts";
+import { authMiddleware } from "./server/authMiddleware.ts";
+import trustRoutes from "./server/trustRoutes.ts";
+import shareRoutes from "./server/shareRoutes.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +14,9 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust the first proxy (e.g., Cloud Run / Nginx)
+  app.set('trust proxy', 1);
 
   app.use(express.json());
 
@@ -20,7 +26,16 @@ async function startServer() {
   });
 
   // AI feature routes — all Gemini SDK usage is server-side only
-  app.use("/api/ai", authMiddleware, createAIRoutes());
+  app.use("/api/ai", authMiddleware, aiRouter);
+  
+  // Trust & Safety Routes
+  app.use("/api/safety", trustRoutes);
+  app.use("/api/profile", trustRoutes);
+  app.use("/api/account", trustRoutes);
+  app.use("/api/support", trustRoutes);
+
+  // Permissioned share-card Routes
+  app.use("/api/share", shareRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
