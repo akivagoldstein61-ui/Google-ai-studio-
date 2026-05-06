@@ -15,7 +15,7 @@ export const SettingsScreen: React.FC<{
   onShowExperiments: () => void,
   onEditProfile: () => void
 }> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowAIOps, onShowExperiments, onEditProfile }) => {
-  const { user, isPremium } = useApp();
+  const { user, isPremium, signOut } = useApp();
 
   const [devClicks, setDevClicks] = useState(0);
   const [showPauseSheet, setShowPauseSheet] = useState(false);
@@ -145,8 +145,9 @@ export const SettingsScreen: React.FC<{
 
           <MenuGroup title="Support">
             <MenuItem icon={Globe} label="Community Guidelines" />
+            <MenuItem icon={Globe} label="Help Center" />
             <MenuItem icon={LifeBuoy} label="Contact Support" onClick={handleContactSupport} />
-            <MenuItem icon={LogOut} label="Log Out" color="text-red-600" />
+            <MenuItem icon={LogOut} label="Log Out" color="text-red-600" onClick={signOut} />
             <MenuItem icon={Trash2} label="Delete Account" color="text-red-600" onClick={() => setShowDeleteSheet(true)} />
           </MenuGroup>
         </div>

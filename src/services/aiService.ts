@@ -14,6 +14,7 @@ import {
 
 import { auth } from "@/firebase";
 import { isPrototypeDemoMode } from "@/lib/prototypeMode";
+import { assertNonEmptyDraft } from './messageCoachInput';
 
 const getHeaders = async () => {
   const headers: Record<string, string> = {
@@ -146,14 +147,34 @@ export const aiService = {
     }
   },
 
-  async rephraseMessage(text: string) {
+  /**
+   * Rewrite-first message coach. Requires a non-empty user draft and
+   * returns 2–4 alternatives plus a brief explanation of what changed.
+   * Never auto-sends; the user must explicitly choose and send.
+   */
+  async coachMessage(text: string): Promise<{ options: string[]; what_changed: string }> {
+    assertNonEmptyDraft(text);
+    const data = await safeApiFetch("/api/ai/rephrase", { text });
+    return {
+      options: Array.isArray(data.options) ? data.options : [data.rephrased || text],
+      what_changed: typeof data.what_changed === "string" ? data.what_changed : "",
+    };
+  },
+
+  /**
+   * Back-compat shim: returns the first coached alternative as a string.
+   * New callers should prefer `coachMessage` to surface all options and
+   * the `what_changed` rationale to the user.
+   */
+  async rephraseMessage(text: string): Promise<string> {
     try {
-      return await safeApiFetch("/api/ai/rephrase", { text });
+      const { options } = await this.coachMessage(text);
+      return options[0] || text;
     } catch (e: any) {
       if (e?.message !== "INVALID_JSON_RESPONSE") {
         console.error("Rephrase API call failed", e);
       }
-      return { original: text };
+      return text;
     }
   },
 

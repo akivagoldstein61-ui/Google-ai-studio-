@@ -5,15 +5,16 @@ import admin from "firebase-admin";
 import fs from "fs";
 import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.ts";
 import {
-  OpenersSchema,
-  RephraseSchema,
-  MessageSafetyScanSchema,
-  ModerationSummarySchema,
+  BioCoachSchema,
+  WhyMatchSchema,
+  RephraseMessageSchema,
+  SafetyScanSchema,
   TasteProfileSchema,
   ProfileCompletenessSchema,
-  BioCoachSchema,
   DailyPicksIntroSchema,
-  WhyThisMatchPayloadSchema,
+  OpenersSchema,
+  MessageSafetyScanSchema,
+  ModerationSummarySchema,
   PersonalitySummarySchema,
   PairInsightReportSchema,
   PacingInterventionSchema,
@@ -26,6 +27,8 @@ import {
   sanitizeWhyMatchSignals,
 } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
+import { sanitize } from "../src/ai/promptSanitizer.ts";
+import { filterWhyMatchSignals } from "../src/ai/dataClassification.ts";
 
 export const aiRouter = express.Router();
 
@@ -449,7 +452,7 @@ aiRouter.post("/explain-match", async (req, res) => {
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
         responseMimeType: "application/json",
-        responseSchema: WhyThisMatchPayloadSchema,
+        responseSchema: WhyMatchSchema,
       },
     });
 
@@ -461,9 +464,13 @@ aiRouter.post("/explain-match", async (req, res) => {
   } catch (error: any) {
     handleAiError(error, res, "Match explanation failed:");
     res.json({
-      reasons_he: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
-      first_question_he: "מה המסלול האהוב עליך?",
-      gentle_clarification_he: ""
+      reasons: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
+      first_question: "מה המסלול האהוב עליך?",
+      possible_mismatch_to_clarify: "",
+      signals_used: [],
+      signals_not_used: [],
+      confidence: 0.5,
+      evidence_label: "HEURISTIC"
     });
   }
 });
@@ -521,7 +528,7 @@ aiRouter.post("/rephrase", async (req, res) => {
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.REPHRASE_MESSAGE,
         responseMimeType: "application/json",
-        responseSchema: RephraseSchema,
+        responseSchema: RephraseMessageSchema,
       },
     });
 
