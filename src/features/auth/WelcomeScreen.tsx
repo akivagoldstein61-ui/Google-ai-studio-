@@ -11,7 +11,7 @@ import {
   redirectToCanonical,
 } from '@/lib/prototypeMode';
 
-export const WelcomeScreen: React.FC<{ onNext: () => Promise<void> }> = ({ onNext: onNextProp }) => {
+export const WelcomeScreen: React.FC = () => {
   const { language, setLanguage } = useApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
@@ -193,7 +193,7 @@ export const WelcomeScreen: React.FC<{ onNext: () => Promise<void> }> = ({ onNex
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 0.4 }}
           className="space-y-4"
         >
           <div className="flex items-center justify-center gap-2 text-[#8C7E6E] pb-2">

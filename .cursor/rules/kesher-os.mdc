@@ -1,0 +1,41 @@
+---
+description: Kesher operating rules
+alwaysApply: true
+---
+
+Use `AGENTS.md` as the operating contract.
+
+Preserve:
+- Hebrew-first Jewish dating for Israel, with English support
+- serious, respectful, verified dating
+- Daily Picks + Explore
+- Hard Filters + Soft Preferences + Learned Taste
+- explainable recommendations
+- private editable taste profile
+- visible trust system
+- premium calm
+
+Never introduce:
+- public attractiveness scores
+- hot-or-not mechanics
+- anonymous random chat
+- AI impersonation or auto-send
+- protected-trait inference from photos
+- hidden ranking or filter manipulation
+- client-side secrets
+- uncontrolled production writes
+
+Execution rules:
+- start with repo truth
+- prefer one vertical slice
+- keep secrets server-side
+- keep ranking authority outside the LLM
+- preserve trust before growth and intent before dopamine
+- UNKNOWN stays UNKNOWN
+
+When changing code, always provide:
+1. short plan
+2. affected files
+3. risks
+4. validation run
+5. follow-up tasks if clearly needed

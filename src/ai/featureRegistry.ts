@@ -1,5 +1,6 @@
 import { AIFeatureMetadata } from './types';
 import { MODEL_REGISTRY } from './modelRegistry';
+import { DATA_CLASS } from './dataClassification';
 
 /**
  * AI Feature Registry
@@ -63,7 +64,9 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     risk_level: 'medium',
     data_inputs: ['likes', 'passes', 'dwell_time'],
     excluded_data: ['messages', 'real_name'],
-    notes: 'Builds a private preference model from user behavior.',
+    data_classes_allowed: [DATA_CLASS.PRIVATE_INFERRED],
+    data_classes_forbidden: [DATA_CLASS.SYSTEM_ONLY_SAFETY],
+    notes: 'Builds a private preference model from user behavior. Output is private to the user.',
     capability_exception: false,
   },
   {
@@ -90,9 +93,22 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     requires_citation_ui: false,
     requires_human_confirmation: false,
     risk_level: 'low',
-    data_inputs: ['user_profile', 'candidate_profile'],
-    excluded_data: ['private_preferences'],
-    notes: 'Explains the values-based connection between users.',
+    data_inputs: ['user_profile', 'candidate_profile', 'whitelisted_signals'],
+    excluded_data: [
+      'private_preferences',
+      'private_taste_profile',
+      'hidden_ranking_weights',
+      'safety_flags',
+      'raw_personality_scores',
+      'behavioral_history',
+      'inferred_protected_traits',
+    ],
+    data_classes_allowed: [DATA_CLASS.PUBLIC_PROFILE],
+    data_classes_forbidden: [
+      DATA_CLASS.PRIVATE_INFERRED,
+      DATA_CLASS.SYSTEM_ONLY_SAFETY,
+    ],
+    notes: 'Explains values-based overlap using only whitelisted, user-visible signals.',
     capability_exception: false,
   },
   {
@@ -121,7 +137,9 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     risk_level: 'high',
     data_inputs: ['message_text'],
     excluded_data: ['user_identity'],
-    notes: 'Scans messages for harmful content before sending.',
+    data_classes_allowed: [DATA_CLASS.SYSTEM_ONLY_SAFETY],
+    data_classes_forbidden: [DATA_CLASS.PRIVATE_INFERRED],
+    notes: 'Scans messages for harmful content before sending. Output never leaks into match explanations.',
     capability_exception: false,
   },
   {
@@ -208,8 +226,17 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     requires_human_confirmation: true,
     risk_level: 'low',
     data_inputs: ['message_text'],
-    excluded_data: [],
-    notes: 'Rephrases messages to be more respectful.',
+    excluded_data: [
+      'recipient_private_preferences',
+      'private_taste_profile',
+      'safety_flags',
+    ],
+    data_classes_allowed: [DATA_CLASS.PUBLIC_PROFILE],
+    data_classes_forbidden: [
+      DATA_CLASS.PRIVATE_INFERRED,
+      DATA_CLASS.SYSTEM_ONLY_SAFETY,
+    ],
+    notes: 'Rewrite-first message coach. Requires a user draft; returns alternatives the user must explicitly send.',
     capability_exception: false,
   },
   {
