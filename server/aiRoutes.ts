@@ -26,6 +26,10 @@ import {
   sanitizeWhyMatchSignals,
 } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
+import {
+  type EvidencePacket, deterministicFallback, lintExplanationCopy,
+  EXPLANATION_SYSTEM_PROMPT,
+} from "../src/lib/explanationSchema.ts";
 
 export const aiRouter = express.Router();
 
@@ -430,41 +434,70 @@ aiRouter.post("/daily-picks-intro", async (req, res) => {
 
 aiRouter.post("/explain-match", async (req, res) => {
   res.locals.ai_metadata.feature_id = "why_match";
-  res.locals.ai_metadata.prompt_version = "v1.0";
+  res.locals.ai_metadata.prompt_version = "v2.0";
   try {
     const { params } = req.body;
     if (!params) {
       return res.status(400).json({ error: "Missing params" });
     }
-    const safeParams = {
-      user_profile: pickVisibleMatchProfile(params.user_profile),
-      candidate_profile: pickVisibleMatchProfile(params.candidate_profile),
-      signals: sanitizeWhyMatchSignals(params.signals),
+
+    const userP = pickVisibleMatchProfile(params.user_profile);
+    const candidateP = pickVisibleMatchProfile(params.candidate_profile);
+
+    // Build whitelisted EvidencePacket — only public, shared signals
+    const userTags = new Set((userP.tags as string[]).map((t: string) => t.toLowerCase()));
+    const sharedInterests = (candidateP.tags as string[]).filter((t: string) => userTags.has(t.toLowerCase()));
+    const packet: EvidencePacket = {
+      shared_interests: sharedInterests,
+      shared_intent: userP.intent === candidateP.intent ? (userP.intent as string) : null,
+      shared_observance_label: userP.observance === candidateP.observance ? (userP.observance as string) : null,
+      activity_status: params.activity_status ?? 'unspecified',
+      taste_driven: params.signals?.taste_driven === true,
     };
 
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: capabilityRouter.getRoute("why_match"),
-      contents: PROMPT_TEMPLATES.WHY_MATCH(safeParams),
+      contents: JSON.stringify(packet),
       config: {
-        systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
+        systemInstruction: EXPLANATION_SYSTEM_PROMPT,
         responseMimeType: "application/json",
         responseSchema: WhyThisMatchPayloadSchema,
       },
     });
 
-    const validated = outputValidators.validateWhyMatch(
-      parseAIResponse(response.text),
-    );
+    const parsed = parseAIResponse(response.text);
+    const lint = lintExplanationCopy(JSON.stringify(parsed));
+    if (lint.length > 0) {
+      console.warn("explain-match lint violations:", lint);
+    }
+    const validated = outputValidators.validateWhyMatch(parsed);
     res.locals.ai_metadata.validator_result = "success";
     res.json(validated);
   } catch (error: any) {
     handleAiError(error, res, "Match explanation failed:");
-    res.json({
-      reasons_he: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
-      first_question_he: "מה המסלול האהוב עליך?",
-      gentle_clarification_he: ""
-    });
+    // Build fallback from the request's evidence if available
+    try {
+      const { params } = req.body;
+      const userP = pickVisibleMatchProfile(params?.user_profile);
+      const candidateP = pickVisibleMatchProfile(params?.candidate_profile);
+      const userTags = new Set((userP.tags as string[]).map((t: string) => t.toLowerCase()));
+      const fallbackPacket: EvidencePacket = {
+        shared_interests: (candidateP.tags as string[]).filter((t: string) => userTags.has(t.toLowerCase())),
+        shared_intent: userP.intent === candidateP.intent ? (userP.intent as string) : null,
+        shared_observance_label: userP.observance === candidateP.observance ? (userP.observance as string) : null,
+        activity_status: 'unspecified',
+        taste_driven: false,
+      };
+      const fb = deterministicFallback(fallbackPacket);
+      res.json({ reasons_he: fb.reasons_he, first_question_he: fb.first_question_he, gentle_clarification_he: "" });
+    } catch {
+      res.json({
+        reasons_he: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
+        first_question_he: "מה המסלול האהוב עליך?",
+        gentle_clarification_he: "",
+      });
+    }
   }
 });
 

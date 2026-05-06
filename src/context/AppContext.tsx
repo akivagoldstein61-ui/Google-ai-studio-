@@ -5,6 +5,11 @@ import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
+import {
+  type TasteState, type TasteEvent, applyEvent, implicitAffinity, emptyTasteState,
+} from '@/lib/learnedTaste';
+import { serializeTasteState, deserializeTasteState, cloneTasteState, profileToFeatureTags } from '@/lib/tastePersistence';
+import { violatesHardFilters, directionalScore, type HardFilterContext } from '@/lib/filteringGrammar';
 
 interface AppState {
   user: Profile | null;
@@ -15,6 +20,7 @@ interface AppState {
   conversations: Conversation[];
   preferences: DiscoveryPreferences;
   tasteProfile: any;
+  tasteState: TasteState;
   isPremium: boolean;
   isAgeVerified: boolean;
   hasAcceptedTerms: boolean;
@@ -109,7 +115,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(!isDemoMode);
   const [preferences, setPreferencesState] = useState<DiscoveryPreferences>(DEFAULT_PREFERENCES);
   const [tasteProfile, setTasteProfileState] = useState(EMPTY_TASTE_PROFILE);
+  const [tasteState, setTasteStateRaw] = useState<TasteState>(() => emptyTasteState());
   const [isPremium, setIsPremium] = useState(isDemoMode);
+
+  const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
+    setTasteStateRaw(prev => {
+      const next = applyEvent(cloneTasteState(prev), ev);
+      // Defer Firestore write out of the render cycle
+      if (!isDemoMode && uid) {
+        setTimeout(() => {
+          setDoc(doc(db, `users/${uid}/private/taste_state`), serializeTasteState(next))
+            .catch((e: unknown) => console.error('Error saving taste_state:', e));
+        }, 0);
+      }
+      return next;
+    });
+  };
   const [matches, setMatches] = useState<Match[]>(isDemoMode ? DEMO_MATCHES : []);
   const [conversations, setConversations] = useState<Conversation[]>(isDemoMode ? DEMO_CONVERSATIONS : []);
   const [dailyPicks, setDailyPicks] = useState<Profile[]>(isDemoMode ? MOCK_PROFILES.slice(0, 2) : []);
@@ -155,6 +176,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setTasteProfileState(tasteDoc.data() as any);
             }
 
+            const tasteStateDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/taste_state`));
+            let loadedTasteState = emptyTasteState();
+            if (tasteStateDoc.exists()) {
+              loadedTasteState = deserializeTasteState(tasteStateDoc.data());
+              setTasteStateRaw(loadedTasteState);
+            }
+
             const prefDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/discovery_preferences`));
             if (prefDoc.exists()) {
               setPreferencesState(prefDoc.data() as any);
@@ -193,12 +221,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 .map(doc => ({ id: doc.id, ...(doc.data() as any) } as Profile))
                 .filter(p => p.uid !== firebaseUser.uid);
 
-              fetchedUsers = fetchedUsers.filter(p => {
-                const ageMatch = p.age >= currentPrefs.ageRange[0] && p.age <= currentPrefs.ageRange[1];
-                const observanceMatch = currentPrefs.observancePreference.includes(p.observance);
-                const intentMatch = currentPrefs.intentPreference.includes(p.intent);
-                return ageMatch && observanceMatch && intentMatch;
-              });
+              // Hard filters + taste-driven ranking
+              const viewerHardCtx: HardFilterContext = {
+                ageRange: currentPrefs.ageRange as [number, number],
+                genderPreference: currentPrefs.genderPreference as any[],
+                intentPreference: currentPrefs.intentPreference as any[],
+              };
+
+              // Use the taste state we just loaded from Firestore (or empty if none)
+              const currentTasteState = loadedTasteState;
+
+              fetchedUsers = fetchedUsers
+                .filter(p => currentPrefs.observancePreference.length === 0 ||
+                              currentPrefs.observancePreference.includes(p.observance))
+                .filter(p => !violatesHardFilters(p, viewerHardCtx).violates)
+                .map(p => {
+                  const features = profileToFeatureTags(p);
+                  const aff = implicitAffinity(currentTasteState, features);
+                  const ds = directionalScore({
+                    viewer: userDoc.data() as Profile,
+                    candidate: p,
+                    hardCtx: viewerHardCtx,
+                    softWeights: { shared_interests: 0.5, similar_age: 0.3, same_city: 0.2 },
+                    implicitAffinity: aff,
+                  });
+                  return { profile: p, score: ds.score };
+                })
+                .filter(x => x.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(x => x.profile);
 
               if (fetchedUsers.length > 0) {
                 setDailyPicks(fetchedUsers.slice(0, 2));
@@ -288,6 +339,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
     }));
+    applyTasteEvent(user.uid, {
+      name: 'like', class: 'explicit_preference',
+      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+      occurredAt: Date.now(),
+    });
 
     if (isDemoMode) {
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
@@ -372,6 +428,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
       }));
+      applyTasteEvent(user.uid, {
+        name: 'pass', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
     }
 
     setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
@@ -401,6 +462,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       moreLikeThis: [...interactions.moreLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
     };
     setInteractions(newInteractions);
+    applyTasteEvent(user.uid, {
+      name: 'more_like_this', class: 'explicit_preference',
+      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+      occurredAt: Date.now(),
+    });
 
     if (isDemoMode) {
       setTasteProfileState(prev => ({
@@ -436,6 +502,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       lessLikeThis: [...interactions.lessLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
     };
     setInteractions(newInteractions);
+    applyTasteEvent(user.uid, {
+      name: 'less_like_this', class: 'explicit_preference',
+      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+      occurredAt: Date.now(),
+    });
 
     if (isDemoMode) {
       setTasteProfileState(prev => ({
@@ -473,6 +544,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setInteractions(emptyInteractions);
 
+    const freshTasteState = emptyTasteState();
+    setTasteStateRaw(freshTasteState);
+
     if (isDemoMode || !user) {
       return;
     }
@@ -481,6 +555,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), emptyProfile);
       await setDoc(doc(db, `users/${user.uid}/private/interactions`), emptyInteractions);
+      await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(freshTasteState));
     } catch (error) {
       console.error('Error resetting taste profile in Firestore:', error);
     }
@@ -533,6 +608,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       conversations,
       preferences,
       tasteProfile,
+      tasteState,
       isPremium,
       isAgeVerified,
       hasAcceptedTerms,
