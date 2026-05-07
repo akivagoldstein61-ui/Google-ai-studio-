@@ -57,6 +57,8 @@
   "security": {
     "server_side_only_secrets": [
       "GEMINI_API_KEY",
+      "FIREBASE_PROJECT_ID",
+      "FIREBASE_CLIENT_EMAIL",
       "FIREBASE_PRIVATE_KEY"
     ],
     "client_secret_exposure_forbidden": true
