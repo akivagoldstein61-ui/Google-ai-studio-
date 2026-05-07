@@ -213,8 +213,8 @@ const handleAiError = (error: any, res: express.Response, logMessage: string) =>
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
   if (isMissingKey) {
     res.locals.ai_metadata.fallback_used = true;
-    res.locals.ai_metadata.validator_result = "success";
-    res.locals.ai_metadata.error_class = "none";
+    res.locals.ai_metadata.validator_result = "missing_api_key";
+    res.locals.ai_metadata.error_class = "configuration_error";
   } else {
     res.locals.ai_metadata.fallback_used = true;
     res.locals.ai_metadata.validator_result = "schema_failure_or_catch";
@@ -250,7 +250,6 @@ aiRouter.post("/safety-advice", async (req, res) => {
     res.json({
       advice:
         "Your safety is our priority. Please contact support if you have immediate concerns.",
-      error: error instanceof Error ? error.message : String(error)
     }); // Safe fallback
   }
 });
