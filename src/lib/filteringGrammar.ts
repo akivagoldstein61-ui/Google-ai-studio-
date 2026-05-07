@@ -13,7 +13,15 @@
  * what those IDs mean and how they are evaluated.
  */
 
-import type { Profile, ObservanceLevel, IntentType, Gender } from '@/types';
+import type {
+  Profile,
+  ReligiousObservance,
+  Intent,
+  Gender,
+} from "@/types";
+
+type ObservanceLevel = ReligiousObservance | "other" | "prefer_not_to_say";
+type IntentType = Intent;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FILTER GRAMMAR
@@ -59,6 +67,7 @@ const OBSERVANCE_RANK: Record<ObservanceLevel, number> = {
   masorti: 2,
   dati: 3,
   modern_orthodox: 4,
+  ultra_orthodox: 5,
   other: 2,             // treat 'other' as mid-range for floor checks
   prefer_not_to_say: 2, // treat as mid-range
 };
