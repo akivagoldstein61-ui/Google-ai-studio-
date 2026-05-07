@@ -20,6 +20,7 @@ import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
 import { ValuesPhrasingCoach } from './features/settings/ValuesPhrasingCoach';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -202,6 +203,7 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent />
+      <CookieConsentBanner />
     </AppProvider>
   );
 }

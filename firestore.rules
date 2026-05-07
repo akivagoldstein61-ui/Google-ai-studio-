@@ -81,6 +81,16 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Cached compatibility reflection cards. Linked to a /consents record;
+    // the server invalidates these when consent is revoked.
+    match /compatibilityCards/{cardId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.users || isAdmin()
+      );
+      // Cards are server-issued only; clients cannot create/update.
+      allow create, update, delete: if isAdmin();
+    }
+
     // Mutual consent records (Gate 5 — compatibility reflection prerequisite).
     // Only the two users in the consent pair may read/write their own record.
     match /consents/{consentId} {

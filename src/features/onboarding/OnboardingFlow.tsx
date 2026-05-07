@@ -5,10 +5,15 @@ import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Phone, Mail, Check, Shield, Heart, Sparkles, Loader2 } from 'lucide-react';
 import { ProfileBuilder } from '@/components/onboarding/ProfileBuilder';
+import { PrivacyNoticeScreen } from './PrivacyNoticeScreen';
+import { TermsOfServiceScreen } from './TermsOfServiceScreen';
 import { cn } from '@/lib/utils';
+
+type LegalGate = 'welcome' | 'tos' | 'privacy' | 'done';
 
 export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
+  const [legalGate, setLegalGate] = useState<LegalGate>('welcome');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     phone: '',
@@ -38,6 +43,30 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
   };
 
   const totalSteps = 5;
+
+  // Legal gate — must be cleared before any account collection step
+  if (legalGate === 'tos') {
+    return (
+      <TermsOfServiceScreen
+        onAccept={() => {
+          acceptTerms();
+          setLegalGate('privacy');
+        }}
+        onBack={() => setLegalGate('welcome')}
+      />
+    );
+  }
+  if (legalGate === 'privacy') {
+    return (
+      <PrivacyNoticeScreen
+        onAccept={() => {
+          setLegalGate('done');
+          nextStep();
+        }}
+        onBack={() => setLegalGate('tos')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col overflow-hidden relative">
@@ -104,10 +133,9 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
                 <div className="space-y-6">
                   <Button className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all" onClick={() => {
                     verifyAge();
-                    acceptTerms();
-                    nextStep();
+                    setLegalGate('tos');
                   }}>
-                    I Agree & Continue
+                    Review Terms &amp; Privacy
                   </Button>
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-1 h-1 bg-[#D4AF37] rounded-full" />

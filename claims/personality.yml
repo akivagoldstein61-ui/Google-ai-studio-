@@ -28,14 +28,14 @@ instrument_status:
   scoring_version_in_use: "bfas-mvp-v1"
 
 release_gate_status:
-  gate_1_privacy_consent: pending
+  gate_1_privacy_consent: passing      # PrivacyNoticeScreen.tsx + /api/profile/personality/{export,delete,reset}
   gate_2_forbidden_patterns: passing   # outputValidators.ts + scan-forbidden-fields.mjs
-  gate_3_scientific_integrity: pending # IPIP decision memo not yet signed
-  gate_4_hebrew_rtl: passing           # test-rtl.mjs passing
-  gate_5_mutual_consent: pending
-  gate_6_leakage_redteam: pending
-  gate_7_claim_substantiation: pending
-  gate_8_legal_counsel: pending
+  gate_3_scientific_integrity: passing # docs/adr/0005-ipip-instrument-decision.md (IPIP public-domain)
+  gate_4_hebrew_rtl: passing           # scripts/test-rtl.mjs
+  gate_5_mutual_consent: passing       # server/consentRoutes.ts + MutualConsentSheet.tsx + cascade revoke
+  gate_6_leakage_redteam: passing      # scripts/redteam-personality.mjs in CI
+  gate_7_claim_substantiation: passing # claims/substantiation-matrix.md
+  gate_8_legal_counsel: pending        # Counsel review of PrivacyNoticeScreen + DPIA — not yet signed
 
 claims:
 

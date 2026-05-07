@@ -1,0 +1,29 @@
+# Kesher — robots.txt
+
+# We index the marketing/landing surface, but block all authenticated
+# paths and API endpoints. AI prompts and personality data must never
+# appear in search results.
+
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /prototype
+Allow: /demo
+Disallow: /api/
+Disallow: /settings
+Disallow: /profile
+Disallow: /matches
+Disallow: /chat
+Disallow: /admin
+
+# Aggressive bots — block entirely
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://google-ai-studio-sage-sigma.vercel.app/sitemap.xml

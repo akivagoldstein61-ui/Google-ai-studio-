@@ -36,6 +36,11 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
 } from "firebase/firestore";
 import fs from "fs";
 
@@ -240,9 +245,35 @@ router.post("/revoke", async (req, res) => {
       updatedAt: serverTimestamp(),
     });
 
-    // TODO(LAUNCH): cascade-invalidate cached compatibility reflection cards
+    // Cascade: invalidate any cached compatibility reflection cards
+    // for this pair. Cards are stored under /compatibilityCards with a
+    // `consentId` field linking them to this consent record.
+    let invalidated = 0;
+    try {
+      const cardsQuery = query(
+        collection(db, "compatibilityCards"),
+        where("consentId", "==", id),
+        where("revokedAt", "==", null),
+      );
+      const cards = await getDocs(cardsQuery);
+      if (!cards.empty) {
+        const batch = writeBatch(db);
+        cards.forEach((cardDoc) => {
+          batch.update(cardDoc.ref, {
+            revokedAt: serverTimestamp(),
+            revokedBy: me,
+            payload: null,           // clear cached AI output
+            mutualSignals: [],
+          });
+        });
+        await batch.commit();
+        invalidated = cards.size;
+      }
+    } catch (cascadeErr) {
+      console.warn("Cascade invalidation partial:", cascadeErr);
+    }
 
-    res.json({ consentId: id, revoked: true });
+    res.json({ consentId: id, revoked: true, cardsInvalidated: invalidated });
   } catch (e: any) {
     console.error("Consent revoke failed:", e);
     res.status(500).json({ error: "Failed to revoke consent" });
