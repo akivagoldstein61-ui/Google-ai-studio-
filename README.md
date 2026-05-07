@@ -138,6 +138,15 @@ firebase deploy --only hosting
 2. Add a `_routes.json` or configure "Functions" routing so all paths serve `index.html`.
 3. Add the `*.pages.dev` domain to Firebase's authorized domains list.
 
+### Option 5 — GitSpark
+
+Use GitSpark with either:
+
+- **Node/fullstack mode (recommended):** `npm ci` → `npm run build` → `npm run start`
+- **Static mode (fallback):** `npm ci` → `npm run build` with output directory `dist` (no Express `/api/*` routes)
+
+See `docs/deployment/gitspark.md` for repository connection steps, server-only env vars, required quality gates, and post-deploy verification.
+
 ---
 
 ## Environment variables
@@ -154,8 +163,8 @@ See full deployment docs in `docs/deployment/`:
 
 - `vercel.md`
 - `netlify.md`
+- `gitspark.md`
 - `neon.md`
 - `env-vars.md`
-- `gitspark.md`
 - `preview-workflow.md`
 - `rollback.md`
