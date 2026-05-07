@@ -1,6 +1,6 @@
 # GitSpark integration
 
-This repo already uses GitHub Actions for CI (`.github/workflows/ci.yml`) and Vercel deploys (`.github/workflows/deploy.yml`).
+This repo already uses GitHub Actions for CI (`.github/workflows/ci.yml`) and Vercel deploys (`.github/workflows/deploy.yml`), and both workflow files are present in this repository.
 GitSpark should be configured to align with that behavior, not replace trust/safety controls.
 
 ## 1) Confirm integration mode
@@ -16,11 +16,11 @@ If deploy orchestration is disabled, keep deploy control in `deploy.yml` only.
 
 ## 2) Connect repository and permissions
 
-Connect `akivagoldstein61-ui/Google-ai-studio-` in GitSpark with:
+Connect `akivagoldstein61-ui/Google-ai-studio-` in GitSpark with (the trailing `-` is part of the real repo name):
 
 - Repository: read/write (PR metadata, statuses, checks)
 - Workflows/Actions: read
-- Deployments/environments: optional (only if GitSpark controls releases)
+- Deployments/environments: off by default; enable only if GitSpark controls releases
 
 ## 3) Command mapping
 

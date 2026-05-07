@@ -4,8 +4,9 @@
   "permissions": {
     "repository": "read-write",
     "workflows": "read",
-    "deployments": "optional"
+    "deployments": "none"
   },
+  "deployment_access_enabled": false,
   "commands": {
     "install": "npm ci",
     "lint": "npm run lint",
