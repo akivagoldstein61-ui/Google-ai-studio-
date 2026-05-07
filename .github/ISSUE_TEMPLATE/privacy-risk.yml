@@ -1,0 +1,83 @@
+name: "Privacy Risk"
+description: "Report a privacy concern or potential violation in the Personality Dimension"
+title: "[Privacy Risk] "
+labels: ["privacy", "security", "personality", "urgent"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Privacy Risk Report
+
+        Use this template to report privacy concerns related to Kesher's Personality Dimension.
+        This includes data collection, inference, storage, exposure, or consent issues.
+
+        For general security vulnerabilities, use GitHub's private security advisory instead.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity"
+      options:
+        - "Critical – active or imminent data exposure"
+        - "High – policy violation, no immediate exposure"
+        - "Medium – edge case or potential future violation"
+        - "Low – documentation gap or advisory"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Risk Description"
+      description: "Describe the privacy risk. Be specific about what data is involved."
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-components
+    attributes:
+      label: "Affected Components"
+      description: "Which files, APIs, schemas, or UI flows are affected?"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: risk-category
+    attributes:
+      label: "Risk Category"
+      options:
+        - label: "Inferred trait exposed without user consent"
+        - label: "Raw personality score exposed publicly"
+        - label: "Protected-trait inference from proxies (photo, name, location, etc.)"
+        - label: "Personality data shared without explicit permissioned summary"
+        - label: "Missing or insufficient data deletion/reset path"
+        - label: "Missing or insufficient data export path"
+        - label: "Coercive mutual unlock pattern"
+        - label: "Consent gate bypassed or missing"
+        - label: "Paywall on privacy control (deletion, export, reset, revoke)"
+        - label: "Hidden ranking or throttling manipulation"
+        - label: "AI auto-send without human review"
+        - label: "AI impersonation of user"
+        - label: "Other"
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to Reproduce (if applicable)"
+      description: "How can this risk be observed or triggered?"
+
+  - type: textarea
+    id: proposed-mitigation
+    attributes:
+      label: "Proposed Mitigation"
+      description: "What change would resolve or reduce this risk?"
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: "Disclosure"
+      options:
+        - label: "I have NOT included any real user data in this report"
+          required: true
+        - label: "I have NOT published this risk publicly before tagging the privacy team"
+          required: true

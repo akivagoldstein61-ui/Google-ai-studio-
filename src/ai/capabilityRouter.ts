@@ -2,11 +2,12 @@ import { MODEL_REGISTRY, ModelRoute } from './modelRegistry';
 
 export const capabilityRouter = {
   getRoute(featureId: string): string {
-    // Default to primary reasoning model
     let route: ModelRoute = 'primaryReasoningModel';
 
     switch (featureId) {
       case 'bio_coach':
+        route = 'primaryStructuredModel';
+        break;
       case 'rephrase_message':
       case 'generate_openers':
         route = 'optionalFastFallbackModel';
@@ -16,10 +17,13 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'personality_profile':
+      case 'compatibility_reflection':
+      case 'pacing_coach':
         route = 'primaryStructuredModel';
         break;
       case 'date_planner':
-        route = 'mapsGroundedModel'; // Requires Maps grounding
+        route = 'mapsGroundedModel';
         break;
       case 'safety_advice':
         route = 'primarySearchGroundedModel';
@@ -40,6 +44,7 @@ export const capabilityRouter = {
   getRouteName(featureId: string): ModelRoute {
     switch (featureId) {
       case 'bio_coach':
+        return 'primaryStructuredModel';
       case 'rephrase_message':
       case 'generate_openers':
         return 'optionalFastFallbackModel';
@@ -48,6 +53,9 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'personality_profile':
+      case 'compatibility_reflection':
+      case 'pacing_coach':
         return 'primaryStructuredModel';
       case 'date_planner':
         return 'mapsGroundedModel';

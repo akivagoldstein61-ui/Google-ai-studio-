@@ -1,7 +1,7 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import fs from 'fs';
 
 const router = express.Router();
@@ -234,6 +234,84 @@ router.post('/personality/delete', async (req, res) => {
   } catch (error) {
     console.error('Error deleting personality data:', error);
     res.status(500).json({ error: 'Failed to delete personality data' });
+  }
+});
+
+router.post('/personality/export', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if ((req as any).user.uid !== userId) return res.status(403).json({ error: 'Forbidden' });
+    if (!db) return res.status(500).json({ error: 'Database not initialized' });
+
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const personalitySnap = await getDoc(doc(db, `users/${userId}/private/personality`));
+    const visibilitySnap = await getDoc(doc(db, `users/${userId}/private/visibility`));
+
+    res.json({
+      exportedAt: new Date().toISOString(),
+      scoringVersion: personalitySnap.exists() ? personalitySnap.data()?.scoringVersion ?? 'bfas-mvp-v1' : null,
+      personalityScores: userSnap.exists() ? userSnap.data()?.personalityScores ?? null : null,
+      personalityAnswers: personalitySnap.exists() ? personalitySnap.data()?.answers ?? null : null,
+      personalityProfile: userSnap.exists() ? userSnap.data()?.personalityProfile ?? null : null,
+      visibility: visibilitySnap.exists() ? visibilitySnap.data() : null,
+    });
+  } catch (error) {
+    console.error('Error exporting personality data:', error);
+    res.status(500).json({ error: 'Failed to export personality data' });
+  }
+});
+
+const VISIBILITY_FIELDS = ['trait_summary', 'strengths', 'watch_outs', 'communication_notes'];
+const VISIBILITY_SCOPES = ['private', 'public', 'mutual'];
+
+router.post('/personality/visibility', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if ((req as any).user.uid !== userId) return res.status(403).json({ error: 'Forbidden' });
+    if (!db) return res.status(500).json({ error: 'Database not initialized' });
+
+    const snap = await getDoc(doc(db, `users/${userId}/private/visibility`));
+    if (!snap.exists()) {
+      const defaultDoc = {
+        fields: VISIBILITY_FIELDS.reduce((acc, f) => ({ ...acc, [f]: 'private' }), {}),
+        updatedAt: new Date().toISOString(),
+      };
+      return res.json(defaultDoc);
+    }
+    res.json(snap.data());
+  } catch (error) {
+    console.error('Error loading personality visibility:', error);
+    res.status(500).json({ error: 'Failed to load personality visibility' });
+  }
+});
+
+router.post('/personality/visibility/update', async (req, res) => {
+  try {
+    const { userId, fields } = req.body;
+    if ((req as any).user.uid !== userId) return res.status(403).json({ error: 'Forbidden' });
+    if (!db) return res.status(500).json({ error: 'Database not initialized' });
+    if (!fields || typeof fields !== 'object') return res.status(400).json({ error: 'Missing fields' });
+
+    const sanitized: Record<string, string> = {};
+    for (const [k, v] of Object.entries(fields)) {
+      if (!VISIBILITY_FIELDS.includes(k)) continue;
+      if (typeof v !== 'string' || !VISIBILITY_SCOPES.includes(v)) continue;
+      sanitized[k] = v;
+    }
+
+    await setDoc(
+      doc(db, `users/${userId}/private/visibility`),
+      {
+        fields: sanitized,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+
+    res.json({ success: true, fields: sanitized });
+  } catch (error) {
+    console.error('Error updating personality visibility:', error);
+    res.status(500).json({ error: 'Failed to update personality visibility' });
   }
 });
 

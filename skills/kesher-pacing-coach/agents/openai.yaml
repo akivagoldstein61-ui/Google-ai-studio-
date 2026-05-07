@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Pacing Coach"
+  short_description: "Build anti-burnout nudges"
+  default_prompt: "Use $kesher-pacing-coach to implement gentle anti-burnout pacing interventions."

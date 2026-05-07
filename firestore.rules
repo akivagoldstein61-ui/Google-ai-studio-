@@ -80,5 +80,31 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow read, update, delete: if isAdmin();
     }
+
+    // Permissioned share cards: owner manages; recipient may read while not expired/revoked.
+    match /shareCards/{cardId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.ownerUid ||
+        (
+          request.auth.uid == resource.data.recipientUid &&
+          resource.data.revokedAt == null &&
+          resource.data.expiresAt > request.time
+        ) ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.ownerUid;
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.ownerUid || isAdmin()
+      );
+      allow delete: if isAdmin();
+
+      match /auditLog/{eventId} {
+        allow read: if isAuthenticated() && (
+          request.auth.uid == get(/databases/$(database)/documents/shareCards/$(cardId)).data.ownerUid ||
+          isAdmin()
+        );
+        allow write: if isAdmin();
+      }
+    }
   }
 }

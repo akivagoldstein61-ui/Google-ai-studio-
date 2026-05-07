@@ -46,6 +46,10 @@ export const ProfileBuilder: React.FC<{
     string,
     number
   > | null>(initialData?.personalityScores || null);
+  const [personalityMeta, setPersonalityMeta] = useState<{
+    scoringVersion: string;
+    completedAt: string;
+  } | null>(initialData?.personalityMeta || null);
   const [isCoaching, setIsCoaching] = useState(false);
   const [coachDrafts, setCoachDrafts] = useState<any[]>([]);
   const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
@@ -155,7 +159,17 @@ export const ProfileBuilder: React.FC<{
           </p>
         </div>
         {!personalityScores ? (
-          <PersonalityAssessment onComplete={setPersonalityScores} />
+          <PersonalityAssessment
+            onComplete={(scores, meta) => {
+              setPersonalityScores(scores);
+              if (meta) {
+                setPersonalityMeta({
+                  scoringVersion: meta.scoringVersion,
+                  completedAt: meta.completedAt,
+                });
+              }
+            }}
+          />
         ) : (
           <div className="p-8 bg-white border border-[#F3EFEA] rounded-[32px] space-y-4 shadow-sm text-center">
             <div className="w-16 h-16 bg-[#D4AF37]/10 rounded-full flex items-center justify-center mx-auto text-[#D4AF37]">
@@ -601,7 +615,7 @@ export const ProfileBuilder: React.FC<{
             !isVerified
           }
           onClick={() =>
-            onComplete({ photos, prompts, bio, personalityScores, isVerified })
+            onComplete({ photos, prompts, bio, personalityScores, personalityMeta, isVerified })
           }
         >
           Complete Profile
