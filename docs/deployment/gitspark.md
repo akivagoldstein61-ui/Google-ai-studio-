@@ -10,7 +10,7 @@ Use this guide to connect `akivagoldstein61-ui/Google-ai-studio-` to GitSpark.
 
 ## 2) Runtime mode
 
-## Recommended: Node / fullstack
+### Recommended: Node / fullstack
 
 - Install command: `npm ci`
 - Build command: `npm run build`
@@ -18,7 +18,7 @@ Use this guide to connect `akivagoldstein61-ui/Google-ai-studio-` to GitSpark.
 
 This mode is required when you need Express API routes like `/api/ai/*` and `/api/health`.
 
-## Fallback: static site
+### Fallback: static site
 
 - Install command: `npm ci`
 - Build command: `npm run build`
