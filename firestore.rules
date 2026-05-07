@@ -81,6 +81,20 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Mutual consent records (Gate 5 — compatibility reflection prerequisite).
+    // Only the two users in the consent pair may read/write their own record.
+    match /consents/{consentId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.users || isAdmin()
+      );
+      allow create: if isAuthenticated() &&
+        request.auth.uid in request.resource.data.users &&
+        request.resource.data.users.size() == 2;
+      allow update: if isAuthenticated() &&
+        request.auth.uid in resource.data.users;
+      allow delete: if isAdmin();
+    }
+
     // Permissioned share cards: owner manages; recipient may read while not expired/revoked.
     match /shareCards/{cardId} {
       allow read: if isAuthenticated() && (

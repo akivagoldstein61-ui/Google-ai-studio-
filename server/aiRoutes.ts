@@ -31,6 +31,8 @@ import {
   type EvidencePacket, deterministicFallback, lintExplanationCopy,
   EXPLANATION_SYSTEM_PROMPT,
 } from "../src/lib/explanationSchema.ts";
+import { requireAppCheck } from "./middleware/appCheck.ts";
+import { requireUserRateLimit } from "./middleware/userRateLimit.ts";
 
 export const aiRouter = express.Router();
 
@@ -206,10 +208,12 @@ const requireAuth = async (
   }
 };
 
-// Apply middlewares to all AI routes
-aiRouter.use(apiLimiter);
-aiRouter.use(routeMetadataLogger);
-aiRouter.use(requireAuth);
+// Apply middlewares to all AI routes — order matters
+aiRouter.use(apiLimiter);              // 1. IP-level rate limit (DDoS coarse filter)
+aiRouter.use(routeMetadataLogger);      // 2. Audit log structure
+aiRouter.use(requireAppCheck);          // 3. App Check (proves real client app)
+aiRouter.use(requireAuth);              // 4. Firebase Auth (verifies user identity)
+aiRouter.use(requireUserRateLimit);     // 5. Per-user rate limit + cost cap
 
 const handleAiError = (error: any, res: express.Response, logMessage: string) => {
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");

@@ -1,0 +1,57 @@
+name: Release Gate
+
+# Runs on tags v*.*.* — blocks release unless all production gates pass.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    name: "Release — Production readiness"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+
+      - name: 1. Claims registry linter (banned copy + gate dependencies)
+        run: node scripts/lint-claims-registry.mjs
+
+      - name: 2. Forbidden field scan
+        run: node scripts/scan-forbidden-fields.mjs
+
+      - name: 3. Log hygiene scan
+        run: node scripts/scan-logs.mjs
+
+      - name: 4. Personality schema validation
+        run: node scripts/test-personality-schemas.mjs
+
+      - name: 5. Personality scoring contracts
+        run: node scripts/test-personality-scoring.mjs
+
+      - name: 6. Personality smoke tests
+        run: node scripts/personality-smoke-tests.mjs
+
+      - name: 7. RTL snapshot tests
+        run: node scripts/test-rtl.mjs
+
+      - name: 8. Personality red-team
+        run: node scripts/redteam-personality.mjs
+
+      - name: 9. TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: 10. Build
+        run: npx vite build
+
+      - name: Mark release green
+        run: echo "All 10 release gates passed. Tag $GITHUB_REF_NAME ready for production."

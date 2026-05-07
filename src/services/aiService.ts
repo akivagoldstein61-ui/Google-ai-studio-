@@ -12,7 +12,8 @@ import {
   ModerationSummarySchema,
 } from "@/ai/schemas";
 
-import { auth } from "@/firebase";
+import { auth, appCheck } from "@/firebase";
+import { getToken as getAppCheckToken } from "firebase/app-check";
 import { isPrototypeDemoMode } from "@/lib/prototypeMode";
 
 const getHeaders = async () => {
@@ -22,6 +23,17 @@ const getHeaders = async () => {
   if (auth.currentUser) {
     const token = await auth.currentUser.getIdToken();
     headers["Authorization"] = `Bearer ${token}`;
+  }
+  // App Check token (production hardening — proves request comes from real client app)
+  if (appCheck) {
+    try {
+      const result = await getAppCheckToken(appCheck, /* forceRefresh */ false);
+      if (result?.token) {
+        headers["X-Firebase-AppCheck"] = result.token;
+      }
+    } catch {
+      // App Check failure is logged server-side; don't break the request
+    }
   }
   return headers;
 };

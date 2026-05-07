@@ -1,21 +1,47 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiService } from '@/services/aiService';
+import { consentService, ConsentStatus } from '@/services/consentService';
+import { MutualConsentSheet } from './MutualConsentSheet';
 import { Profile } from '@/types';
 
 interface Props {
   user: Profile;
   candidate: Profile;
-  bothOptedIn: boolean;
+  bothOptedIn?: boolean; // legacy fallback — actual gate is consent service
 }
 
-export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate, bothOptedIn }) => {
+export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate, bothOptedIn = false }) => {
   const [agreed, setAgreed] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consentStatus, setConsentStatus] = useState<ConsentStatus | null>(null);
+  const [showConsentSheet, setShowConsentSheet] = useState(false);
+
+  // Load consent status on mount and after consent UI closes
+  useEffect(() => {
+    let cancelled = false;
+    const peerUid = (candidate as any).uid;
+    if (!peerUid) return;
+    consentService
+      .getStatus(peerUid)
+      .then((s) => {
+        if (!cancelled) setConsentStatus(s);
+      })
+      .catch(() => {
+        // Silent: consent service unavailable in demo mode
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [candidate, showConsentSheet]);
+
+  const peerUid = (candidate as any).uid as string | undefined;
+  const hasMutualConsent = consentStatus?.bothConsented === true;
+  const effectivelyOptedIn = hasMutualConsent || bothOptedIn;
 
   const handleReflect = async () => {
     setLoading(true);
@@ -34,8 +60,8 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
         approvedShareCard: undefined,
       };
       const result = await aiService.getCompatibilityReflection(sharedInputs, {
-        mutualConsent: true,
-        bothOptedIn,
+        mutualConsent: hasMutualConsent,
+        bothOptedIn: effectivelyOptedIn,
       });
       if (!result) {
         setError('Reflection unavailable right now. We never invent compatibility.');
@@ -135,38 +161,76 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
       <p className="text-sm text-white/80 leading-relaxed italic font-serif">
         We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a compatibility score, and the reflection only uses mutually visible signals.
       </p>
-      {!bothOptedIn && (
+      {!effectivelyOptedIn && consentStatus?.state === 'requested_by_me' && (
         <p className="text-[11px] text-amber-300 italic">
-          {candidate.displayName} hasn't opted in yet. Reflections only run when both of you have agreed.
+          Waiting for {candidate.displayName} to confirm. Reflections run only after both of you agree.
         </p>
       )}
-      <label className="flex items-start gap-3 text-xs text-white/80 leading-relaxed cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-1 accent-[#D4AF37]"
-        />
-        <span>
-          I understand this is a reflection, not a prediction. Raw scores, private taste and private messages are not used.
-        </span>
-      </label>
-      <Button
-        onClick={handleReflect}
-        disabled={!agreed || !bothOptedIn || loading}
-        className="w-full h-12 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-xs disabled:opacity-50"
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="animate-spin" size={16} /> Generating reflection
-          </span>
-        ) : (
-          'Generate reflection'
-        )}
-      </Button>
+      {!effectivelyOptedIn && consentStatus?.state === 'requested_by_peer' && (
+        <p className="text-[11px] text-[#D4AF37] italic">
+          {candidate.displayName} invited you to a mutual reflection. Tap the consent button to review.
+        </p>
+      )}
+      {!effectivelyOptedIn && consentStatus?.state === 'none' && (
+        <p className="text-[11px] text-white/60 italic">
+          Tap "Set up mutual consent" to choose what to share before any reflection is generated.
+        </p>
+      )}
+
+      {!effectivelyOptedIn ? (
+        <Button
+          onClick={() => setShowConsentSheet(true)}
+          disabled={!peerUid}
+          className="w-full h-12 rounded-full bg-[#2D2926] text-[#D4AF37] hover:bg-black border border-[#D4AF37]/30 font-bold uppercase tracking-widest text-xs"
+        >
+          {consentStatus?.state === 'requested_by_peer'
+            ? 'Review consent request'
+            : consentStatus?.state === 'requested_by_me'
+            ? 'Update consent'
+            : 'Set up mutual consent'}
+        </Button>
+      ) : (
+        <>
+          <label className="flex items-start gap-3 text-xs text-white/80 leading-relaxed cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-1 accent-[#D4AF37]"
+            />
+            <span>
+              I understand this is a reflection, not a prediction. Raw scores, private taste and private messages are not used.
+            </span>
+          </label>
+          <Button
+            onClick={handleReflect}
+            disabled={!agreed || loading}
+            className="w-full h-12 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-xs disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin" size={16} /> Generating reflection
+              </span>
+            ) : (
+              'Generate reflection'
+            )}
+          </Button>
+        </>
+      )}
+
       {error && (
         <p className="text-xs text-red-300 italic text-center">{error}</p>
       )}
+
+      <AnimatePresence>
+        {showConsentSheet && peerUid && (
+          <MutualConsentSheet
+            peerUid={peerUid}
+            peerDisplayName={candidate.displayName || 'this person'}
+            onClose={() => setShowConsentSheet(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

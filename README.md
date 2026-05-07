@@ -157,4 +157,49 @@ See full deployment docs in `docs/deployment/`:
 - `neon.md`
 - `env-vars.md`
 - `preview-workflow.md`
+- **`production-checklist.md`** — go-live gates and runbook
+- `rollback.md`
+
+---
+
+## Production deployment
+
+For a **production** launch (vs. the always-fresh prototype), follow `docs/deployment/production-checklist.md`. Short version:
+
+```bash
+# 1. Confirm all 8 gates pass
+npm run lint:claims                  # Fails if active claims depend on pending gates
+npm run scan:forbidden-fields
+npm run redteam:personality
+npm run test:rtl
+
+# 2. Set production env vars in Vercel
+#    GEMINI_API_KEY, FIREBASE_*, FIREBASE_APP_CHECK_ENABLED=true, AI_ROUTE_AUTH_MODE=production
+
+# 3. Deploy
+git tag v1.0.0 && git push origin v1.0.0      # Vercel auto-deploys
+
+# 4. Verify
+curl -fsSL https://google-ai-studio-sage-sigma.vercel.app/api/health/ready
+npm run smoke:deployment
+```
+
+### Production-only safety layers
+
+| Layer | File | Status |
+|---|---|---|
+| Firebase App Check (token verification) | `server/middleware/appCheck.ts` | ✅ |
+| Per-user rate limiting + cost cap | `server/middleware/userRateLimit.ts` | ✅ |
+| Mutual consent (Gate 5) | `server/consentRoutes.ts` + `MutualConsentSheet.tsx` | ✅ |
+| Audit logging (every AI call) | `routeMetadataLogger` in `server/aiRoutes.ts` | ✅ |
+| Strict security headers | `server.ts` (HSTS, CSP, no-frame, no-sniff) | ✅ |
+| Banned-copy linter (CI) | `scripts/lint-claims-registry.mjs` | ✅ |
+| Personality data export/delete | `server/trustRoutes.ts` (`/personality/export`, `/personality/delete`) | ✅ |
+
+### Privacy compliance
+
+- **Israeli Amendment 13**: see `docs/privacy/israeli-amendment-13-notice.md` (Gate 8)
+- **Claims registry**: `claims/personality.yml` — every user-facing claim is tracked
+- **Data classification**: `docs/personality/data-classification.md`
+- **Forbidden patterns**: `docs/personality/forbidden-patterns.md`
 - `rollback.md`

@@ -19,8 +19,10 @@
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
     "scan:logs": "node scripts/scan-logs.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
     "lint:claims": "node scripts/lint-claims-registry.mjs",
-    "ci": "node scripts/lint-claims-registry.mjs && node scripts/scan-forbidden-fields.mjs && node scripts/test-rtl.mjs"
+    "ci": "node scripts/lint-claims-registry.mjs && node scripts/scan-forbidden-fields.mjs && node scripts/test-rtl.mjs",
+    "ci:production": "npm run ci && node scripts/test-personality-schemas.mjs && node scripts/test-personality-scoring.mjs && node scripts/redteam-personality.mjs && node scripts/personality-smoke-tests.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.46.0",
