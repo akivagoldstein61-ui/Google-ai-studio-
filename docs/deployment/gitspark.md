@@ -1,11 +1,11 @@
 # GitSpark deployment
 
-Use this guide to connect `akivagoldstein61-ui/Google-ai-studio-` to GitSpark.
+Use this guide to connect this repository to GitSpark.
 
 ## 1) Connect repository
 
 1. In GitSpark, create a new project from GitHub.
-2. Select repository: `akivagoldstein61-ui/Google-ai-studio-`.
+2. Select this repository from your GitHub account.
 3. Choose the deployment runtime mode below.
 
 ## 2) Runtime mode
@@ -14,7 +14,7 @@ Use this guide to connect `akivagoldstein61-ui/Google-ai-studio-` to GitSpark.
 
 - Install command: `npm ci`
 - Build command: `npm run build`
-- Start command: `npm run start`
+- Start command: `npm run start` (`node dist/server.cjs`)
 
 This mode is required when you need Express API routes like `/api/ai/*` and `/api/health`.
 
