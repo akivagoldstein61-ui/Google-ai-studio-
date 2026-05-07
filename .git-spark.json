@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "repository": "akivagoldstein61-ui/Google-ai-studio-",
+  "permissions": {
+    "repository": "read-write",
+    "workflows": "read",
+    "deployments": "none"
+  },
+  "deploy_mode": "github-actions",
+  "commands": {
+    "install": "npm ci",
+    "lint": "npm run lint",
+    "typecheck": "npm run typecheck",
+    "test": "npm run test",
+    "build": "npm run build",
+    "scan_forbidden_fields": "npm run scan:forbidden-fields",
+    "scan_logs": "npm run scan:logs"
+  },
+  "events": {
+    "pull_request": {
+      "branch": "main",
+      "run": [
+        "install",
+        "typecheck",
+        "scan_forbidden_fields",
+        "scan_logs",
+        "test",
+        "build"
+      ],
+      "deploy": false
+    },
+    "push": {
+      "branch": "main",
+      "run": [
+        "install",
+        "typecheck",
+        "scan_forbidden_fields",
+        "scan_logs",
+        "test",
+        "build"
+      ],
+      "deploy": true
+    }
+  },
+  "secrets_required": [
+    "GEMINI_API_KEY",
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_PRIVATE_KEY",
+    "APP_URL"
+  ],
+  "secrets_required_for_deploy_orchestration": [
+    "VERCEL_TOKEN",
+    "VERCEL_ORG_ID",
+    "VERCEL_PROJECT_ID"
+  ],
+  "security": {
+    "server_side_only_secrets": [
+      "GEMINI_API_KEY",
+      "FIREBASE_PROJECT_ID",
+      "FIREBASE_CLIENT_EMAIL",
+      "FIREBASE_PRIVATE_KEY"
+    ],
+    "client_secret_exposure_forbidden": true
+  }
+}

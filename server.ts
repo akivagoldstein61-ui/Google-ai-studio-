@@ -2,9 +2,14 @@ import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import { fileURLToPath } from "url";
 import { aiRouter } from "./server/aiRoutes.ts";
+import { authMiddleware } from "./server/authMiddleware.ts";
 import trustRoutes from "./server/trustRoutes.ts";
 import shareRoutes from "./server/shareRoutes.ts";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -20,8 +25,8 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // AI Routes
-  app.use("/api/ai", aiRouter);
+  // AI feature routes — all Gemini SDK usage is server-side only
+  app.use("/api/ai", authMiddleware, aiRouter);
   
   // Trust & Safety Routes
   app.use("/api/safety", trustRoutes);

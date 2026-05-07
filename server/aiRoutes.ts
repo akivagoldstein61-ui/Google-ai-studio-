@@ -5,15 +5,16 @@ import admin from "firebase-admin";
 import fs from "fs";
 import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.ts";
 import {
-  OpenersSchema,
-  RephraseSchema,
-  MessageSafetyScanSchema,
-  ModerationSummarySchema,
+  BioCoachSchema,
+  WhyMatchSchema,
+  RephraseMessageSchema,
+  SafetyScanSchema,
   TasteProfileSchema,
   ProfileCompletenessSchema,
-  BioCoachSchema,
   DailyPicksIntroSchema,
-  WhyThisMatchPayloadSchema,
+  OpenersSchema,
+  MessageSafetyScanSchema,
+  ModerationSummarySchema,
   PersonalitySummarySchema,
   PairInsightReportSchema,
   PacingInterventionSchema,
@@ -27,9 +28,13 @@ import {
 } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
 import {
-  type EvidencePacket, deterministicFallback, lintExplanationCopy,
+  type EvidencePacket,
+  deterministicFallback,
+  lintExplanationCopy,
   EXPLANATION_SYSTEM_PROMPT,
 } from "../src/lib/explanationSchema.ts";
+import { sanitize } from "../src/ai/promptSanitizer.ts";
+import { filterWhyMatchSignals } from "../src/ai/dataClassification.ts";
 
 export const aiRouter = express.Router();
 
@@ -214,8 +219,8 @@ const handleAiError = (error: any, res: express.Response, logMessage: string) =>
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
   if (isMissingKey) {
     res.locals.ai_metadata.fallback_used = true;
-    res.locals.ai_metadata.validator_result = "success";
-    res.locals.ai_metadata.error_class = "none";
+    res.locals.ai_metadata.validator_result = "missing_api_key";
+    res.locals.ai_metadata.error_class = "configuration_error";
   } else {
     res.locals.ai_metadata.fallback_used = true;
     res.locals.ai_metadata.validator_result = "schema_failure_or_catch";
@@ -251,7 +256,6 @@ aiRouter.post("/safety-advice", async (req, res) => {
     res.json({
       advice:
         "Your safety is our priority. Please contact support if you have immediate concerns.",
-      error: error instanceof Error ? error.message : String(error)
     }); // Safe fallback
   }
 });
@@ -462,7 +466,7 @@ aiRouter.post("/explain-match", async (req, res) => {
       config: {
         systemInstruction: EXPLANATION_SYSTEM_PROMPT,
         responseMimeType: "application/json",
-        responseSchema: WhyThisMatchPayloadSchema,
+        responseSchema: WhyMatchSchema,
       },
     });
 
@@ -472,13 +476,26 @@ aiRouter.post("/explain-match", async (req, res) => {
       console.warn("explain-match lint violations:", lint);
     }
     const validated = outputValidators.validateWhyMatch(parsed);
+    const selectedSignals = filterWhyMatchSignals(params.signals);
     res.locals.ai_metadata.validator_result = "success";
-    res.json(validated);
+    res.json({
+      ...validated,
+      schema_version: validated.schema_version ?? "why_match.v2",
+      signals_used: validated.signals_used?.length
+        ? validated.signals_used
+        : selectedSignals,
+      signals_not_used: validated.signals_not_used?.length
+        ? validated.signals_not_used
+        : [],
+      reasons_he: validated.reasons,
+      first_question_he: validated.first_question,
+      gentle_clarification_he: validated.possible_mismatch_to_clarify ?? "",
+    });
   } catch (error: any) {
     handleAiError(error, res, "Match explanation failed:");
-    // Build fallback from the request's evidence if available
+    const { params } = req.body ?? {};
+    const selectedSignals = filterWhyMatchSignals(params?.signals);
     try {
-      const { params } = req.body;
       const userP = pickVisibleMatchProfile(params?.user_profile);
       const candidateP = pickVisibleMatchProfile(params?.candidate_profile);
       const userTags = new Set((userP.tags as string[]).map((t: string) => t.toLowerCase()));
@@ -486,15 +503,37 @@ aiRouter.post("/explain-match", async (req, res) => {
         shared_interests: (candidateP.tags as string[]).filter((t: string) => userTags.has(t.toLowerCase())),
         shared_intent: userP.intent === candidateP.intent ? (userP.intent as string) : null,
         shared_observance_label: userP.observance === candidateP.observance ? (userP.observance as string) : null,
-        activity_status: 'unspecified',
+        activity_status: "unspecified",
         taste_driven: false,
       };
       const fb = deterministicFallback(fallbackPacket);
-      res.json({ reasons_he: fb.reasons_he, first_question_he: fb.first_question_he, gentle_clarification_he: "" });
-    } catch {
       res.json({
-        reasons_he: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
-        first_question_he: "מה המסלול האהוב עליך?",
+        schema_version: "why_match.v2",
+        reasons: fb.reasons_he,
+        first_question: fb.first_question_he,
+        possible_mismatch_to_clarify: "",
+        signals_used: selectedSignals,
+        signals_not_used: [],
+        confidence: 0.5,
+        evidence_label: "HEURISTIC",
+        reasons_he: fb.reasons_he,
+        first_question_he: fb.first_question_he,
+        gentle_clarification_he: "",
+      });
+    } catch {
+      const reasons = ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."];
+      const firstQuestion = "מה המסלול האהוב עליך?";
+      res.json({
+        schema_version: "why_match.v2",
+        reasons,
+        first_question: firstQuestion,
+        possible_mismatch_to_clarify: "",
+        signals_used: selectedSignals,
+        signals_not_used: [],
+        confidence: 0.5,
+        evidence_label: "HEURISTIC",
+        reasons_he: reasons,
+        first_question_he: firstQuestion,
         gentle_clarification_he: "",
       });
     }
@@ -554,7 +593,7 @@ aiRouter.post("/rephrase", async (req, res) => {
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.REPHRASE_MESSAGE,
         responseMimeType: "application/json",
-        responseSchema: RephraseSchema,
+        responseSchema: RephraseMessageSchema,
       },
     });
 

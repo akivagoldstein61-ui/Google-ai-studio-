@@ -2,6 +2,8 @@
  * AI Feature System Types
  */
 
+import type { DataClass } from './dataClassification';
+
 export type AIFeatureCategory = 'core_enabled' | 'beta_opt_in' | 'internal_only' | 'labs_off_by_default';
 
 export type AIAudience = 'user' | 'premium' | 'internal' | 'lab';
@@ -34,6 +36,11 @@ export interface AIFeatureMetadata {
   risk_level: AIRiskLevel;
   data_inputs: string[];
   excluded_data: string[];
+  /** Data classes this feature is permitted to receive as input. Optional
+   *  during migration; new features should always declare this. */
+  data_classes_allowed?: DataClass[];
+  /** Data classes that must never enter this feature's prompt or output. */
+  data_classes_forbidden?: DataClass[];
   notes?: string;
   capability_exception: boolean;
   exception_reason?: string;

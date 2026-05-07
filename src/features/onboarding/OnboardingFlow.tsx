@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Phone, Mail, Check, Shield, Heart, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Phone, Check, Shield, Heart, Sparkles } from 'lucide-react';
 import { ProfileBuilder } from '@/components/onboarding/ProfileBuilder';
 import { cn } from '@/lib/utils';
 
 export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     phone: '',
     goal: '',
@@ -27,15 +25,6 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
   const prevStep = () => setStep(s => s - 1);
 
   const updateData = (data: any) => setFormData(prev => ({ ...prev, ...data }));
-
-  const handlePhoneSubmit = async () => {
-    setLoading(true);
-    // Simulate phone auth
-    setTimeout(() => {
-      setLoading(false);
-      nextStep();
-    }, 1500);
-  };
 
   const totalSteps = 5;
 
@@ -119,39 +108,28 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
             )}
 
             {step === 1 && (
-              <motion.div 
+              <motion.div
                 key="step1"
-                initial={{ opacity: 0, x: 30 }} 
-                animate={{ opacity: 1, x: 0 }} 
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -30 }}
-                className="space-y-12"
+                className="space-y-12 flex flex-col h-full"
               >
-                <div className="space-y-4">
+                <div className="space-y-8 flex-1">
                   <div className="w-14 h-14 bg-[#F7F2EE] text-[#D4AF37] rounded-[24px] flex items-center justify-center shadow-sm">
                     <Phone size={28} />
                   </div>
-                  <h2 className="text-3xl font-serif italic tracking-tight text-[#2D2926]">Verify your identity</h2>
-                  <p className="text-[#8C7E6E] leading-relaxed italic">We use phone verification to ensure a community of real people. No bots, no fakes.</p>
-                </div>
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C7E6E] px-1">Phone Number</label>
-                    <input 
-                      placeholder="+972 50 000 0000" 
-                      type="tel" 
-                      className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                      value={formData.phone}
-                      onChange={(e) => updateData({ phone: e.target.value })}
-                    />
+                  <div className="space-y-4">
+                    <h2 className="text-3xl font-serif italic tracking-tight text-[#2D2926]">Identity verified</h2>
+                    <p className="text-[#8C7E6E] leading-relaxed italic">Your account has been verified. Let's set up your profile.</p>
                   </div>
-                  <Button 
-                    className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all" 
-                    onClick={handlePhoneSubmit} 
-                    disabled={!formData.phone || loading}
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : 'Send Verification Code'}
-                  </Button>
                 </div>
+                <Button
+                  className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all"
+                  onClick={nextStep}
+                >
+                  Continue
+                </Button>
               </motion.div>
             )}
 

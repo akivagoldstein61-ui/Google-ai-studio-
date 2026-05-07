@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '../types';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -45,6 +46,7 @@ interface AppState {
   resetTasteProfile: () => void;
   setTasteProfile: (profile: any) => void;
   sendMessage: (conversationId: string, text: string, aiAssisted?: boolean) => void;
+  signOut: () => Promise<void>;
   verifyAge: () => void;
   acceptTerms: () => void;
   trackEvent: (eventName: string, eventData?: Record<string, any>) => void;
@@ -263,23 +265,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               console.error('Error fetching data:', error);
             }
           } else {
-            // New user: signed in via Firebase Auth but no Firestore profile yet.
-            // Seed a minimal profile so OnboardingFlow can render and use user.uid
-            // to save the completed profile. The user cannot access discovery or
-            // matching screens while isOnboarding is true, so these placeholder
-            // values are never used for matching or personality scoring — they will
-            // be replaced by the values the user explicitly provides during onboarding.
             setUser({
               id: firebaseUser.uid,
               uid: firebaseUser.uid,
               displayName: firebaseUser.displayName ?? '',
-              age: 0,           // placeholder – collected in onboarding step 4
-              gender: 'male',   // placeholder – collected in onboarding step 2
-              city: '',         // placeholder – collected in onboarding step 4
+              age: 0,
+              gender: 'male',
+              city: '',
               photos: firebaseUser.photoURL ? [firebaseUser.photoURL] : [],
               bio: '',
-              observance: 'secular',             // placeholder – collected in onboarding step 3
-              intent: 'serious_relationship',    // placeholder – collected in onboarding step 1
+              observance: 'secular',
+              intent: 'serious_relationship',
               prompts: [],
               isVerified: firebaseUser.emailVerified,
               isPremium: false,
@@ -591,6 +587,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    setUser(null);
+    setOnboarding(false);
+  };
+
   const verifyAge = () => setIsAgeVerified(true);
   const acceptTerms = () => setHasAcceptedTerms(true);
 
@@ -627,6 +629,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetTasteProfile,
       setTasteProfile,
       sendMessage,
+      signOut,
       verifyAge,
       acceptTerms,
       trackEvent
