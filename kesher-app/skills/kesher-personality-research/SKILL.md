@@ -1,0 +1,3 @@
+---
+name: kesher-personality-research
+description: Authoritative evidence base for Kesher's personality, compatibility, sharing, and trust features. Use when writing or reviewing user-facing copy about traits or compatibility, choosing between BFAS forms, designing share cards or "why this match" outputs, debating similarity vs complementarity, defending a privacy/visibility default, or grounding a claim with VERIFIED/INFERRED/HEURISTIC/UNKNOWN labels. Pair with the implementation skills below.
