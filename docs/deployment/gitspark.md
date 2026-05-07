@@ -26,6 +26,11 @@ In `.git-spark.json`, `deploy_mode` is set to `github-actions`, so `deploy: true
 
 > Note: the trailing `-` in `akivagoldstein61-ui/Google-ai-studio-` is part of the real repository name.
 
+`deploy_mode` values used by this repo:
+
+- `github-actions`: deployment is performed by existing GitHub Actions (`deploy.yml`) on `main`.
+- If you later switch to direct GitSpark-controlled deployments, update this value and enable deployment/environment access in GitSpark.
+
 ## 3) Command mapping
 
 Use the existing project commands:
