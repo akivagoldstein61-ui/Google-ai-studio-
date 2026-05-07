@@ -54,6 +54,12 @@ If GitSpark also triggers GitHub/Vercel deployments, also set:
 
 Never commit secret values to the repository.
 
+## Security constraints
+
+- Keep `GEMINI_API_KEY` and Firebase private credentials server-side only.
+- Do not expose secret values through Vite client env vars, browser logs, CI artifacts, or generated bundles.
+- Preserve existing trust/safety behavior; GitSpark orchestration must not bypass or weaken current checks.
+
 ## 5) Branch and event behavior
 
 Match current workflow behavior:
@@ -61,7 +67,7 @@ Match current workflow behavior:
 - Pull requests to `main`: validation only, no production deploy
 - Pushes to `main`: validation + deploy
 
-Keep server-side key handling intact (`GEMINI_API_KEY` must never move to client-side env vars).
+The `.git-spark.json` file uses `push_to_main` and `pull_request` event keys to make branch intent explicit.
 
 ## 6) Dry run checklist
 

@@ -28,7 +28,7 @@
       ],
       "deploy": false
     },
-    "push_main": {
+    "push_to_main": {
       "branch": "main",
       "run": [
         "install",
@@ -46,7 +46,9 @@
     "FIREBASE_PROJECT_ID",
     "FIREBASE_CLIENT_EMAIL",
     "FIREBASE_PRIVATE_KEY",
-    "APP_URL",
+    "APP_URL"
+  ],
+  "secrets_required_if_deploy_enabled": [
     "VERCEL_TOKEN",
     "VERCEL_ORG_ID",
     "VERCEL_PROJECT_ID"
