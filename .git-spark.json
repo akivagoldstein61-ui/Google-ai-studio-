@@ -29,7 +29,7 @@
       ],
       "deploy": false
     },
-    "push_to_main": {
+    "push": {
       "branch": "main",
       "run": [
         "install",
@@ -49,7 +49,7 @@
     "FIREBASE_PRIVATE_KEY",
     "APP_URL"
   ],
-  "secrets_required_if_deploy_enabled": [
+  "secrets_required_for_deploy_orchestration": [
     "VERCEL_TOKEN",
     "VERCEL_ORG_ID",
     "VERCEL_PROJECT_ID"

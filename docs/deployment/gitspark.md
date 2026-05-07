@@ -22,7 +22,7 @@ Connect `akivagoldstein61-ui/Google-ai-studio-` in GitSpark with:
 - Workflows/Actions: read (so GitSpark can observe workflow/check outcomes and report status context on PRs)
 - Deployments/environments: off by default; enable only if GitSpark controls releases
 
-In `.git-spark.json`, `deploy_mode` is set to `github-actions`, so `deploy: true` on `push_to_main` means "allow deploy flow on main" while direct GitSpark deployment access remains disabled by default.
+In `.git-spark.json`, `deploy_mode` is set to `github-actions`, so `deploy: true` on the `push` event for `main` means "run the existing main-branch deployment flow via GitHub Actions (`deploy.yml`)". It does not grant direct GitSpark deployment access by itself.
 
 > Note: the trailing `-` in `akivagoldstein61-ui/Google-ai-studio-` is part of the real repository name.
 
