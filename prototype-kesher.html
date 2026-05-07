@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kesher — integrated prototype</title>
+  <style>
+    :root {
+      --bg:#FDFCFB; --fg:#2D2926; --muted:#6E6963; --line:#EDE7E0; --line-2:#D8D0C7;
+      --surface:#FFFFFF; --surface-2:#F7F2EE;
+      --info:#185FA5; --info-bg:#E6F1FB;
+      --teal:#0F6E56; --teal-bg:#E1F5EE;
+      --purple:#3C3489; --purple-bg:#EEEDFE;
+      --amber:#854F0B; --amber-bg:#FAEEDA;
+      --coral:#993C1D; --coral-bg:#FAECE7;
+      --gold:#D4AF37;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+    .container { max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+    header h1 { font-family: "Times New Roman", serif; font-style: italic; font-weight: 400; font-size: 30px; margin: 0 0 4px; }
+    header p { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+
+    .tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 12px; margin: 0 0 16px; }
+    .tab { flex: 1; padding: 10px 12px; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; border: none; background: transparent; color: var(--muted); }
+    .tab[aria-selected="true"] { background: var(--surface); color: var(--fg); border: 0.5px solid var(--line); }
+
+    .card { background: var(--surface); border: 0.5px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 0 0 14px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .label { font-size: 13px; color: var(--muted); }
+    .h { font-size: 14px; font-weight: 500; margin: 0 0 8px; }
+    .sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+    .divider { height: 0.5px; background: var(--line); margin: 12px 0; }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+    .pill-blue { background: var(--info-bg); color: var(--info); }
+    .pill-teal { background: var(--teal-bg); color: var(--teal); }
+    .pill-purple { background: var(--purple-bg); color: var(--purple); }
+    .pill-amber { background: var(--amber-bg); color: var(--amber); }
+    .pill-coral { background: var(--coral-bg); color: var(--coral); }
+    .pill-gray { background: var(--surface-2); color: var(--muted); }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+    .metric { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+    .metric .lbl { font-size: 12px; color: var(--muted); }
+    .metric .val { font-size: 20px; font-weight: 500; margin-top: 2px; }
+    .bar { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: #5DCAA5; }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chk { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 12px; border: 0.5px solid var(--line); border-radius: 999px; cursor: pointer; user-select: none; background: transparent; color: var(--fg); }
+    .chk[aria-pressed="true"] { background: var(--info-bg); color: var(--info); border-color: var(--info); }
+    .profile { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 0.5px solid var(--line); }
+    .profile + .profile { margin-top: 10px; }
+    .avatar { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; color: var(--purple); background: var(--purple-bg); font-size: 18px; }
+    .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn { padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 10px; border: 0.5px solid var(--line-2); background: transparent; cursor: pointer; color: var(--fg); }
+    .btn:hover { background: var(--surface-2); }
+    .btn-primary { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+    .trace { font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; line-height: 1.6; color: var(--muted); white-space: pre-wrap; margin: 0; }
+    .trace .ok { color: var(--teal); }
+    .trace .warn { color: var(--amber); }
+    .trace .err { color: var(--coral); }
+    .rtl { direction: rtl; text-align: right; }
+
+    .q-step { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .radio-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0; }
+    .radio-row button { padding: 8px 4px; font-size: 11px; border: 0.5px solid var(--line); border-radius: 8px; background: transparent; cursor: pointer; color: var(--fg); }
+    .radio-row button[aria-pressed="true"] { background: var(--info-bg); color: var(--info); border-color: var(--info); }
+
+    footer { margin-top: 40px; padding-top: 16px; border-top: 0.5px solid var(--line); color: var(--muted); font-size: 12px; }
+    code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Kesher · integrated prototype</h1>
+    <p>Filtering grammar · learned-taste ranking · OCEAN reflection · mutual-consent compatibility — all in one demo.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="discovery">Discovery & filters</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="ranking">Ranking trace</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="personality">Personality</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="reflection">Compatibility</button>
+  </div>
+
+  <section data-pane="discovery">
+    <div class="card">
+      <p class="h">Hard filters (dealbreakers)</p>
+      <p class="sub">Per <code>filteringGrammar.ts</code>: candidates violating any are scored 0 and removed.</p>
+      <div class="checks" id="hard-filters">
+        <button class="chk" data-hf="shomer_shabbat" aria-pressed="false">Shomer Shabbat</button>
+        <button class="chk" data-hf="kashrut" aria-pressed="false">Keeps kosher</button>
+        <button class="chk" data-hf="verified_only" aria-pressed="true">Verified profiles only</button>
+        <button class="chk" data-hf="intent_marriage" aria-pressed="false">Marriage-minded</button>
+      </div>
+      <div class="divider"></div>
+      <p class="h">Soft preferences (ranking signals)</p>
+      <p class="sub">Influence ordering only — never exclude.</p>
+      <div class="checks" id="soft-filters">
+        <button class="chk" data-sf="shared_interests" aria-pressed="true">Shared interests</button>
+        <button class="chk" data-sf="shared_observance_label" aria-pressed="true">Same self-description</button>
+        <button class="chk" data-sf="similar_age" aria-pressed="true">Similar age</button>
+        <button class="chk" data-sf="same_city" aria-pressed="false">Same city</button>
+        <button class="chk" data-sf="more_like_recent_likes" aria-pressed="true">More like recent likes</button>
+      </div>
+    </div>
+    <div class="card">
+      <p class="h">Daily picks (reciprocal × fairness, sorted)</p>
+      <p class="sub">Live re-ranks as you toggle filters or like/pass.</p>
+      <div id="picks-list"></div>
+    </div>
+  </section>
+
+  <section data-pane="ranking" hidden>
+    <div class="card">
+      <p class="h">Ranking authority output (top pick)</p>
+      <p class="sub">Only whitelisted reason codes leave the ranker.</p>
+      <div class="grid3" id="trace-metrics"></div>
+      <div class="divider"></div>
+      <pre class="trace" id="trace-log"></pre>
+    </div>
+  </section>
+
+  <section data-pane="personality" hidden>
+    <div class="card">
+      <p class="h">Mini OCEAN reflection</p>
+      <p class="sub">Five short items — score is illustrative, not a validated percentile.</p>
+      <div id="quiz"></div>
+      <div class="divider"></div>
+      <p class="h">Your trait reflection</p>
+      <div class="grid3" id="ocean-bars"></div>
+      <p class="sub" style="margin-top:10px;">Neuroticism is shown as <em>Emotional Style</em> in user-facing copy.</p>
+    </div>
+  </section>
+
+  <section data-pane="reflection" hidden>
+    <div class="card">
+      <p class="h">Mutual-consent compatibility reflection</p>
+      <p class="sub">Both users must opt in. Empty evidence yields a neutral message — we never invent compatibility.</p>
+      <div class="row">
+        <div>
+          <p class="label">You opted in</p>
+          <button class="chk" id="optin-self" aria-pressed="true">Yes, I want a reflection</button>
+        </div>
+        <div>
+          <p class="label">They opted in</p>
+          <button class="chk" id="optin-other" aria-pressed="false">Awaiting consent</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div id="reflection-output"></div>
+    </div>
+  </section>
+
+  <footer>
+    Mock data only · No network calls · Mirrors logic in <code>src/lib/filteringGrammar.ts</code>, <code>learnedTaste.ts</code>, <code>oceanScoring.ts</code>, <code>integratedRanking.ts</code>, <code>explanationSchema.ts</code>.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const USER = {
+    id:'u', age:28, city:'Tel Aviv', gender:'female', intent:'serious_relationship',
+    observance:'modern_orthodox', isVerified:true,
+    tags:['Hiking','Books','Shabbat','Tech','Jerusalem'],
+    practiceTags:['shomer_shabbat','kasher','mitpalel_shabbatot'],
+    ocean:{Openness:78,Conscientiousness:71,Extraversion:55,Agreeableness:74,Neuroticism:38}
+  };
+  const CANDIDATES = [
+    {id:'amit',name:'Amit',initials:'AM',age:29,city:'Jerusalem',gender:'male',
+     intent:'marriage_minded',observance:'modern_orthodox',isVerified:true,
+     tags:['Hiking','Books','Shabbat','Tech','Singing'],
+     practiceTags:['shomer_shabbat','kasher','mitpalel_yom_yom'],
+     lastActiveHrs:4,accountAgeDays:200,impr7d:25,impr24h:9,
+     ocean:{Openness:71,Conscientiousness:78,Extraversion:62,Agreeableness:70,Neuroticism:42}},
+    {id:'noa',name:'Noa',initials:'NO',age:26,city:'Tel Aviv',gender:'female',
+     intent:'serious_relationship',observance:'traditional',isVerified:true,
+     tags:['Beach','Cooking','History','Shabbat'],
+     practiceTags:['shomer_masoret','kasher_babayit'],
+     lastActiveHrs:1,accountAgeDays:12,impr7d:8,impr24h:2,
+     ocean:{Openness:60,Conscientiousness:68,Extraversion:70,Agreeableness:80,Neuroticism:35}},
+    {id:'maya',name:'Maya',initials:'MY',age:24,city:'Haifa',gender:'female',
+     intent:'serious_relationship',observance:'secular',isVerified:false,
+     tags:['Art','Nature','Hiking','Books'],
+     practiceTags:['lo_shomer_shabbat','lo_kasher'],
+     lastActiveHrs:22,accountAgeDays:1,impr7d:3,impr24h:1,
+     ocean:{Openness:88,Conscientiousness:55,Extraversion:60,Agreeableness:72,Neuroticism:50}},
+    {id:'yosef',name:'Yosef',initials:'YO',age:31,city:'Raanana',gender:'male',
+     intent:'marriage_minded',observance:'dati',isVerified:true,
+     tags:['Books','Teaching','Shabbat','Community'],
+     practiceTags:['shomer_shabbat','kasher','pail_bakehila','mitpalel_yom_yom'],
+     lastActiveHrs:36,accountAgeDays:600,impr7d:410,impr24h:80,
+     ocean:{Openness:65,Conscientiousness:82,Extraversion:48,Agreeableness:78,Neuroticism:30}}
+  ];
+  const STATE = {
+    hard:{verified_only:true},
+    soft:{shared_interests:0.9,shared_observance_label:0.7,similar_age:0.5,more_like_recent_likes:0.6},
+    likedTags:new Map(),
+    optinSelf:true,optinOther:false,quizAnswers:{}
+  };
+  const intersect = (a,b)=>{const s=new Set(a.map(x=>x.toLowerCase()));return b.filter(x=>s.has(x.toLowerCase()));};
+  function violatesHard(c){
+    if(STATE.hard.shomer_shabbat && !c.practiceTags.includes('shomer_shabbat')) return 'shomer_shabbat';
+    if(STATE.hard.kashrut && !c.practiceTags.some(t=>['mehadrin','kasher','kasher_babayit'].includes(t))) return 'kashrut';
+    if(STATE.hard.verified_only && !c.isVerified) return 'verified_only';
+    if(STATE.hard.intent_marriage && c.intent!=='marriage_minded') return 'intent_alignment';
+    return null;
+  }
+  function implicitAffinity(c){
+    if(STATE.likedTags.size===0) return 0;
+    let sum=0,n=c.tags.length;
+    for(const t of c.tags) sum+=(STATE.likedTags.get(t.toLowerCase())||0);
+    return Math.max(-1,Math.min(1,sum/Math.max(1,n)));
+  }
+  function dirScore(viewer,cand){
+    const v=violatesHard(cand);
+    if(v) return {score:0,violation:v,reasons:[],components:{em:0,im:0,ctx:0}};
+    let ws=0,ms=0;const reasons=[];
+    const shared=intersect(viewer.tags,cand.tags);
+    if(STATE.soft.shared_interests&&shared.length>0){const w=STATE.soft.shared_interests,vv=Math.min(1,shared.length/4);ms+=w*vv;ws+=w;if(shared.length>=2) reasons.push('shared_interests');}
+    if(STATE.soft.shared_observance_label&&viewer.observance===cand.observance){const w=STATE.soft.shared_observance_label;ms+=w;ws+=w;reasons.push('shared_observance_label');}
+    if(STATE.soft.similar_age){const w=STATE.soft.similar_age,d=Math.abs(viewer.age-cand.age);ms+=w*Math.max(0,1-d/12);ws+=w;}
+    if(STATE.soft.same_city&&viewer.city===cand.city){const w=STATE.soft.same_city;ms+=w;ws+=w;}
+    if(viewer.intent===cand.intent) reasons.push('shared_intent');
+    const em=ws>0?ms/ws:0;
+    const im=STATE.soft.more_like_recent_likes?Math.max(0,implicitAffinity(cand)):0;
+    if(im>0.3) reasons.push('taste_driven');
+    const ctx=cand.lastActiveHrs<24?0.1:0;
+    return {score:Math.max(0,Math.min(1,0.5*em+0.4*im+0.1*(ctx/0.2))),reasons,components:{em,im,ctx}};
+  }
+  function reciprocal(a,b){return a<=0||b<=0?0:(2*a*b)/(a+b);}
+  function fairness(c){
+    if(c.accountAgeDays<3) return 1.5;
+    if(c.impr24h>500) return 0.5;
+    if(c.impr7d<10) return 1.2+(10-c.impr7d)*0.05;
+    return 1.0;
+  }
+  function rank(c){
+    const a=dirScore(USER,c),b=dirScore(c,USER);
+    if(a.score===0||b.score===0) return {admissible:false,violation:a.violation||b.violation,final:0,recip:0,mult:0,evidence:null,a,b};
+    const r=reciprocal(a.score,b.score),m=fairness(c);
+    const sharedTags=intersect(USER.tags,c.tags);
+    return {admissible:true,recip:r,mult:m,final:r*m,
+      evidence:{shared_interests:sharedTags,
+        shared_intent:USER.intent===c.intent?USER.intent:null,
+        shared_observance_label:USER.observance===c.observance?USER.observance:null,
+        activity_status:c.accountAgeDays<3?'new_user':(c.lastActiveHrs<168?'active_recently':'unspecified'),
+        taste_driven:a.reasons.includes('taste_driven')},a,b};
+  }
+  function explFromEvidence(e){
+    if(!e) return ['—'];const out=[];
+    if(e.shared_interests.length>=2) out.push('אתם חולקים תחומי עניין: '+e.shared_interests.slice(0,3).join(' ו-')+'.');
+    else if(e.shared_interests.length===1) out.push('שניכם רשמתם '+e.shared_interests[0]+' בפרופיל.');
+    if(e.shared_intent) out.push('אתם מחפשים סוג דומה של מערכת יחסים.');
+    if(e.shared_observance_label) out.push('יש לכם תיאור עצמי דומה ביחס למסורת.');
+    if(e.activity_status==='new_user') out.push('הם חדשים בקשר.');
+    else if(e.activity_status==='active_recently') out.push('הם פעילים לאחרונה.');
+    if(e.taste_driven) out.push('בהתבסס על פרופילים שאהבת לאחרונה.');
+    if(out.length===0) out.push('הם תואמים את המסננים הנוכחיים שלך ופעילים באזור.');
+    return out;
+  }
+  function renderPicks(){
+    const ranked=CANDIDATES.map(c=>({c,r:rank(c)}));
+    const ok=ranked.filter(x=>x.r.admissible).sort((a,b)=>b.r.final-a.r.final);
+    const blocked=ranked.filter(x=>!x.r.admissible);
+    const list=document.getElementById('picks-list');list.innerHTML='';
+    ok.forEach((x,i)=>{
+      const c=x.c,r=x.r,reasons=explFromEvidence(r.evidence).slice(0,2);
+      const el=document.createElement('div');el.className='profile';
+      el.innerHTML=`
+        <div class="avatar">${c.initials}</div>
+        <div>
+          <div class="row">
+            <div><span style="font-weight:500;font-size:14px;">${c.name}, ${c.age}</span>
+              <span class="label" style="margin-left:8px;">${c.city} · ${c.observance.replace(/_/g,' ')}</span></div>
+            <span class="pill pill-blue">score ${r.final.toFixed(2)}</span>
+          </div>
+          <div class="bar" style="margin-top:6px;"><span style="width:${Math.min(100,r.final*100)}%"></span></div>
+          <div class="rtl" style="margin-top:8px;font-size:12px;color:var(--muted);">
+            ${reasons.map(t=>`<div>· ${t}</div>`).join('')}
+          </div>
+          <div class="actions">
+            <button class="btn" data-action="pass" data-id="${c.id}">Pass</button>
+            <button class="btn btn-primary" data-action="like" data-id="${c.id}">Like</button>
+            ${i===0?'<button class="btn" data-action="trace">View ranking trace</button>':''}
+          </div>
+        </div>`;
+      list.appendChild(el);
+    });
+    blocked.forEach(x=>{
+      const el=document.createElement('div');el.className='profile';el.style.opacity='0.55';
+      el.innerHTML=`<div class="avatar" style="background:#F1EFE8;color:#5F5E5A;">${x.c.initials}</div>
+        <div>
+          <div class="row">
+            <span style="font-weight:500;font-size:14px;">${x.c.name}, ${x.c.age}</span>
+            <span class="pill pill-coral">excluded · ${x.r.violation}</span>
+          </div>
+          <div class="label" style="margin-top:4px;">Removed by hard filter — never appears in daily picks.</div>
+        </div>`;
+      list.appendChild(el);
+    });
+    renderTrace(ok[0]);
+  }
+  function renderTrace(top){
+    const m=document.getElementById('trace-metrics'),log=document.getElementById('trace-log');
+    if(!top){m.innerHTML='';log.textContent='No admissible candidates.';return;}
+    const r=top.r,c=top.c;
+    m.innerHTML=`
+      <div class="metric"><div class="lbl">Score(viewer→cand)</div><div class="val">${r.a.score.toFixed(2)}</div></div>
+      <div class="metric"><div class="lbl">Score(cand→viewer)</div><div class="val">${r.b.score.toFixed(2)}</div></div>
+      <div class="metric"><div class="lbl">Reciprocal (harmonic)</div><div class="val">${r.recip.toFixed(2)}</div></div>
+      <div class="metric"><div class="lbl">Fairness multiplier</div><div class="val">${r.mult.toFixed(2)}×</div></div>
+      <div class="metric"><div class="lbl">Final adjusted</div><div class="val">${r.final.toFixed(2)}</div></div>
+      <div class="metric"><div class="lbl">Reason codes</div><div class="val" style="font-size:13px;font-weight:400;">${r.a.reasons.join(', ')||'—'}</div></div>`;
+    const e=r.evidence;
+    log.innerHTML=[
+      `<span class="ok">[hard]</span>      passed: age, distance, observance floor, verification`,
+      `<span class="ok">[directional]</span> w1·explicit=${(0.5*r.a.components.em).toFixed(2)} + w2·implicit=${(0.4*r.a.components.im).toFixed(2)} + w3·ctx=${(0.1*(r.a.components.ctx/0.2)).toFixed(2)}`,
+      `<span class="ok">[reciprocal]</span>  2·a·b/(a+b) = ${r.recip.toFixed(3)}`,
+      `<span class="${r.mult===1?'ok':(r.mult>1?'warn':'err')}">[fairness]</span>    multiplier=${r.mult.toFixed(2)}× (account ${c.accountAgeDays}d old · 7d impr=${c.impr7d} · 24h impr=${c.impr24h})`,
+      `<span class="ok">[evidence]</span>   shared=${JSON.stringify(e.shared_interests)} intent=${e.shared_intent} observance=${e.shared_observance_label} activity=${e.activity_status} taste=${e.taste_driven}`,
+      `<span class="ok">[output]</span>     final=${r.final.toFixed(3)}  →  passed to explanation generator`
+    ].join('\n');
+  }
+  const QUESTIONS=[
+    {id:'q1',dom:'Openness',text:'I enjoy exploring new ideas and unfamiliar art.',reverse:false},
+    {id:'q2',dom:'Conscientiousness',text:'I follow through on the plans I make.',reverse:false},
+    {id:'q3',dom:'Extraversion',text:'I prefer being around people over being alone.',reverse:false},
+    {id:'q4',dom:'Agreeableness',text:'I usually trust that others mean well.',reverse:false},
+    {id:'q5',dom:'Neuroticism',text:'I rarely feel anxious or on edge.',reverse:true}
+  ];
+  function renderQuiz(){
+    const root=document.getElementById('quiz');root.innerHTML='';
+    QUESTIONS.forEach((q,i)=>{
+      const div=document.createElement('div');div.style.margin='0 0 12px';
+      div.innerHTML=`<div class="q-step">${i+1}/${QUESTIONS.length} · ${q.text}</div>
+        <div class="radio-row" data-q="${q.id}">${[1,2,3,4,5].map(v=>`<button data-v="${v}" aria-pressed="false">${['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'][v-1]}</button>`).join('')}</div>`;
+      root.appendChild(div);
+    });
+    renderOcean();
+  }
+  function scoreOcean(){
+    const t={},co={};
+    QUESTIONS.forEach(q=>{const a=STATE.quizAnswers[q.id];if(!a)return;const v=q.reverse?(6-a):a;t[q.dom]=(t[q.dom]||0)+v;co[q.dom]=(co[q.dom]||0)+1;});
+    const out={};
+    ['Openness','Conscientiousness','Extraversion','Agreeableness','Neuroticism'].forEach(d=>{out[d]=co[d]?Math.round(((t[d]/co[d])-1)/4*100):null;});
+    return out;
+  }
+  function renderOcean(){
+    const root=document.getElementById('ocean-bars');const s=scoreOcean();
+    const order=['Openness','Conscientiousness','Extraversion','Agreeableness','Neuroticism'];
+    root.innerHTML=order.map(d=>{const v=s[d],lbl=d==='Neuroticism'?'Emotional Style':d;
+      return `<div class="metric"><div class="lbl">${lbl}</div><div class="val">${v==null?'—':v}</div><div class="bar" style="margin-top:6px;"><span style="width:${v==null?0:v}%"></span></div></div>`;}).join('');
+  }
+  function renderReflection(){
+    const root=document.getElementById('reflection-output');
+    if(!(STATE.optinSelf&&STATE.optinOther)){
+      root.innerHTML=`<div class="pill pill-amber">Reflection is locked until both users opt in.</div>
+        <p class="sub" style="margin-top:10px;">Per <code>0003-mutual-consent-compatibility-reflection</code>: we never produce a one-sided personality reading.</p>`;
+      return;
+    }
+    const top=CANDIDATES.find(c=>!violatesHard(c))||CANDIDATES[0];
+    const a=USER.ocean,b=top.ocean,DOMS=['Openness','Conscientiousness','Extraversion','Agreeableness','Neuroticism'];
+    const harm=[],grow=[],fric=[];
+    DOMS.forEach(d=>{const dlt=Math.abs(a[d]-b[d]);if(dlt<=12) harm.push(d);else if(dlt>=35) fric.push(d);else grow.push(d);});
+    const lbl=d=>d==='Neuroticism'?'Emotional Style':d;
+    const row=(label,items,kl)=>`<div style="margin-top:10px;"><span class="label">${label}</span><div style="margin-top:4px;">${items.length===0?'<span class="pill pill-gray">none</span>':items.map(d=>`<span class="pill ${kl}" style="margin-right:6px;">${lbl(d)}</span>`).join('')}</div></div>`;
+    root.innerHTML=`<div class="pill pill-purple">Reflection · ${USER.id} ↔ ${top.name}</div>
+      ${row('Likely harmony',harm,'pill-teal')}
+      ${row('Complementary differences (growth)',grow,'pill-blue')}
+      ${row('Possible friction',fric,'pill-amber')}
+      <p class="sub rtl" style="margin-top:14px;">זוהי השתקפות לדיון משותף, לא מדד התאמה. דברו על מה שנכון לכם.</p>`;
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+      t.setAttribute('aria-selected','true');
+      const name=t.dataset.tab;
+      document.querySelectorAll('[data-pane]').forEach(p=>{p.hidden=p.dataset.pane!==name;});
+      if(name==='personality'){renderQuiz();renderOcean();}
+      if(name==='reflection') renderReflection();
+      if(name==='ranking') renderPicks();
+    });
+  });
+  document.getElementById('hard-filters').addEventListener('click',e=>{
+    const b=e.target.closest('.chk');if(!b)return;
+    const id=b.dataset.hf,on=b.getAttribute('aria-pressed')!=='true';
+    b.setAttribute('aria-pressed',on);STATE.hard[id]=on;renderPicks();
+  });
+  document.getElementById('soft-filters').addEventListener('click',e=>{
+    const b=e.target.closest('.chk');if(!b)return;
+    const id=b.dataset.sf,on=b.getAttribute('aria-pressed')!=='true';
+    b.setAttribute('aria-pressed',on);STATE.soft[id]=on?(STATE.soft[id]||0.7):0;renderPicks();
+  });
+  document.getElementById('picks-list').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.action==='trace'){document.querySelector('.tab[data-tab="ranking"]').click();return;}
+    const id=b.dataset.id,c=CANDIDATES.find(x=>x.id===id);if(!c)return;
+    if(b.dataset.action==='like'){c.tags.forEach(t=>{const k=t.toLowerCase();STATE.likedTags.set(k,Math.min(1,(STATE.likedTags.get(k)||0)+0.25));});}
+    else if(b.dataset.action==='pass'){c.tags.forEach(t=>{const k=t.toLowerCase();STATE.likedTags.set(k,Math.max(-1,(STATE.likedTags.get(k)||0)-0.1));});}
+    renderPicks();
+  });
+  document.getElementById('quiz').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-v]');if(!b)return;
+    const row=b.closest('.radio-row'),qid=row.dataset.q;
+    row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    STATE.quizAnswers[qid]=parseInt(b.dataset.v,10);renderOcean();
+  });
+  document.getElementById('optin-self').addEventListener('click',e=>{
+    const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
+    e.currentTarget.setAttribute('aria-pressed',on);STATE.optinSelf=on;renderReflection();
+  });
+  document.getElementById('optin-other').addEventListener('click',e=>{
+    const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
+    e.currentTarget.setAttribute('aria-pressed',on);STATE.optinOther=on;
+    e.currentTarget.textContent=on?'They opted in':'Awaiting consent';renderReflection();
+  });
+  renderPicks();
+})();
+</script>
+</body>
+</html>

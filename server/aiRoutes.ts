@@ -19,6 +19,7 @@ import {
   PacingInterventionSchema,
   DateIdeasSchema,
   PhotoAnalysisSchema,
+  ValuesPhrasingSchema,
 } from "../src/ai/schemas.ts";
 import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
 import {
@@ -800,6 +801,64 @@ aiRouter.post("/moderation-summary", async (req, res) => {
       evidence: [],
       riskLevel: "low",
       escalationRecommended: false,
+    });
+  }
+});
+
+aiRouter.post("/values-phrasing", async (req, res) => {
+  res.locals.ai_metadata.feature_id = "values_phrasing";
+  res.locals.ai_metadata.prompt_version = "v1.0";
+  try {
+    const { value_topic, user_draft = "", observance = "unspecified", context = "bio" } = req.body;
+
+    if (!value_topic || typeof value_topic !== "string") {
+      return res.status(400).json({ error: "Missing value_topic" });
+    }
+
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: capabilityRouter.getRoute("bio_coach"), // Flash — fast, low-thinking
+      contents: PROMPT_TEMPLATES.VALUES_PHRASING({ value_topic, user_draft, observance, context }),
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS.VALUES_PHRASING,
+        responseMimeType: "application/json",
+        responseSchema: ValuesPhrasingSchema,
+        temperature: 0.4,
+      },
+    });
+
+    const parsed = parseAIResponse(response.text);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.phrasing_options_he) ||
+      parsed.phrasing_options_he.length < 3
+    ) {
+      throw new Error("Invalid values phrasing output: missing or insufficient Hebrew options");
+    }
+
+    res.locals.ai_metadata.validator_result = "success";
+    res.json(parsed);
+  } catch (error: any) {
+    handleAiError(error, res, "Values phrasing failed:");
+    res.json({
+      phrasing_options_he: [
+        "אני מחפש/ת מישהו שמשתף את הערכים שלי",
+        "מסורת משפחתית חשובה לי מאוד",
+        "אני חי/ה לפי ערכים יהודיים עמוקים",
+      ],
+      phrasing_options_en: [
+        "I'm looking for someone who shares my values",
+        "Family tradition is very important to me",
+        "I live by deep Jewish values",
+      ],
+      what_each_option_signals: [
+        "Open, welcoming",
+        "Family-oriented",
+        "Values-grounded",
+      ],
+      avoid_phrases: ["I'm very serious", "Looking for my bashert"],
+      coaching_note_he: "כדאי לבחור את הניסוח שמרגיש הכי אמיתי עבורך.",
     });
   }
 });

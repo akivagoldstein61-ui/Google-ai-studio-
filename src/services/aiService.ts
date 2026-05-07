@@ -207,4 +207,20 @@ export const aiService = {
       return null;
     }
   },
+
+  async getValuesPhrasing(params: {
+    value_topic: string;
+    user_draft?: string;
+    observance?: string;
+    context?: string;
+  }) {
+    try {
+      return await safeApiFetch("/api/ai/values-phrasing", params);
+    } catch (e: any) {
+      if (e?.message !== "INVALID_JSON_RESPONSE") {
+        console.error("Values phrasing API call failed", e);
+      }
+      return null;
+    }
+  },
 };

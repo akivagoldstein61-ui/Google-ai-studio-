@@ -641,6 +641,47 @@ export const PacingInterventionSchema = {
   required: ["message_he", "reflection_prompt_he"],
 };
 
+export const ValuesPhrasingSchema = {
+  type: Type.OBJECT,
+  properties: {
+    phrasing_options_he: {
+      type: Type.ARRAY,
+      minItems: 3,
+      maxItems: 6,
+      items: { type: Type.STRING },
+      description: "3-6 Hebrew phrasing options that express the value authentically",
+    },
+    phrasing_options_en: {
+      type: Type.ARRAY,
+      minItems: 3,
+      maxItems: 6,
+      items: { type: Type.STRING },
+      description: "3-6 English phrasing options (for review context)",
+    },
+    what_each_option_signals: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Brief note on tone/signal for each option (parallel array)",
+    },
+    avoid_phrases: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Phrases to avoid — typically clichés or misrepresentations",
+    },
+    coaching_note_he: {
+      type: Type.STRING,
+      description: "A warm, brief note about how to present this value authentically",
+    },
+  },
+  required: [
+    "phrasing_options_he",
+    "phrasing_options_en",
+    "what_each_option_signals",
+    "avoid_phrases",
+    "coaching_note_he",
+  ],
+};
+
 export const SHARE_CARD_SCOPES = [
   "summary",
   "strengths",

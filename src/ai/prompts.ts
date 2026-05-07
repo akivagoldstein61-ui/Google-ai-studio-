@@ -120,5 +120,21 @@ Output a compatibility_reflection JSON.`,
   PACING_INTERVENTION: (sessionLength: number, swipeVelocity: number) => `Generate a gentle prompt to take a break.
 Session length: ${sessionLength} minutes
 Swipe velocity: ${swipeVelocity} swipes/minute
-Output a pacing_intervention JSON.`
+Output a pacing_intervention JSON.`,
+
+  VALUES_PHRASING: (params: { value_topic: string; user_draft: string; observance: string; context: string }) => `Help this user express their value authentically on a serious Jewish dating profile.
+
+Value/topic: ${params.value_topic}
+User's current draft (may be empty): "${params.user_draft}"
+Observance level (user-declared): ${params.observance}
+Context (bio, prompt, or conversation): ${params.context}
+
+CRITICAL RULES:
+- Output phrasing options in Hebrew (primary) and English (for review).
+- Do not invent facts about the user — work only from what they provided.
+- Do not produce clichés unless the user asked for them.
+- Do not produce anything that overstates commitment (e.g., do not write "strictly shomer Shabbat" if the user said "traditional").
+- Frame any mismatch gently in the coaching note.
+
+Output a values_phrasing JSON.`
 };

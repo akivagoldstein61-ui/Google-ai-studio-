@@ -7,14 +7,15 @@ import { cn } from '@/lib/utils';
 
 import { trustService } from '@/services/trustService';
 
-export const SettingsScreen: React.FC<{ 
-  onShowSafety: () => void, 
+export const SettingsScreen: React.FC<{
+  onShowSafety: () => void,
   onShowAITrust: () => void,
   onShowPersonalityProfile: () => void,
   onShowAIOps: () => void,
   onShowExperiments: () => void,
-  onEditProfile: () => void
-}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowAIOps, onShowExperiments, onEditProfile }) => {
+  onEditProfile: () => void,
+  onShowValuesPhrasing?: () => void,
+}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowAIOps, onShowExperiments, onEditProfile, onShowValuesPhrasing }) => {
   const { user, isPremium } = useApp();
 
   const [devClicks, setDevClicks] = useState(0);
@@ -85,8 +86,27 @@ export const SettingsScreen: React.FC<{
           </div>
         </section>
 
+        {/* Values & Observance Phrasing Coach */}
+        {onShowValuesPhrasing && (
+          <section
+            onClick={onShowValuesPhrasing}
+            className="p-6 bg-gradient-to-br from-[#FFF9EF] to-white border border-[#F3EFEA] rounded-[32px] flex items-center justify-between cursor-pointer group hover:shadow-md transition-all"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#D4AF37] text-white rounded-full flex items-center justify-center shadow-lg">
+                <Sparkles size={22} />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="font-bold text-[#2D2926]">Values Phrasing Coach</h4>
+                <p className="text-[10px] text-[#8C7E6E] font-medium italic uppercase tracking-widest">Express yourself authentically in Hebrew</p>
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-[#8C7E6E] group-hover:translate-x-1 transition-transform" />
+          </section>
+        )}
+
         {/* AI & Trust Hub Entry */}
-        <section 
+        <section
           onClick={() => onShowAITrust && onShowAITrust()}
           className="p-6 bg-gradient-to-br from-[#F7F2EE] to-white border border-[#F3EFEA] rounded-[32px] flex items-center justify-between cursor-pointer group hover:shadow-md transition-all"
         >
