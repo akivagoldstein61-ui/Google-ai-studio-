@@ -7,7 +7,6 @@
     "deployments": "none"
   },
   "deploy_mode": "github-actions",
-  "deployment_access_enabled": false,
   "commands": {
     "install": "npm ci",
     "lint": "npm run lint",
