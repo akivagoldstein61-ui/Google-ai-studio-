@@ -156,5 +156,6 @@ See full deployment docs in `docs/deployment/`:
 - `netlify.md`
 - `neon.md`
 - `env-vars.md`
+- `gitspark.md`
 - `preview-workflow.md`
 - `rollback.md`
