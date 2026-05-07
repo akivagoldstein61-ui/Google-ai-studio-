@@ -16,11 +16,13 @@ If deploy orchestration is disabled, keep deploy control in `deploy.yml` only.
 
 ## 2) Connect repository and permissions
 
-Connect `akivagoldstein61-ui/Google-ai-studio-` in GitSpark with (the trailing `-` is part of the real repo name):
+Connect `akivagoldstein61-ui/Google-ai-studio-` in GitSpark with (the trailing `-` is part of the actual repository name):
 
 - Repository: read/write (PR metadata, statuses, checks)
-- Workflows/Actions: read
+- Workflows/Actions: read (so GitSpark can observe workflow/check outcomes and report status context on PRs)
 - Deployments/environments: off by default; enable only if GitSpark controls releases
+
+In `.git-spark.json`, `deploy_mode` is set to `github-actions`, so `deploy: true` on `push_to_main` means "allow deploy flow on main" while direct GitSpark deployment access remains disabled by default.
 
 ## 3) Command mapping
 
