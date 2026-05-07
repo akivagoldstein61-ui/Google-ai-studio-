@@ -1,0 +1,177 @@
+# Kesher Personality Dimension — Machine-Readable Claims Registry
+# Every user-facing personality or AI claim must appear here before shipping.
+# CI fails if a claim_text appears in production copy without a VERIFIED or INFERRED entry.
+#
+# Evidence labels:
+#   VERIFIED   — Based on a validated, peer-reviewed psychometric instrument with documented reliability/validity.
+#                License confirmed. External study on file.
+#   INFERRED   — Derived from behavioral signals using a defined algorithm. No external validation study.
+#                Uncertainty must be disclosed in UI copy.
+#   HEURISTIC  — Rule-based logic with no validation study. Engineering judgment only.
+#                Must be disclosed as a rough guide.
+#   UNKNOWN    — Not yet classified. MUST NOT be shown to users in production.
+#
+# Forbidden claim patterns (CI rejects these even if registered):
+#   - compatibility score / % compatible / percentile
+#   - soulmate / perfect match / bashert / destiny
+#   - marriage probability / desirability / attractiveness score
+#   - diagnosis / clinical label / personality disorder
+
+schema_version: "1.0"
+last_updated: "2026-05-06"
+owner: "@personality-reviewers"
+instrument_status:
+  ipip_public_domain: true
+  bfas_license_confirmed: false   # BLOCKED — see docs/personality/claim-registry.md
+  bfi2_license_confirmed: false   # BLOCKED — pending legal review
+  current_scoring_instrument: "ipip-short-form-mvp"
+  scoring_version_in_use: "bfas-mvp-v1"
+
+release_gate_status:
+  gate_1_privacy_consent: pending
+  gate_2_forbidden_patterns: passing   # outputValidators.ts + scan-forbidden-fields.mjs
+  gate_3_scientific_integrity: pending # IPIP decision memo not yet signed
+  gate_4_hebrew_rtl: passing           # test-rtl.mjs passing
+  gate_5_mutual_consent: pending
+  gate_6_leakage_redteam: pending
+  gate_7_claim_substantiation: pending
+  gate_8_legal_counsel: pending
+
+claims:
+
+  # ── ACTIVE CLAIMS (currently shown in UI) ──────────────────────────────────
+
+  - id: CL-001
+    claim_text: "Your personality tendencies, based on how you answered"
+    placement: personality_profile_screen
+    evidence_label: HEURISTIC
+    instrument: ipip-short-form-mvp
+    scoring_version: bfas-mvp-v1
+    uncertainty_disclosed: true
+    uncertainty_copy: "These are tendencies, not fixed traits. Results may shift over time."
+    owner: "@personality-reviewers"
+    release_gate: gate_3_scientific_integrity
+    status: prototype_only    # not in production until gate_3 passes
+    notes: "20-item IPIP short form. Not a validated percentile — displayed as 0–100 raw mean only."
+
+  - id: CL-002
+    claim_text: "Why you're seeing this match"
+    placement: daily_picks_why_match_card
+    evidence_label: HEURISTIC
+    instrument: none           # whitelisted explicit signals only — no psychometric instrument
+    scoring_version: v1.0
+    uncertainty_disclosed: true
+    uncertainty_copy: "Based on what you both shared publicly. This is a hypothesis, not a verdict."
+    owner: "@matching-reviewers"
+    release_gate: null         # no personality gate required — uses only explicit_public signals
+    status: active
+    notes: >
+      WHY_MATCH_ALLOWED_SIGNALS only: visible_values, visible_intent, visible_observance,
+      visible_lifestyle, visible_interests, visible_prompts, self_declared_profile_fields.
+      WHY_MATCH_FORBIDDEN_SIGNALS validated by outputValidators.validateWhyMatch().
+
+  - id: CL-003
+    claim_text: "Possible shared strengths based on your profiles"
+    placement: compatibility_reflection_screen
+    evidence_label: INFERRED
+    instrument: ipip-short-form-mvp
+    scoring_version: bfas-mvp-v1
+    uncertainty_disclosed: true
+    uncertainty_copy: "These are possible tendencies — not a compatibility verdict."
+    owner: "@personality-reviewers"
+    release_gate: gate_5_mutual_consent
+    status: prototype_only
+    notes: >
+      Requires both users to opt in and share cards. Validated by
+      outputValidators.validateCompatibilityReflection(). No compatibility % ever shown.
+
+  - id: CL-004
+    claim_text: "Your profile coach suggestions are drafts — you stay in control"
+    placement: bio_coach_screen
+    evidence_label: HEURISTIC
+    instrument: none
+    scoring_version: v1.0
+    uncertainty_disclosed: true
+    uncertainty_copy: "All outputs are draft suggestions. Review before using."
+    owner: "@ai-reviewers"
+    release_gate: null
+    status: active
+    notes: "BioCoachSchema enforced. No auto-send. User remains author."
+
+  - id: CL-005
+    claim_text: "Values phrasing suggestions are drafts — express yourself authentically"
+    placement: values_phrasing_coach_screen
+    evidence_label: HEURISTIC
+    instrument: none
+    scoring_version: v1.0
+    uncertainty_disclosed: true
+    uncertainty_copy: "These are suggestions only. Choose what feels true to you."
+    owner: "@ai-reviewers"
+    release_gate: null
+    status: active
+    notes: "ValuesPhrasingSchema enforced. No identity invention. No auto-send."
+
+  - id: CL-006
+    claim_text: "Safety FAQ answers are based on current guidance"
+    placement: safety_center
+    evidence_label: INFERRED
+    instrument: google_search_grounding
+    scoring_version: v1.0
+    uncertainty_disclosed: true
+    uncertainty_copy: "For emergencies, call 100 (police) or 101 (ambulance)."
+    owner: "@safety-reviewers"
+    release_gate: null
+    status: active
+    notes: "Google Search grounding with citation UI required. Non-emergency framing enforced."
+
+  # ── PROPOSED CLAIMS (pre-review, not yet in production) ───────────────────
+
+  - id: CL-P001
+    claim_text: "Based on your personality tendencies, you may communicate differently under stress"
+    placement: aspect_reflection_card
+    evidence_label: UNKNOWN
+    instrument: ipip-short-form-mvp
+    scoring_version: bfas-mvp-v1
+    uncertainty_disclosed: false  # needs UI copy
+    owner: "@personality-reviewers"
+    release_gate: gate_3_scientific_integrity
+    status: proposed
+    notes: >
+      Neuroticism/Volatility aspect card. Requires gate_3 (IPIP decision memo) and gate_1 (consent).
+      Must use probabilistic language: "may", "often", "tends to".
+
+  - id: CL-P002
+    claim_text: "Topics worth exploring together"
+    placement: compatibility_reflection_screen
+    evidence_label: INFERRED
+    instrument: ipip-short-form-mvp
+    scoring_version: bfas-mvp-v1
+    uncertainty_disclosed: false  # needs UI copy
+    owner: "@personality-reviewers"
+    release_gate: gate_5_mutual_consent
+    status: proposed
+    notes: >
+      friction_loops card. Requires mutual consent gate. Must not frame as "red flags"
+      or negative verdicts. Must use question_to_explore_he from PairInsightReportSchema.
+
+  # ── RETIRED CLAIMS ─────────────────────────────────────────────────────────
+  # (none yet)
+
+# ── BANNED COPY (CI hard fails on these strings in any production output) ──
+banned_patterns:
+  - pattern: "soulmate|soul mate|נשמה תאומה"
+    reason: "Destiny language — not scientifically defensible"
+  - pattern: "perfect match|התאמה מושלמת"
+    reason: "Deterministic compatibility claim"
+  - pattern: "\\d{1,3}\\s*%\\s*(compatible|match|compatibility)"
+    reason: "Compatibility percentage — never show"
+  - pattern: "compatibility score|ציון התאמה"
+    reason: "Scored compatibility — never show"
+  - pattern: "marriage probability|סיכוי לנישואים"
+    reason: "Unsubstantiated prediction"
+  - pattern: "desirability|attractiveness score|דירוג משיכה"
+    reason: "Objectifying — prohibited"
+  - pattern: "diagnos|personality disorder|הפרעת אישיות"
+    reason: "Clinical label — prohibited"
+  - pattern: "bashert|באשערט"
+    reason: "Destiny language — unless user-entered, not AI-generated"

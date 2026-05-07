@@ -339,4 +339,32 @@ export const outputValidators = {
     validateStringFields(output);
     return output;
   },
+
+  validateValuesPhrasing(output: any) {
+    if (
+      !output ||
+      !Array.isArray(output.phrasing_options_he) ||
+      output.phrasing_options_he.length < 3
+    ) {
+      throw new Error(
+        "Invalid Values Phrasing output: must have at least 3 Hebrew phrasing options.",
+      );
+    }
+    if (!Array.isArray(output.phrasing_options_en)) {
+      throw new Error(
+        "Invalid Values Phrasing output: missing English phrasing options.",
+      );
+    }
+    if (!output.coaching_note_he || typeof output.coaching_note_he !== "string") {
+      throw new Error(
+        "Invalid Values Phrasing output: missing coaching_note_he.",
+      );
+    }
+    // Ensure no prohibited language leaked into suggestions
+    validateStringFields({
+      options_combined: output.phrasing_options_he.join(" "),
+      coaching_note: output.coaching_note_he,
+    });
+    return output;
+  },
 };

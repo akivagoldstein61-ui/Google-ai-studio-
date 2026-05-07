@@ -13,6 +13,7 @@ on:
       - "server.ts"
       - "scripts/**"
       - "docs/personality/**"
+      - "claims/**"
       - "package.json"
   push:
     branches:
@@ -21,6 +22,7 @@ on:
       - "src/ai/**"
       - "src/features/personality/**"
       - "scripts/**"
+      - "claims/**"
 
 permissions:
   contents: read
@@ -91,6 +93,19 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Run personality smoke tests
         run: node scripts/personality-smoke-tests.mjs
+
+  claims-registry:
+    name: "Lint – Claims Registry"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts
+      - name: Lint claims registry for UNKNOWN labels and banned copy
+        run: node scripts/lint-claims-registry.mjs
 
   typecheck:
     name: "TypeScript – No-emit check"

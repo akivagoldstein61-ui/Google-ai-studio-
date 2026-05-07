@@ -817,7 +817,7 @@ aiRouter.post("/values-phrasing", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: capabilityRouter.getRoute("bio_coach"), // Flash — fast, low-thinking
+      model: capabilityRouter.getRoute("values_phrasing"), // Flash — fast, low-thinking
       contents: PROMPT_TEMPLATES.VALUES_PHRASING({ value_topic, user_draft, observance, context }),
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.VALUES_PHRASING,
@@ -827,18 +827,12 @@ aiRouter.post("/values-phrasing", async (req, res) => {
       },
     });
 
-    const parsed = parseAIResponse(response.text);
-
-    if (
-      !parsed ||
-      !Array.isArray(parsed.phrasing_options_he) ||
-      parsed.phrasing_options_he.length < 3
-    ) {
-      throw new Error("Invalid values phrasing output: missing or insufficient Hebrew options");
-    }
+    const validated = outputValidators.validateValuesPhrasing(
+      parseAIResponse(response.text),
+    );
 
     res.locals.ai_metadata.validator_result = "success";
-    res.json(parsed);
+    res.json(validated);
   } catch (error: any) {
     handleAiError(error, res, "Values phrasing failed:");
     res.json({

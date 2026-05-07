@@ -9,6 +9,7 @@ export const capabilityRouter = {
       case 'bio_coach':
       case 'rephrase_message':
       case 'generate_openers':
+      case 'values_phrasing':
         route = 'optionalFastFallbackModel';
         break;
       case 'taste_profile':
@@ -42,6 +43,7 @@ export const capabilityRouter = {
       case 'bio_coach':
       case 'rephrase_message':
       case 'generate_openers':
+      case 'values_phrasing':
         return 'optionalFastFallbackModel';
       case 'taste_profile':
       case 'why_match':

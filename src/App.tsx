@@ -19,6 +19,7 @@ import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
+import { ValuesPhrasingCoach } from './features/settings/ValuesPhrasingCoach';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -37,6 +38,7 @@ const AppContent: React.FC = () => {
   const [showExperiments, setShowExperiments] = useState(false);
   const [showMatch, setShowMatch] = useState<Profile | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showValuesPhrasing, setShowValuesPhrasing] = useState(false);
 
   if (!user) {
     return <WelcomeScreen onNext={() => {}} />;
@@ -80,6 +82,8 @@ const AppContent: React.FC = () => {
             <PrivateTasteProfile onBack={() => setShowTasteProfile(false)} />
           ) : showPersonalityProfile ? (
             <PersonalityProfileScreen onBack={() => setShowPersonalityProfile(false)} />
+          ) : showValuesPhrasing ? (
+            <ValuesPhrasingCoach onBack={() => setShowValuesPhrasing(false)} />
           ) : showAIOps ? (
             <AIOpsScreen onBack={() => setShowAIOps(false)} />
           ) : showExperiments ? (
@@ -158,13 +162,14 @@ const AppContent: React.FC = () => {
                   {activeTab === 'explore' && <ExploreScreen onSelect={setSelectedProfile} />}
                   {activeTab === 'matches' && <InboxScreen onSelect={setSelectedConversation} />}
                   {activeTab === 'profile' && (
-                    <SettingsScreen 
-                      onShowSafety={() => setShowSafety(true)} 
+                    <SettingsScreen
+                      onShowSafety={() => setShowSafety(true)}
                       onShowAITrust={() => setShowAITrust(true)}
                       onShowPersonalityProfile={() => setShowPersonalityProfile(true)}
                       onShowAIOps={() => setShowAIOps(true)}
                       onShowExperiments={() => setShowExperiments(true)}
                       onEditProfile={() => setShowEditProfile(true)}
+                      onShowValuesPhrasing={() => setShowValuesPhrasing(true)}
                     />
                   )}
                 </motion.div>
