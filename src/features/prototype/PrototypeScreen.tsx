@@ -19,8 +19,8 @@ const NETLIFY_MIRROR_URL = env.VITE_NETLIFY_MIRROR_URL || '';
 const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
 const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
-const SKILLS_INDEX_URL = `${STABLE_PROTOTYPE_URL}/prototype/skills.html`;
-const SKILLS_ZIP_URL = `${STABLE_PROTOTYPE_URL}/downloads/kesher-personality-skills.zip`;
+const SKILLS_INDEX_URL = new URL('/prototype/skills.html', STABLE_PROTOTYPE_URL).toString();
+const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
