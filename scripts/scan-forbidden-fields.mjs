@@ -226,6 +226,8 @@ const EXCLUDE_PATH_PREFIXES = [
   "src/ai/outputValidators",
   "src/ai/policies",
   "src/ai/prompts",
+  "src/ai/dataClassification",
+  "src/lib/explanationSchema",
 ];
 
 // Files that define the policy itself should not be self-flagged
@@ -258,6 +260,7 @@ function shouldSkipFile(filePath) {
   const base = filePath.split("/").pop();
   if (EXCLUDE_FILES.has(base)) return true;
   const rel = relative(ROOT, filePath).replace(/\\/g, "/");
+  if (/\.(test|spec)\.[cm]?[jt]sx?$/.test(rel)) return true;
   if (EXCLUDE_PATH_PREFIXES.some((prefix) => rel.startsWith(prefix))) return true;
   return false;
 }

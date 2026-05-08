@@ -111,7 +111,7 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
           <h3 className="text-2xl font-serif italic text-[#2D2926]">Dating Style Profile</h3>
           <p className="text-sm text-[#8C7E6E] leading-relaxed">
             This short reflection helps us understand how you approach relationships. 
-            It is <strong>private by default</strong> and is used to provide you with insights and communication suggestions, not to rank you or determine your "soulmate."
+            It is <strong>private by default</strong> and is used to provide you with insights and communication suggestions, not to rank you or decide who might be right for you.
           </p>
           <div className="p-4 bg-[#F7F2EE] rounded-2xl flex gap-3 items-start">
             <AlertCircle size={16} className="text-[#8C7E6E] shrink-0 mt-0.5" />
