@@ -15,6 +15,7 @@
 - PRs receive Vercel preview deployments via Git integration.
 - `preview-verification.yml` performs smoke verification when preview URL metadata is available.
 - `/prototype` exposes commit/environment metadata for reviewer confidence.
+- `/prototype/skills.html` exposes the skills index and `/downloads/kesher-personality-skills.zip` serves the bundled `skills/` archive.
 
 ## Firebase auth guidance
 
