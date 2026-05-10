@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
+    { "source": "/__version", "destination": "/api/version" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

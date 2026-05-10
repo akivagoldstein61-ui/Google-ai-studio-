@@ -162,9 +162,9 @@ export const PrivacyRecommendationSkill: React.FC<{ onBack: () => void }> = ({ o
           <div className="p-3 bg-red-50 rounded-xl border border-red-100 text-xs text-red-700 space-y-1">
             <p className="font-bold">Never:</p>
             <ul className="space-y-0.5 pl-3">
-              <li>• Show "X% compatible"</li>
-              <li>• Rank matches by compatibility score visibly</li>
-              <li>• Use "soulmate," "perfect match," or "destiny" language</li>
+              <li>• Show a numeric fit claim</li>
+              <li>• Rank matches by a visible fit meter</li>
+              <li>• Use "soulmate," "ideal pair," or "destiny" language</li>
             </ul>
           </div>
         </section>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExternalLink, GitBranch, Globe, Info, Link2, Server, Sparkles } from 'lucide-react';
 import { STABLE_PROTOTYPE_URL } from '@/lib/prototypeMode';
 
@@ -7,6 +7,24 @@ const CI_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/ci.yml/badge.svg`;
 const DEPLOY_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/deploy.yml/badge.svg`;
 
 const env = import.meta.env;
+
+type ServerBuildFingerprint = {
+  status: string;
+  source: string;
+  generatedAt: string;
+  repository: string;
+  repositoryUrl: string;
+  commitSha: string | null;
+  shortCommitSha: string | null;
+  commitUrl: string | null;
+  branch: string | null;
+  environment: string | null;
+  targetEnvironment: string | null;
+  pullRequestId: string | null;
+  deploymentUrl: string | null;
+  productionUrl: string | null;
+  buildTime: string | null;
+};
 
 const COMMIT_SHA = env.VITE_VERCEL_GIT_COMMIT_SHA || env.VITE_COMMIT_SHA || '';
 const BRANCH = env.VITE_VERCEL_GIT_COMMIT_REF || env.VITE_GIT_BRANCH || 'unknown';
@@ -87,6 +105,39 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
 ];
 
 export const PrototypeScreen: React.FC = () => {
+  const [serverFingerprint, setServerFingerprint] = useState<ServerBuildFingerprint | null>(null);
+  const [versionError, setVersionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    fetch('/__version', { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Version endpoint returned ${response.status}`);
+        }
+        return response.json() as Promise<ServerBuildFingerprint>;
+      })
+      .then((data) => {
+        if (!ignore) {
+          setServerFingerprint(data);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!ignore) {
+          setVersionError(error instanceof Error ? error.message : 'Unable to load server fingerprint');
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const visibleCommitSha = serverFingerprint?.commitSha || COMMIT_SHA || 'unknown';
+  const visibleBranch = serverFingerprint?.branch || BRANCH;
+  const visibleEnvironment = serverFingerprint?.environment || CURRENT_ENV;
+
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926] px-4 py-8">
       <main className="max-w-4xl mx-auto space-y-6">
@@ -100,7 +151,7 @@ export const PrototypeScreen: React.FC = () => {
             This page confirms what commit and environment are currently running on the stable prototype URL.
           </p>
           <p className="text-xs font-mono text-[#2D2926]" data-testid="prototype-commit-marker">
-            Commit marker: {COMMIT_SHA || 'unknown'}
+            Commit marker: {visibleCommitSha}
           </p>
         </section>
 
@@ -113,6 +164,54 @@ export const PrototypeScreen: React.FC = () => {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Server className="w-4 h-4" />
+            Server fingerprint
+          </div>
+          <p className="text-sm text-[#6B5E52]">
+            This is loaded live from <code className="font-mono text-[#2D2926]">/__version</code>, so it verifies the running deployment, not only the client bundle.
+          </p>
+          {versionError ? (
+            <p className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              Could not load server fingerprint: {versionError}
+            </p>
+          ) : serverFingerprint ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server commit</p>
+                <div className="break-all font-mono">
+                  {serverFingerprint.commitUrl ? (
+                    <a href={serverFingerprint.commitUrl} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+                      {serverFingerprint.commitSha}
+                    </a>
+                  ) : 'unknown'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server branch</p>
+                <div>{visibleBranch}</div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server environment</p>
+                <div>{visibleEnvironment}</div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server deployment URL</p>
+                <div className="break-all">
+                  {serverFingerprint.deploymentUrl ? (
+                    <a href={serverFingerprint.deploymentUrl} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+                      {serverFingerprint.deploymentUrl}
+                    </a>
+                  ) : 'unknown'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[#6B5E52]">Loading server fingerprint…</p>
+          )}
         </section>
 
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3">
