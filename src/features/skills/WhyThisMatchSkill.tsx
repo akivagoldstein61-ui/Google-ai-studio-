@@ -23,7 +23,7 @@ const EXCLUDED_SIGNALS = [
   'Private taste profile',
   'Behavioral patterns (swipes, dwell)',
   'Inferred traits',
-  'Attractiveness/desirability ranking',
+  'Appearance-based ranking',
   'Other users\' data about this person',
   'Blocked/reported history',
 ];
@@ -145,7 +145,7 @@ export const WhyThisMatchSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
             <div className="space-y-2">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-red-700">Prohibited</h3>
               {[
-                '"You\'re X% compatible."',
+                '"You\'re a 9/10 fit."',
                 '"Our AI thinks you\'d be great together."',
                 '"Based on your personality, strong match."',
                 '"Better match than others in your queue."',

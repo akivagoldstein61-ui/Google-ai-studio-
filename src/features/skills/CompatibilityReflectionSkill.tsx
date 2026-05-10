@@ -25,7 +25,7 @@ const LENSES = [
 ];
 
 const ANTI_PATTERNS = [
-  { pattern: '"92% compatible"', reason: 'No scientific basis; creates false precision' },
+  { pattern: '"Numeric fit claim"', reason: 'No scientific basis; creates false precision' },
   { pattern: '"Soulmate match"', reason: 'Destiny framing creates unhealthy expectations' },
   { pattern: '"You complete each other"', reason: 'Essentializing and deterministic' },
   { pattern: '"Based on science"', reason: 'Overclaims; FTC scrutiny risk' },
