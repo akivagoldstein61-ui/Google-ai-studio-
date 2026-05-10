@@ -20,6 +20,7 @@ import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
+import { SkillsRouter } from './features/skills';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -213,6 +214,16 @@ const TasteProfileRoute: React.FC = () => {
   return <PrivateTasteProfile onBack={() => navigate(-1)} />;
 };
 
+const SkillsRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <SkillsRouter onBack={() => navigate(-1)} />;
+};
+
+const PersonalityProfileRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <PersonalityProfileScreen onBack={() => navigate(-1)} />;
+};
+
 const AIOpsRoute: React.FC = () => {
   const navigate = useNavigate();
   return <AIOpsScreen onBack={() => navigate(-1)} />;
@@ -248,6 +259,7 @@ const AppContent: React.FC = () => {
           <Route path="/settings/taste-profile" element={<TasteProfileRoute />} />
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
+          <Route path="/skills" element={<SkillsRoute />} />
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/daily" replace />} />
@@ -260,6 +272,9 @@ const AppContent: React.FC = () => {
 export default function App() {
   if (typeof window !== 'undefined' && (window.location.pathname === '/prototype' || window.location.pathname === '/status')) {
     return <PrototypeScreen />;
+  }
+  if (typeof window !== 'undefined' && window.location.pathname === '/skills-hub') {
+    return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
   }
   return (
     <BrowserRouter>
