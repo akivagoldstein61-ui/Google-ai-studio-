@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, GitBranch, Globe, Info, Link2, Server } from 'lucide-react';
+import { ExternalLink, GitBranch, Globe, Info, Link2, Server, Sparkles } from 'lucide-react';
 import { STABLE_PROTOTYPE_URL } from '@/lib/prototypeMode';
 
 const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
@@ -141,6 +141,21 @@ export const PrototypeScreen: React.FC = () => {
             <li>Preview deployments may not be Firebase-auth authorized; reviewers should use demo mode when sign-in is blocked.</li>
             <li>Production personality-sensitive features remain gated and must not be auto-enabled from previews.</li>
           </ul>
+        </section>
+
+        <section className="bg-[#2D2926] rounded-2xl p-6 space-y-3">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+            <Sparkles className="w-4 h-4" />
+            <span>Kesher Skills Hub</span>
+          </div>
+          <p className="text-sm text-white/80 italic">Explore all 10 integrated skill modules powering Kesher's trust-forward personality system.</p>
+          <a
+            href="/skills-hub"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#2D2926] rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[#E5C048] transition-all"
+          >
+            Open Skills Hub
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </section>
 
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 text-xs text-[#8C7E6E] flex flex-wrap items-center gap-2">
