@@ -7,6 +7,7 @@ import { ArrowLeft, Phone, Mail, Check, Shield, Heart, Sparkles, Loader2 } from 
 import { ProfileBuilder } from '@/components/onboarding/ProfileBuilder';
 import { PrivacyNoticeScreen } from './PrivacyNoticeScreen';
 import { TermsOfServiceScreen } from './TermsOfServiceScreen';
+import { authService } from '@/services/authService';
 import { cn } from '@/lib/utils';
 
 type LegalGate = 'welcome' | 'tos' | 'privacy' | 'done';
@@ -33,13 +34,68 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
 
   const updateData = (data: any) => setFormData(prev => ({ ...prev, ...data }));
 
+  const [smsSent, setSmsSent] = useState(false);
+  const [smsCode, setSmsCode] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const handlePhoneSubmit = async () => {
+    if (!formData.phone || formData.phone.trim().length < 6) {
+      setAuthError('נא להזין מספר טלפון תקין');
+      return;
+    }
     setLoading(true);
-    // Simulate phone auth
-    setTimeout(() => {
+    setAuthError(null);
+    try {
+      const { mode } = await authService.startPhoneAuth(formData.phone);
+      setSmsSent(true);
+      if (mode === 'demo') {
+        setAuthError('מצב דמו: השתמש בכל 6-ספרות.');
+      }
+    } catch (e: any) {
+      setAuthError(e?.message || 'שליחת הקוד נכשלה. נסה שוב.');
+    } finally {
       setLoading(false);
-      nextStep();
-    }, 1500);
+    }
+  };
+
+  const handleCodeSubmit = async () => {
+    if (!/^\d{6}$/.test(smsCode)) {
+      setAuthError('הקוד חייב להיות 6 ספרות');
+      return;
+    }
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const result = await authService.confirmPhoneCode(smsCode);
+      if (result.uid) {
+        // AppContext's onAuthStateChanged listener will set user when Firebase signs in.
+        // For demo mode, prime a synthetic user so onboarding can advance.
+        if (!user) {
+          setUser({
+            id: result.uid,
+            uid: result.uid,
+            displayName: '',
+            age: 0,
+            gender: 'female',
+            city: '',
+            photos: [],
+            bio: '',
+            observance: 'traditional',
+            intent: 'serious_relationship',
+            prompts: [],
+            isVerified: false,
+            isPremium: false,
+            tags: [],
+            lastActive: new Date().toISOString(),
+          } as any);
+        }
+        nextStep();
+      }
+    } catch (e: any) {
+      setAuthError(e?.message || 'הקוד שגוי או פג תוקף.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const totalSteps = 5;
@@ -162,23 +218,64 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
                   <p className="text-[#8C7E6E] leading-relaxed italic">We use phone verification to ensure a community of real people. No bots, no fakes.</p>
                 </div>
                 <div className="space-y-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C7E6E] px-1">Phone Number</label>
-                    <input 
-                      placeholder="+972 50 000 0000" 
-                      type="tel" 
-                      className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
-                      value={formData.phone}
-                      onChange={(e) => updateData({ phone: e.target.value })}
-                    />
-                  </div>
-                  <Button 
-                    className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all" 
-                    onClick={handlePhoneSubmit} 
-                    disabled={!formData.phone || loading}
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : 'Send Verification Code'}
-                  </Button>
+                  {!smsSent ? (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C7E6E] px-1">Phone Number</label>
+                        <input
+                          placeholder="+972 50 000 0000"
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-lg focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
+                          value={formData.phone}
+                          onChange={(e) => updateData({ phone: e.target.value })}
+                        />
+                      </div>
+                      <Button
+                        className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all"
+                        onClick={handlePhoneSubmit}
+                        disabled={!formData.phone || loading}
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : 'Send Verification Code'}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C7E6E] px-1">6-digit verification code</label>
+                        <input
+                          placeholder="000000"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          autoComplete="one-time-code"
+                          className="w-full px-6 py-4 bg-white border border-[#F3EFEA] rounded-[24px] text-2xl tracking-[0.5em] text-center focus:outline-none focus:border-[#D4AF37] transition-all shadow-sm"
+                          value={smsCode}
+                          onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        />
+                        <button
+                          type="button"
+                          className="text-xs text-[#8C7E6E] hover:text-[#2D2926] underline"
+                          onClick={() => { setSmsSent(false); setSmsCode(''); setAuthError(null); }}
+                        >
+                          Change number / resend
+                        </button>
+                      </div>
+                      <Button
+                        className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all"
+                        onClick={handleCodeSubmit}
+                        disabled={smsCode.length !== 6 || loading}
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : 'Verify Code'}
+                      </Button>
+                    </>
+                  )}
+                  {authError && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">{authError}</p>
+                  )}
+                  {/* Invisible reCAPTCHA target */}
+                  <div id="recaptcha-container" />
                 </div>
               </motion.div>
             )}

@@ -6,6 +6,7 @@ import { aiRouter } from "./server/aiRoutes.ts";
 import trustRoutes from "./server/trustRoutes.ts";
 import shareRoutes from "./server/shareRoutes.ts";
 import consentRoutes from "./server/consentRoutes.ts";
+import matchRoutes from "./server/matchRoutes.ts";
 
 async function startServer() {
   const app = express();
@@ -64,6 +65,9 @@ async function startServer() {
 
   // Mutual consent (Gate 5 — compatibility reflection prerequisite)
   app.use("/api/consent", consentRoutes);
+
+  // Match notification fan-out + unmatch
+  app.use("/api/match", matchRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

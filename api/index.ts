@@ -16,6 +16,7 @@ import { aiRouter } from "../server/aiRoutes.ts";
 import trustRoutes from "../server/trustRoutes.ts";
 import shareRoutes from "../server/shareRoutes.ts";
 import consentRoutes from "../server/consentRoutes.ts";
+import matchRoutes from "../server/matchRoutes.ts";
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use("/api/account", trustRoutes);
 app.use("/api/support", trustRoutes);
 app.use("/api/share", shareRoutes);
 app.use("/api/consent", consentRoutes);
+app.use("/api/match", matchRoutes);
 
 // Vercel passes (req, res) directly — Express handles them like any HTTP request
 export default app;

@@ -14,12 +14,16 @@ import {
 import { motion, Reorder, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { aiService } from "@/services/aiService";
+import { photoUploadService } from "@/services/photoUploadService";
 
 import { PersonalityAssessment } from "./PersonalityAssessment";
 
 interface Photo {
   id: string;
   url: string;
+  path?: string;
+  uploading?: boolean;
+  error?: string;
 }
 
 export const ProfileBuilder: React.FC<{
@@ -130,16 +134,44 @@ export const ProfileBuilder: React.FC<{
     }
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const addPhoto = () => {
-    const newPhoto = {
-      id: Math.random().toString(),
-      url: `https://picsum.photos/seed/${Math.random()}/600/800`,
-    };
-    setPhotos([...photos, newPhoto]);
+    // Trigger native file picker — uploadFiles handles the rest
+    fileInputRef.current?.click();
   };
 
-  const removePhoto = (id: string) => {
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const filesToUpload = Array.from(files).slice(0, 6 - photos.length);
+    for (const file of filesToUpload) {
+      const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const localUrl = URL.createObjectURL(file);
+      setPhotos((cur) => [...cur, { id: tempId, url: localUrl, uploading: true }]);
+      try {
+        const result = await photoUploadService.uploadPhoto(file);
+        setPhotos((cur) =>
+          cur.map((p) =>
+            p.id === tempId ? { id: tempId, url: result.url, path: result.path, uploading: false } : p,
+          ),
+        );
+      } catch (err: any) {
+        setPhotos((cur) =>
+          cur.map((p) =>
+            p.id === tempId ? { ...p, uploading: false, error: err?.message || "Upload failed" } : p,
+          ),
+        );
+      }
+    }
+  };
+
+  const removePhoto = async (id: string) => {
+    const photo = photos.find((p) => p.id === id);
     setPhotos(photos.filter((p) => p.id !== id));
+    if (photo?.path) {
+      // Best-effort cleanup of storage
+      photoUploadService.deletePhoto(photo.path).catch(() => {});
+    }
   };
 
   return (
@@ -430,6 +462,18 @@ export const ProfileBuilder: React.FC<{
             </button>
           )}
         </Reorder.Group>
+        {/* Hidden native file input — triggered by addPhoto() */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            uploadFiles(e.target.files);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+          }}
+        />
       </section>
 
       <section className="space-y-6">

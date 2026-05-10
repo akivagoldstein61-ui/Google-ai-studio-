@@ -39,11 +39,40 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.fromId || isAdmin());
     }
 
+    match /passes/{passId} {
+      // Private to the user who passed — never readable by the target
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.fromId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.fromId;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.fromId || isAdmin());
+    }
+
+    match /notifications/{notifId} {
+      // Each notification has a userId; only that user can read.
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
     match /conversations/{conversationId} {
       allow read: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (request.auth.uid in resource.data.participants || isAdmin());
       allow delete: if isAdmin();
+
+      // Real-time messages subcollection
+      match /messages/{messageId} {
+        function isConversationParticipant() {
+          return isAuthenticated() &&
+            request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+        allow read: if isConversationParticipant() || isAdmin();
+        allow create: if isConversationParticipant() &&
+          request.auth.uid == request.resource.data.senderId &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 &&
+          request.resource.data.text.size() <= 2000;
+        // Messages are immutable once written (no edit; report and re-send pattern)
+        allow update, delete: if isAdmin();
+      }
     }
     match /matches/{matchId} {
       allow read: if isAuthenticated() && (request.auth.uid in resource.data.users || isAdmin());

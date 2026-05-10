@@ -21,6 +21,7 @@ import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
 import { ValuesPhrasingCoach } from './features/settings/ValuesPhrasingCoach';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { NotificationBell } from './components/NotificationBell';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -150,6 +151,18 @@ const AppContent: React.FC = () => {
             />
           ) : (
             <MainLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+              <div className="absolute top-3 right-3 z-50">
+                <NotificationBell
+                  uid={user?.uid || null}
+                  onNotificationClick={(n) => {
+                    if (n.kind === 'new_match' || n.kind === 'new_message') {
+                      setActiveTab('matches');
+                    } else if (n.kind === 'consent_request' || n.kind === 'consent_granted') {
+                      setActiveTab('matches');
+                    }
+                  }}
+                />
+              </div>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}

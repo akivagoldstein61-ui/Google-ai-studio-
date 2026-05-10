@@ -5,6 +5,10 @@ import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
+import { matchService } from '@/services/matchService';
+import { chatService } from '@/services/chatService';
+import { notificationService, type AppNotification } from '@/services/notificationService';
+import { setObservedUser, track } from '@/lib/observability';
 import {
   type TasteState, type TasteEvent, applyEvent, implicitAffinity, emptyTasteState,
 } from '@/lib/learnedTaste';
@@ -380,39 +384,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Error saving like:', error);
     }
 
-    const isMatch = Math.random() > 0.5;
-    if (isMatch) {
-      const newMatch: Match = {
-        id: `m_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        users: [user.uid, profileId],
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        whyThisMatch: `You both share an interest in ${profile.tags.slice(0, 2).join(' and ')}.`,
-        participants: [profile]
-      };
-      setMatches(prev => [...prev, newMatch]);
-      setConversations(prev => [
-        {
-          id: newMatch.id,
+    // Real mutual-like check via matchService (replaces Math.random())
+    try {
+      const result = await matchService.recordLike(user.uid, profile);
+      track('like', { profileId, matched: result.isMatch });
+
+      if (result.isMatch && result.match) {
+        const newMatch: Match = {
+          ...result.match,
           participants: [profile],
-          messages: []
-        },
-        ...prev
-      ]);
+        };
+        setMatches(prev => prev.some(m => m.id === newMatch.id) ? prev : [newMatch, ...prev]);
+        setConversations(prev =>
+          prev.some(c => c.id === newMatch.id)
+            ? prev
+            : [{ id: newMatch.id, participants: [profile], messages: [] }, ...prev],
+        );
 
-      try {
-        const { doc, setDoc } = await import('firebase/firestore');
-        await setDoc(doc(db, 'matches', newMatch.id), newMatch);
-        await setDoc(doc(db, 'conversations', newMatch.id), {
-          id: newMatch.id,
-          participants: [user.uid, profileId],
-          messages: []
-        });
-      } catch (error) {
-        console.error('Error saving match:', error);
+        // Fire-and-forget notification fan-out via server
+        try {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (auth.currentUser) {
+            headers['Authorization'] = `Bearer ${await auth.currentUser.getIdToken()}`;
+          }
+          fetch('/api/match/notify-on-match', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              matchId: newMatch.id,
+              peerUid: profile.uid,
+              peerDisplayName: profile.displayName,
+            }),
+          }).catch(() => {});
+        } catch {
+          /* notification is best-effort */
+        }
+
+        return true;
       }
-
-      return true;
+    } catch (error) {
+      console.error('matchService.recordLike failed:', error);
     }
 
     setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
@@ -562,32 +573,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const sendMessage = async (conversationId: string, text: string, aiAssisted?: boolean) => {
-    if (!user) return;
-    const newMessage: Message = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    if (!user || !text.trim()) return;
+
+    // Optimistic local update — UI feels instant; real-time subscription
+    // will reconcile with the canonical Firestore-issued message id.
+    const optimistic: Message = {
+      id: `msg_optimistic_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       senderId: user.uid,
       text,
       createdAt: new Date().toISOString(),
-      aiAssisted
+      aiAssisted,
     };
 
     setConversations(prev => prev.map(c =>
       c.id === conversationId
-        ? { ...c, messages: [...c.messages, newMessage], lastMessage: newMessage }
-        : c
+        ? { ...c, messages: [...c.messages, optimistic], lastMessage: optimistic }
+        : c,
     ));
+    track('message_send', { conversationId, aiAssisted: !!aiAssisted });
 
-    if (isDemoMode) {
-      return;
-    }
+    if (isDemoMode) return;
 
     try {
-      const { doc, updateDoc, arrayUnion } = await import('firebase/firestore');
-      await updateDoc(doc(db, 'conversations', conversationId), {
-        messages: arrayUnion(newMessage)
-      });
+      await chatService.sendMessage(conversationId, user.uid, text, { aiAssisted });
+      // Real-time subscription (set up in ChatThread / InboxScreen) will
+      // replace optimistic message with the canonical Firestore one.
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('chatService.sendMessage failed:', error);
+      // Rollback: remove the optimistic message so user can retry
+      setConversations(prev => prev.map(c =>
+        c.id === conversationId
+          ? { ...c, messages: c.messages.filter(m => m.id !== optimistic.id) }
+          : c,
+      ));
     }
   };
 

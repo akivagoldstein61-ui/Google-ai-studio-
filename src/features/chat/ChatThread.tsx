@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { aiService } from '@/services/aiService';
 import { aiDatePlannerService } from '@/services/aiDatePlannerService';
 import { aiSafetyService } from '@/services/aiSafetyService';
+import { chatService } from '@/services/chatService';
 import { getFeatureById } from '@/ai/featureRegistry';
 import { cn } from '@/lib/utils';
 import { SafetyMenu } from '@/features/safety/SafetyMenu';
@@ -44,13 +45,35 @@ export const ChatThread: React.FC<{
   const icebreakerFeature = getFeatureById('visual_icebreaker');
   const isIcebreakerEnabled = icebreakerFeature?.category === 'core_enabled';
 
+  // Real-time messages — keep a local view that the subscription updates.
+  // Falls back to conversation.messages in demo mode (subscribeToMessages
+  // returns a no-op there).
+  const [liveMessages, setLiveMessages] = useState<Message[]>(conversation.messages || []);
+
+  useEffect(() => {
+    const unsub = chatService.subscribeToMessages(conversation.id, (msgs) => {
+      setLiveMessages(msgs);
+    });
+    return () => unsub();
+  }, [conversation.id]);
+
+  // Mark conversation as read once when opened
+  useEffect(() => {
+    if (user?.uid) {
+      chatService.markAsRead(conversation.id, user.uid).catch(() => {});
+    }
+  }, [conversation.id, user?.uid]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [conversation.messages]);
+  }, [liveMessages]);
+
+  // Use liveMessages everywhere instead of conversation.messages
+  const displayMessages = liveMessages.length > 0 ? liveMessages : (conversation.messages || []);
 
   const handleSend = async () => {
     if (!inputText.trim() || isScanning) return;
