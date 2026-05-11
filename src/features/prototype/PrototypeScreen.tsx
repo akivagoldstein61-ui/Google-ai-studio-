@@ -37,6 +37,8 @@ const NETLIFY_MIRROR_URL = env.VITE_NETLIFY_MIRROR_URL || '';
 const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
 const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
+const SKILLS_INDEX_URL = new URL('/prototype/skills.html', STABLE_PROTOTYPE_URL).toString();
+const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -59,6 +61,24 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     value: (
       <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {GITHUB_REPO_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  {
+    label: 'Prototype skills page',
+    value: (
+      <a href={SKILLS_INDEX_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_INDEX_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  {
+    label: 'Prototype skills zip',
+    value: (
+      <a href={SKILLS_ZIP_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_ZIP_URL}
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
     ),
