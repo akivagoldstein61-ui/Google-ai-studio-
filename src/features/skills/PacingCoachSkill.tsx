@@ -230,7 +230,7 @@ export const PacingCoachSkill: React.FC<{ onBack: () => void }> = ({ onBack }) =
               'Every nudge has a visible dismiss / "not now" path',
               'Gemini failure produces no intrusive modal',
               'Nudges never block access to discovery or navigation',
-              'Output validator blocks diagnosis, urgency, and shame language',
+              'Output validator blocks labeling, urgency, and shame language',
               'Rate limiter prevents nudging more than once per trigger per session',
             ].map((check, i) => (
               <div key={i} className="flex items-start gap-2 p-3 bg-[#F7F2EE] rounded-xl text-xs">
