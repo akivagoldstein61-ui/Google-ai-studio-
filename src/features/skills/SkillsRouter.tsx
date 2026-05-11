@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SkillsHub } from './SkillsHub';
+import { SkillsHub, SKILLS } from './SkillsHub';
 import { PersonalityAssessmentSkill } from './PersonalityAssessmentSkill';
 import { ConsentUxSkill } from './ConsentUxSkill';
 import { IsraeliPrivacySkill } from './IsraeliPrivacySkill';
@@ -10,6 +10,11 @@ import { CompatibilityReflectionSkill } from './CompatibilityReflectionSkill';
 import { PsychometricValidationSkill } from './PsychometricValidationSkill';
 import { DarkPatternAuditSkill } from './DarkPatternAuditSkill';
 import { AIRuntimeGovernanceSkill } from './AIRuntimeGovernanceSkill';
+import { PersonalityProfileSkill } from './PersonalityProfileSkill';
+import { PacingCoachSkill } from './PacingCoachSkill';
+import { PrivateTasteSkill } from './PrivateTasteSkill';
+import { PersonalityVisibilitySkill } from './PersonalityVisibilitySkill';
+import { PlannedSkillPage } from './PlannedSkillPage';
 
 export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
@@ -41,7 +46,20 @@ export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return <DarkPatternAuditSkill {...skillProps} />;
     case 'ai-runtime-governance':
       return <AIRuntimeGovernanceSkill {...skillProps} />;
-    default:
+    case 'personality-profile':
+      return <PersonalityProfileSkill {...skillProps} />;
+    case 'pacing-coach':
+      return <PacingCoachSkill {...skillProps} />;
+    case 'private-taste':
+      return <PrivateTasteSkill {...skillProps} />;
+    case 'personality-visibility':
+      return <PersonalityVisibilitySkill {...skillProps} />;
+    default: {
+      const meta = SKILLS.find(s => s.id === activeSkill);
+      if (meta) {
+        return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
+      }
       return <SkillsHub onBack={onBack} onSelect={setActiveSkill} />;
+    }
   }
 };
