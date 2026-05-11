@@ -224,6 +224,11 @@ const PersonalityProfileRoute: React.FC = () => {
   return <PersonalityProfileScreen onBack={() => navigate(-1)} />;
 };
 
+const PersonalityVisibilityRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <PersonalityVisibilitySettings onBack={() => navigate(-1)} />;
+};
+
 const AIOpsRoute: React.FC = () => {
   const navigate = useNavigate();
   return <AIOpsScreen onBack={() => navigate(-1)} />;
@@ -257,6 +262,8 @@ const AppContent: React.FC = () => {
           <Route path="/settings/safety" element={<SafetyCenterRoute />} />
           <Route path="/settings/ai-trust" element={<AITrustHubRoute />} />
           <Route path="/settings/taste-profile" element={<TasteProfileRoute />} />
+          <Route path="/settings/personality" element={<PersonalityProfileRoute />} />
+          <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
           <Route path="/skills" element={<SkillsRoute />} />
