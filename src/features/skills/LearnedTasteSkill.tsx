@@ -35,14 +35,14 @@ const DEMO_EVENTS: DemoEventRow[] = [
 
 const CANDIDATE_FEATURES = ['intent_serious', 'observance_dati', 'tag_travel', 'tag_music'];
 
-function authorityBar(a: number) {
-  if (a === 0) return <span className="text-[9px] text-[#8C7E6E]">—</span>;
+function authorityBar(authorityValue: number) {
+  if (authorityValue === 0) return <span className="text-[9px] text-[#8C7E6E]">—</span>;
   return (
     <div className="flex items-center gap-1">
       <div className="h-1.5 bg-[#F3EFEA] rounded-full overflow-hidden w-16">
-        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${a * 100}%` }} />
+        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${authorityValue * 100}%` }} />
       </div>
-      <span className="text-[9px] font-mono text-[#8C7E6E]">{a.toFixed(2)}</span>
+      <span className="text-[9px] font-mono text-[#8C7E6E]">{authorityValue.toFixed(2)}</span>
     </div>
   );
 }
@@ -62,8 +62,8 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
     });
     setTasteState(next);
     const sign = signOf(ev.name);
-    const a = authority(ev.name);
-    setLog(prev => [`${ev.label} (auth=${a.toFixed(2)}, sign=${sign > 0 ? '+' : sign < 0 ? '−' : '0'})`, ...prev.slice(0, 9)]);
+    const authorityValue = authority(ev.name);
+    setLog(prev => [`${ev.label} (auth=${authorityValue.toFixed(2)}, sign=${sign > 0 ? '+' : sign < 0 ? '−' : '0'})`, ...prev.slice(0, 9)]);
   };
 
   const reset = () => {
@@ -120,8 +120,8 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
               </thead>
               <tbody>
                 {DEMO_EVENTS.map(ev => {
-                  const a = authority(ev.name);
-                  const s = signOf(ev.name);
+                  const authorityValue = authority(ev.name);
+                  const sign = signOf(ev.name);
                   return (
                     <tr key={ev.name} className="border-b border-[#F3EFEA]/50">
                       <td className="py-2 pr-4 font-medium">{ev.label}</td>
@@ -130,10 +130,10 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
                           {ev.classLabel.replace('_', ' ')}
                         </span>
                       </td>
-                      <td className="py-2 pr-4">{authorityBar(a)}</td>
+                      <td className="py-2 pr-4">{authorityBar(authorityValue)}</td>
                       <td className="py-2">
-                        <span className={`font-bold ${s > 0 ? 'text-green-600' : s < 0 ? 'text-red-600' : 'text-[#8C7E6E]'}`}>
-                          {s > 0 ? '+' : s < 0 ? '−' : '0'}
+                        <span className={`font-bold ${sign > 0 ? 'text-green-600' : sign < 0 ? 'text-red-600' : 'text-[#8C7E6E]'}`}>
+                          {sign > 0 ? '+' : sign < 0 ? '−' : '0'}
                         </span>
                       </td>
                     </tr>

@@ -21,20 +21,20 @@ const FRIENDLY: Record<string, string> = {
   Neuroticism: 'Emotional Style',
 };
 
-const DEMO_PROFILE_A: OceanScores = { Openness: 72, Conscientiousness: 65, Extraversion: 55, Agreeableness: 80, Neuroticism: 30 };
-const DEMO_PROFILE_B: OceanScores = { Openness: 60, Conscientiousness: 70, Extraversion: 40, Agreeableness: 75, Neuroticism: 50 };
+const DEMO_PROFILE_HIGH_WARMTH: OceanScores = { Openness: 72, Conscientiousness: 65, Extraversion: 55, Agreeableness: 80, Neuroticism: 30 };
+const DEMO_PROFILE_BALANCED: OceanScores = { Openness: 60, Conscientiousness: 70, Extraversion: 40, Agreeableness: 75, Neuroticism: 50 };
 
-const OBSERVANCE_A: ObservanceProfile = { selfDescriptionId: 'dati_leumi', practiceIds: ['shomer_shabbat', 'kasher', 'mitpalel_shabbatot', 'rotze_yeladim'] };
-const OBSERVANCE_B: ObservanceProfile = { selfDescriptionId: 'masorti_dati', practiceIds: ['shomer_masoret', 'kasher_babayit', 'beit_knesset_paam', 'rotze_yeladim'] };
+const OBSERVANCE_DATI_LEUMI: ObservanceProfile = { selfDescriptionId: 'dati_leumi', practiceIds: ['shomer_shabbat', 'kasher', 'mitpalel_shabbatot', 'rotze_yeladim'] };
+const OBSERVANCE_MASORTI_DATI: ObservanceProfile = { selfDescriptionId: 'masorti_dati', practiceIds: ['shomer_masoret', 'kasher_babayit', 'beit_knesset_paam', 'rotze_yeladim'] };
 
 const AREA_LABELS: Record<string, string> = { shabbat: 'Shabbat', kashrut: 'Kashrut', community: 'Community', family: 'Family' };
 
 export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [profileA, setProfileA] = useState<OceanScores>({ ...DEMO_PROFILE_A });
+  const [profileA, setProfileA] = useState<OceanScores>({ ...DEMO_PROFILE_HIGH_WARMTH });
   const [showObservance, setShowObservance] = useState(false);
 
-  const reflection = reflectOcean(profileA, DEMO_PROFILE_B);
-  const observanceResult = practiceAreaAlignment(OBSERVANCE_A, OBSERVANCE_B);
+  const reflection = reflectOcean(profileA, DEMO_PROFILE_BALANCED);
+  const observanceResult = practiceAreaAlignment(OBSERVANCE_DATI_LEUMI, OBSERVANCE_MASORTI_DATI);
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926]">

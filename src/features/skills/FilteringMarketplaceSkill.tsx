@@ -135,7 +135,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
             <div className="flex items-center gap-4 p-3 bg-[#F7F2EE] rounded-xl">
               <span className="text-xs font-medium min-w-[100px]">Max age</span>
               <input type="range" min={20} max={60} value={maxAge}
-                onChange={e => setMaxAge(Number(e.target.value))}
+                onChange={e => { const v = Number(e.target.value); if (!Number.isNaN(v)) setMaxAge(Math.max(20, Math.min(60, v))); }}
                 className="flex-1 accent-lime-500"
               />
               <span className="text-xs font-mono w-8">{maxAge}</span>
@@ -220,7 +220,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
               <div key={label} className="flex items-center gap-4 p-3 bg-[#F7F2EE] rounded-xl">
                 <span className="text-xs font-medium min-w-[160px]">{label}</span>
                 <input type="range" min={min} max={max} value={value}
-                  onChange={e => setter(Number(e.target.value))}
+                  onChange={e => { const v = Number(e.target.value); if (!Number.isNaN(v)) setter(Math.max(min, Math.min(max, v))); }}
                   className="flex-1 accent-lime-500"
                 />
                 <span className="text-xs font-mono w-10 text-right">{value}</span>
