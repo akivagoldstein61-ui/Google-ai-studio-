@@ -142,6 +142,7 @@ const SettingsRoute: React.FC = () => {
       onShowSafety={() => navigate('/settings/safety')}
       onShowAITrust={() => navigate('/settings/ai-trust')}
       onShowPersonalityProfile={() => navigate('/settings/personality')}
+      onShowPersonalityVisibility={() => navigate('/settings/personality-visibility')}
       onShowAIOps={() => navigate('/admin/ai-ops')}
       onShowExperiments={() => navigate('/admin/experiments')}
       onEditProfile={() => navigate('/profile/edit')}

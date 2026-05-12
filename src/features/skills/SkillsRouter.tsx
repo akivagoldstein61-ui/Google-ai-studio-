@@ -14,6 +14,9 @@ import { PersonalityProfileSkill } from './PersonalityProfileSkill';
 import { PacingCoachSkill } from './PacingCoachSkill';
 import { PrivateTasteSkill } from './PrivateTasteSkill';
 import { PersonalityVisibilitySkill } from './PersonalityVisibilitySkill';
+import { PersonalityOceanSkill } from './PersonalityOceanSkill';
+import { LearnedTasteSkill } from './LearnedTasteSkill';
+import { FilteringMarketplaceSkill } from './FilteringMarketplaceSkill';
 import { PlannedSkillPage } from './PlannedSkillPage';
 
 export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -54,6 +57,12 @@ export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return <PrivateTasteSkill {...skillProps} />;
     case 'personality-visibility':
       return <PersonalityVisibilitySkill {...skillProps} />;
+    case 'personality-ocean':
+      return <PersonalityOceanSkill {...skillProps} />;
+    case 'learned-taste':
+      return <LearnedTasteSkill {...skillProps} />;
+    case 'filtering-marketplace':
+      return <FilteringMarketplaceSkill {...skillProps} />;
     default: {
       const meta = SKILLS.find(s => s.id === activeSkill);
       if (meta) {
