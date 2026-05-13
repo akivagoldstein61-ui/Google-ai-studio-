@@ -1,39 +1,62 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/Button';
-import { Brain, ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { Brain, ChevronRight, Check, AlertCircle, ShieldAlert } from 'lucide-react';
 
 // Versioned questionnaire — bump SCORING_VERSION when items, reverse-keys, or aggregation change.
-export const SCORING_VERSION = 'bfas-mvp-v1';
+export const SCORING_VERSION = 'ipip-neo-30-v1';
+export const INSTRUMENT_NAME = 'IPIP-NEO-30';
+export const INSTRUMENT_LICENSE = 'public-domain';
 
-// Using public domain IPIP items for a short-form Big Five + 10 Aspects assessment.
+/**
+ * IPIP-NEO-30 short form — 30 public-domain items from the
+ * International Personality Item Pool (Goldberg 1999).
+ *
+ * 5 domains × 2 aspects × 3 items = 30 items
+ * Internal reliability (α) per aspect: ~0.70–0.78 in published samples.
+ * Source: https://ipip.ori.org/ — all items are public domain.
+ */
 const QUESTIONS = [
-  // Extraversion
+  // ── Extraversion ──────────────────────────────────────────────────────
   { id: 'e_ent1', domain: 'Extraversion', aspect: 'Enthusiasm', text: 'I make friends easily.', reverse: false },
-  { id: 'e_ent2', domain: 'Extraversion', aspect: 'Enthusiasm', text: 'I keep in the background.', reverse: true },
+  { id: 'e_ent2', domain: 'Extraversion', aspect: 'Enthusiasm', text: 'I warm up quickly to others.', reverse: false },
+  { id: 'e_ent3', domain: 'Extraversion', aspect: 'Enthusiasm', text: 'I keep in the background.', reverse: true },
   { id: 'e_ass1', domain: 'Extraversion', aspect: 'Assertiveness', text: 'I take charge.', reverse: false },
-  { id: 'e_ass2', domain: 'Extraversion', aspect: 'Assertiveness', text: 'I wait for others to lead the way.', reverse: true },
-  // Neuroticism
+  { id: 'e_ass2', domain: 'Extraversion', aspect: 'Assertiveness', text: 'I have a strong personality.', reverse: false },
+  { id: 'e_ass3', domain: 'Extraversion', aspect: 'Assertiveness', text: 'I wait for others to lead the way.', reverse: true },
+
+  // ── Neuroticism ───────────────────────────────────────────────────────
   { id: 'n_vol1', domain: 'Neuroticism', aspect: 'Volatility', text: 'I get angry easily.', reverse: false },
-  { id: 'n_vol2', domain: 'Neuroticism', aspect: 'Volatility', text: 'I rarely get irritated.', reverse: true },
+  { id: 'n_vol2', domain: 'Neuroticism', aspect: 'Volatility', text: 'I get upset easily.', reverse: false },
+  { id: 'n_vol3', domain: 'Neuroticism', aspect: 'Volatility', text: 'I rarely get irritated.', reverse: true },
   { id: 'n_wit1', domain: 'Neuroticism', aspect: 'Withdrawal', text: 'I am filled with doubts about things.', reverse: false },
-  { id: 'n_wit2', domain: 'Neuroticism', aspect: 'Withdrawal', text: 'I feel comfortable with myself.', reverse: true },
-  // Agreeableness
+  { id: 'n_wit2', domain: 'Neuroticism', aspect: 'Withdrawal', text: 'I am afraid of many things.', reverse: false },
+  { id: 'n_wit3', domain: 'Neuroticism', aspect: 'Withdrawal', text: 'I feel comfortable with myself.', reverse: true },
+
+  // ── Agreeableness ─────────────────────────────────────────────────────
   { id: 'a_com1', domain: 'Agreeableness', aspect: 'Compassion', text: 'I feel others\' emotions.', reverse: false },
-  { id: 'a_com2', domain: 'Agreeableness', aspect: 'Compassion', text: 'I am not interested in other people\'s problems.', reverse: true },
+  { id: 'a_com2', domain: 'Agreeableness', aspect: 'Compassion', text: 'I sympathize with others\' feelings.', reverse: false },
+  { id: 'a_com3', domain: 'Agreeableness', aspect: 'Compassion', text: 'I am not interested in other people\'s problems.', reverse: true },
   { id: 'a_pol1', domain: 'Agreeableness', aspect: 'Politeness', text: 'I respect authority.', reverse: false },
-  { id: 'a_pol2', domain: 'Agreeableness', aspect: 'Politeness', text: 'I believe that I am better than others.', reverse: true },
-  // Conscientiousness
+  { id: 'a_pol2', domain: 'Agreeableness', aspect: 'Politeness', text: 'I avoid imposing my will on others.', reverse: false },
+  { id: 'a_pol3', domain: 'Agreeableness', aspect: 'Politeness', text: 'I believe that I am better than others.', reverse: true },
+
+  // ── Conscientiousness ────────────────────────────────────────────────
   { id: 'c_ind1', domain: 'Conscientiousness', aspect: 'Industriousness', text: 'I carry out my plans.', reverse: false },
-  { id: 'c_ind2', domain: 'Conscientiousness', aspect: 'Industriousness', text: 'I waste my time.', reverse: true },
+  { id: 'c_ind2', domain: 'Conscientiousness', aspect: 'Industriousness', text: 'I finish what I start.', reverse: false },
+  { id: 'c_ind3', domain: 'Conscientiousness', aspect: 'Industriousness', text: 'I waste my time.', reverse: true },
   { id: 'c_ord1', domain: 'Conscientiousness', aspect: 'Orderliness', text: 'I like order.', reverse: false },
-  { id: 'c_ord2', domain: 'Conscientiousness', aspect: 'Orderliness', text: 'I leave my belongings around.', reverse: true },
-  // Openness
+  { id: 'c_ord2', domain: 'Conscientiousness', aspect: 'Orderliness', text: 'I want everything to be just right.', reverse: false },
+  { id: 'c_ord3', domain: 'Conscientiousness', aspect: 'Orderliness', text: 'I leave my belongings around.', reverse: true },
+
+  // ── Openness ──────────────────────────────────────────────────────────
   { id: 'o_int1', domain: 'Openness', aspect: 'Intellect', text: 'I am quick to understand things.', reverse: false },
-  { id: 'o_int2', domain: 'Openness', aspect: 'Intellect', text: 'I have difficulty understanding abstract ideas.', reverse: true },
+  { id: 'o_int2', domain: 'Openness', aspect: 'Intellect', text: 'I can handle complex ideas.', reverse: false },
+  { id: 'o_int3', domain: 'Openness', aspect: 'Intellect', text: 'I have difficulty understanding abstract ideas.', reverse: true },
   { id: 'o_ope1', domain: 'Openness', aspect: 'Openness', text: 'I enjoy the beauty of nature.', reverse: false },
-  { id: 'o_ope2', domain: 'Openness', aspect: 'Openness', text: 'I do not like art.', reverse: true },
-];
+  { id: 'o_ope2', domain: 'Openness', aspect: 'Openness', text: 'I see beauty in things others might not notice.', reverse: false },
+  { id: 'o_ope3', domain: 'Openness', aspect: 'Openness', text: 'I do not like art.', reverse: true },
+] as const;
 
 const OPTIONS = [
   { value: 1, label: 'Strongly Disagree' },
@@ -43,63 +66,211 @@ const OPTIONS = [
   { value: 5, label: 'Strongly Agree' },
 ];
 
+export interface ResponseQuality {
+  /** True if a single answer value dominates the response set */
+  straightLine: boolean;
+  /** Avg time per item (ms) — flagged if under threshold */
+  avgMsPerItem: number;
+  rushed: boolean;
+  /** 0..1 — how consistent reverse-keyed item pairs are with same-aspect peers */
+  reverseKeyAgreement: number;
+  inconsistent: boolean;
+  /** Reliability tier shown alongside scores */
+  tier: 'high' | 'moderate' | 'low';
+  /** True if scoring should be hidden and user prompted to re-take */
+  shouldRetake: boolean;
+}
+
 export interface PersonalityAssessmentResult {
   scores: Record<string, number>;
   scoringVersion: string;
+  instrument: string;
+  license: string;
   completedAt: string;
+  responseQuality: ResponseQuality;
 }
 
-export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<string, number>, meta?: PersonalityAssessmentResult) => void }> = ({ onComplete }) => {
+const STRAIGHTLINE_THRESHOLD = 0.85;
+const MIN_AVG_MS = 1500;
+const REVERSE_AGREE_THRESHOLD = 0.55;
+
+function detectResponseQuality(
+  answers: Record<string, number>,
+  itemMs: Record<string, number>,
+): ResponseQuality {
+  const values = Object.values(answers);
+  if (values.length === 0) {
+    return {
+      straightLine: false, avgMsPerItem: 0, rushed: false,
+      reverseKeyAgreement: 1, inconsistent: false,
+      tier: 'low', shouldRetake: true,
+    };
+  }
+
+  // Straight-line detection
+  const counts = new Map<number, number>();
+  values.forEach((v) => counts.set(v, (counts.get(v) || 0) + 1));
+  const maxRun = Math.max(...counts.values());
+  const straightLine = maxRun / values.length >= STRAIGHTLINE_THRESHOLD;
+
+  // Time-based rushing
+  const times = Object.values(itemMs);
+  const avgMsPerItem = times.length > 0 ? times.reduce((s, t) => s + t, 0) / times.length : 0;
+  const rushed = avgMsPerItem > 0 && avgMsPerItem < MIN_AVG_MS;
+
+  // Reverse-key consistency
+  let pairs = 0;
+  let consistent = 0;
+  QUESTIONS.forEach((q, i) => {
+    if (!q.reverse) return;
+    const peer = QUESTIONS.find(
+      (p, j) => j !== i && p.aspect === q.aspect && p.domain === q.domain && !p.reverse,
+    );
+    if (!peer) return;
+    const qAns = answers[q.id];
+    const pAns = answers[peer.id];
+    if (qAns == null || pAns == null) return;
+    pairs++;
+    const qCoded = 6 - qAns;
+    if (Math.abs(qCoded - pAns) <= 1) consistent++;
+  });
+  const reverseKeyAgreement = pairs > 0 ? consistent / pairs : 1;
+  const inconsistent = reverseKeyAgreement < REVERSE_AGREE_THRESHOLD;
+
+  let tier: 'high' | 'moderate' | 'low' = 'high';
+  if (straightLine || (rushed && inconsistent)) tier = 'low';
+  else if (rushed || inconsistent) tier = 'moderate';
+
+  return {
+    straightLine,
+    avgMsPerItem,
+    rushed,
+    reverseKeyAgreement: Math.round(reverseKeyAgreement * 100) / 100,
+    inconsistent,
+    tier,
+    shouldRetake: tier === 'low',
+  };
+}
+
+export const PersonalityAssessment: React.FC<{
+  onComplete: (scores: Record<string, number>, meta?: PersonalityAssessmentResult) => void;
+}> = ({ onComplete }) => {
   const [hasStarted, setHasStarted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [itemMs, setItemMs] = useState<Record<string, number>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [itemStartedAt, setItemStartedAt] = useState<number>(Date.now());
+  const [showQualityWarning, setShowQualityWarning] = useState<ResponseQuality | null>(null);
+
+  const totalQuestions = QUESTIONS.length;
+
+  const progress = useMemo(
+    () => Math.round((Object.keys(answers).length / totalQuestions) * 100),
+    [answers, totalQuestions],
+  );
 
   const handleAnswer = (value: number) => {
     const currentQ = QUESTIONS[currentIndex];
-    setAnswers(prev => ({ ...prev, [currentQ.id]: value }));
-    
-    if (currentIndex < QUESTIONS.length - 1) {
-      setTimeout(() => setCurrentIndex(prev => prev + 1), 300);
+    const elapsed = Date.now() - itemStartedAt;
+
+    setAnswers((prev) => ({ ...prev, [currentQ.id]: value }));
+    setItemMs((prev) => ({ ...prev, [currentQ.id]: elapsed }));
+
+    if (currentIndex < totalQuestions - 1) {
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        setItemStartedAt(Date.now());
+      }, 250);
     }
   };
 
   const handleComplete = () => {
-    // Deterministic scoring pipeline
+    const quality = detectResponseQuality(answers, itemMs);
+    if (quality.shouldRetake) {
+      setShowQualityWarning(quality);
+      return;
+    }
+    finalize(quality);
+  };
+
+  const finalize = (quality: ResponseQuality) => {
     const scores: Record<string, number> = {};
     const counts: Record<string, number> = {};
 
-    QUESTIONS.forEach(q => {
+    QUESTIONS.forEach((q) => {
       if (answers[q.id]) {
         let val = answers[q.id];
-        if (q.reverse) {
-          val = 6 - val; // Reverse score (1->5, 5->1)
-        }
-        
-        // Domain score
+        if (q.reverse) val = 6 - val;
         scores[q.domain] = (scores[q.domain] || 0) + val;
         counts[q.domain] = (counts[q.domain] || 0) + 1;
-        
-        // Aspect score
         const aspectKey = `${q.domain}_${q.aspect}`;
         scores[aspectKey] = (scores[aspectKey] || 0) + val;
         counts[aspectKey] = (counts[aspectKey] || 0) + 1;
       }
     });
 
-    // Convert to 0-100 approximate display value (NOT a validated percentile — see SKILL contract).
     const finalScores: Record<string, number> = {};
-    Object.keys(scores).forEach(key => {
+    Object.keys(scores).forEach((key) => {
       const avg = scores[key] / counts[key];
-      // Map 1-5 to 0-100
       finalScores[key] = Math.round(((avg - 1) / 4) * 100);
     });
 
     onComplete(finalScores, {
       scores: finalScores,
       scoringVersion: SCORING_VERSION,
+      instrument: INSTRUMENT_NAME,
+      license: INSTRUMENT_LICENSE,
       completedAt: new Date().toISOString(),
+      responseQuality: quality,
     });
   };
+
+  const handleRetake = () => {
+    setAnswers({});
+    setItemMs({});
+    setCurrentIndex(0);
+    setItemStartedAt(Date.now());
+    setShowQualityWarning(null);
+  };
+
+  const handleKeepAnyway = () => {
+    if (showQualityWarning) {
+      finalize({ ...showQualityWarning, tier: 'low', shouldRetake: false });
+    }
+  };
+
+  // ── Quality warning gate ─────────────────────────────────────────────
+  if (showQualityWarning) {
+    return (
+      <div className="p-8 bg-white border border-amber-200 rounded-[32px] space-y-6 shadow-sm">
+        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
+          <ShieldAlert size={32} />
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-serif italic text-[#2D2926]">Your responses look rushed</h3>
+          <p className="text-sm text-[#8C7E6E] leading-relaxed">
+            We noticed{' '}
+            {showQualityWarning.straightLine && <>you marked nearly every item the same. </>}
+            {showQualityWarning.rushed && <>each item took less than {Math.round(MIN_AVG_MS / 1000)}s on average. </>}
+            {showQualityWarning.inconsistent && <>some answers contradict others on the same trait. </>}
+            For a reflection that's actually useful, we recommend re-taking with a calmer pace.
+          </p>
+          <div className="text-xs text-[#8C7E6E] space-y-1 mt-2">
+            <p>Avg time per item: <strong>{Math.round(showQualityWarning.avgMsPerItem / 100) / 10}s</strong></p>
+            <p>Reverse-key consistency: <strong>{Math.round(showQualityWarning.reverseKeyAgreement * 100)}%</strong></p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <Button onClick={handleRetake} className="flex-1 h-12 rounded-2xl bg-[#2D2926] text-white font-bold">
+            Re-take
+          </Button>
+          <Button onClick={handleKeepAnyway} variant="ghost" className="flex-1 h-12 rounded-2xl border border-[#E8E0D8] text-[#6B5E52] font-bold">
+            Keep results anyway
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasStarted) {
     return (
@@ -110,18 +281,21 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
         <div className="space-y-4">
           <h3 className="text-2xl font-serif italic text-[#2D2926]">Dating Style Profile</h3>
           <p className="text-sm text-[#8C7E6E] leading-relaxed">
-            This short reflection helps us understand how you approach relationships. 
+            {totalQuestions} short reflections that help us understand how you approach relationships.
             It is <strong>private by default</strong> and is used to provide you with insights and communication suggestions, not to rank you or determine your "soulmate."
           </p>
           <div className="p-4 bg-[#F7F2EE] rounded-2xl flex gap-3 items-start">
             <AlertCircle size={16} className="text-[#8C7E6E] shrink-0 mt-0.5" />
             <p className="text-xs text-[#8C7E6E] leading-relaxed">
-              This is a reflective tool, not a clinical diagnosis. You control what this influences, and you can reset or delete your profile at any time.
+              This is a reflective tool, not a clinical diagnosis. You control what this influences, and you can reset or delete your profile at any time. Take your time — rushing gives noisy results we can't use.
             </p>
           </div>
+          <p className="text-[10px] text-[#C4B5A5] uppercase tracking-widest font-bold">
+            Instrument: {INSTRUMENT_NAME} · public domain · {totalQuestions} items · ~5 minutes
+          </p>
         </div>
-        <Button 
-          onClick={() => setHasStarted(true)}
+        <Button
+          onClick={() => { setHasStarted(true); setItemStartedAt(Date.now()); }}
           className="w-full h-14 rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] font-bold uppercase tracking-widest text-xs"
         >
           Begin Reflection
@@ -143,7 +317,7 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
           <h3 className="text-2xl font-serif italic text-[#2D2926]">Reflection Complete</h3>
           <p className="text-sm text-[#8C7E6E] italic">Thank you for sharing. We're generating your private profile.</p>
         </div>
-        <Button 
+        <Button
           onClick={handleComplete}
           className="w-full h-14 rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] font-bold uppercase tracking-widest text-xs"
         >
@@ -160,14 +334,15 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
           <Brain size={18} />
           <span className="text-[10px] font-bold uppercase tracking-widest">Dating Style</span>
         </div>
-        <span className="text-xs text-[#8C7E6E] font-mono">{currentIndex + 1} / {QUESTIONS.length}</span>
+        <span className="text-xs text-[#8C7E6E] font-mono">{currentIndex + 1} / {totalQuestions}</span>
       </div>
 
       <div className="w-full h-1.5 bg-[#F7F2EE] rounded-full overflow-hidden">
-        <motion.div 
+        <motion.div
           className="h-full bg-[#D4AF37] rounded-full"
           initial={{ width: 0 }}
-          animate={{ width: `${((currentIndex) / QUESTIONS.length) * 100}%` }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.3 }}
         />
       </div>
 
@@ -184,13 +359,13 @@ export const PersonalityAssessment: React.FC<{ onComplete: (scores: Record<strin
           </h4>
 
           <div className="space-y-2">
-            {OPTIONS.map(opt => (
+            {OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => handleAnswer(opt.value)}
                 className={`w-full p-4 rounded-2xl border text-sm transition-all ${
-                  answers[currentQ.id] === opt.value 
-                    ? 'border-[#D4AF37] bg-[#D4AF37]/5 text-[#D4AF37] font-bold' 
+                  answers[currentQ.id] === opt.value
+                    ? 'border-[#D4AF37] bg-[#D4AF37]/5 text-[#D4AF37] font-bold'
                     : 'border-[#F3EFEA] text-[#8C7E6E] hover:border-[#D4AF37]/30 hover:bg-[#F7F2EE]'
                 }`}
               >

@@ -37,6 +37,8 @@ export interface RankingInput {
   candidateObservance?: ObservanceProfile;
   /** ms since candidate last active (for activity status only) */
   candidateLastActiveAgoMs?: number;
+  /** Lifetime profile impressions for the candidate — drives anti-starvation boost. */
+  candidateImpressions?: number;
 }
 
 export interface RankingResult {
@@ -44,13 +46,53 @@ export interface RankingResult {
   hardViolation?: string;
   finalScore: number;        // 0..1ish (post-fairness; can exceed 1 with boosts)
   reciprocal: number;
-  multiplier: number;
+  multiplier: number;        // fairness multiplier from filteringGrammar
+  boost: number;             // anti-starvation + new-user boost (1.0 = none)
   evidence: EvidencePacket;
   privateAlignment: { alignedAreas: string[]; totalAreas: number };
 }
 
-const NEW_USER_WINDOW_MS = 72 * 60 * 60 * 1000;
+const NEW_USER_WINDOW_MS = 72 * 60 * 60 * 1000;       // 3 days
 const ACTIVE_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const STARVATION_THRESHOLD_IMPRESSIONS = 50;          // candidates below this get a bump
+const STARVATION_BOOST = 0.20;                        // multiplicative
+const NEW_USER_BOOST = 0.15;                          // multiplicative
+const NEW_USER_BOOST_DECAY_MS = NEW_USER_WINDOW_MS;   // boost fades to zero across the window
+const FAIRNESS_CAP = 1.50;                            // never compound past 1.5x
+
+/**
+ * Compute a fairness boost multiplier for a candidate.
+ *
+ * Two purposes:
+ *   1. Anti-starvation — candidates with very few profile impressions get
+ *      a small bump so the marketplace doesn't collapse on a top decile.
+ *   2. New-user boost — accounts in the {@link NEW_USER_WINDOW_MS} window
+ *      get visibility help that decays linearly to zero at the boundary.
+ *
+ * The multiplier is bounded at {@link FAIRNESS_CAP} so no candidate ever
+ * jumps more than 50% above their organic score. This protects against
+ * gaming (creating new accounts) and protects taste signal integrity.
+ */
+export function computeBoostMultiplier(input: {
+  candidateImpressions: number;
+  candidateAccountAgeMs: number;
+}): number {
+  let boost = 1.0;
+
+  // Anti-starvation: under-exposed candidates get a small lift.
+  if (input.candidateImpressions < STARVATION_THRESHOLD_IMPRESSIONS) {
+    const ratio = 1 - input.candidateImpressions / STARVATION_THRESHOLD_IMPRESSIONS;
+    boost += STARVATION_BOOST * ratio;
+  }
+
+  // New-user boost: linear decay from full boost at age=0 → 0 at NEW_USER_WINDOW_MS.
+  if (input.candidateAccountAgeMs < NEW_USER_BOOST_DECAY_MS) {
+    const ageRatio = 1 - input.candidateAccountAgeMs / NEW_USER_BOOST_DECAY_MS;
+    boost += NEW_USER_BOOST * Math.max(0, ageRatio);
+  }
+
+  return Math.min(boost, FAIRNESS_CAP);
+}
 
 export function rank(input: RankingInput): RankingResult {
   const aff_v = implicitAffinity(input.viewerTaste, input.candidateFeatures);
@@ -78,6 +120,7 @@ export function rank(input: RankingInput): RankingResult {
       finalScore: 0,
       reciprocal: 0,
       multiplier: 0,
+      boost: 1,
       evidence: emptyPacket(),
       privateAlignment: { alignedAreas: [], totalAreas: 4 },
     };
@@ -85,7 +128,14 @@ export function rank(input: RankingInput): RankingResult {
 
   const reciprocal = reciprocalScore(a.score, b.score);
   const multiplier = fairnessMultiplier(input.fairness);
-  const finalScore = adjustedFinalScore(reciprocal, multiplier);
+
+  // Layer 2 fairness: anti-starvation + new-user boost
+  const boost = computeBoostMultiplier({
+    candidateImpressions: input.candidateImpressions ?? Number.POSITIVE_INFINITY,
+    candidateAccountAgeMs: input.fairness.candidateAccountAgeMs,
+  });
+
+  const finalScore = adjustedFinalScore(reciprocal, multiplier) * boost;
 
   const privateAlignment = (input.viewerObservance && input.candidateObservance)
     ? practiceAreaAlignment(input.viewerObservance, input.candidateObservance)
@@ -96,6 +146,7 @@ export function rank(input: RankingInput): RankingResult {
     finalScore,
     reciprocal,
     multiplier,
+    boost,
     evidence: buildEvidence(input, a.reasonCodes),
     privateAlignment,
   };

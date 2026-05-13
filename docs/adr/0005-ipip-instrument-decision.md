@@ -19,13 +19,15 @@ The third option is the **International Personality Item Pool (IPIP)** — a pee
 
 ## Decision
 
-Kesher will ship the **IPIP-NEO short form (20 items)** as the production personality instrument for v1.0.
+Kesher will ship the **IPIP-NEO-30 short form (30 items)** as the production personality instrument for v1.0.
 
 - **Source:** Goldberg et al., 1999. International Personality Item Pool (IPIP).
 - **License:** Public domain. Items may be used freely in commercial applications.
-- **Items:** 20 — 4 per Big Five domain × 2 aspects per domain × 2 items per aspect.
+- **Items:** 30 — 5 Big Five domains × 2 aspects × 3 items per aspect.
 - **Scoring:** Deterministic Likert-5 mean per aspect, mapped to 0–100 raw score (NOT a validated percentile).
+- **Response quality gating:** Straight-line detection (≥85% same value), time-based rushing detection (<1.5s avg per item), and reverse-key consistency check (<55% disagreement triggers warning). Low-tier responses prompt re-take; user can override and proceed with results marked low-confidence.
 - **Display label:** "Your tendencies based on how you answered" (HEURISTIC evidence label per `claims/personality.yml`).
+- **Upgrade from 20-item form:** the 30-item form raises per-aspect α reliability from ~0.65–0.75 → ~0.70–0.78 in published samples and tightens reverse-key inconsistency detection.
 
 ---
 

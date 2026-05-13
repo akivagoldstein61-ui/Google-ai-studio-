@@ -24,8 +24,13 @@ instrument_status:
   ipip_public_domain: true
   bfas_license_confirmed: false   # BLOCKED — see docs/personality/claim-registry.md
   bfi2_license_confirmed: false   # BLOCKED — pending legal review
-  current_scoring_instrument: "ipip-short-form-mvp"
-  scoring_version_in_use: "bfas-mvp-v1"
+  current_scoring_instrument: "ipip-neo-30"
+  scoring_version_in_use: "ipip-neo-30-v1"
+  item_count: 30
+  domains: 5
+  aspects_per_domain: 2
+  items_per_aspect: 3
+  response_quality_gates: true   # straight-line + rushed + reverse-key consistency
 
 release_gate_status:
   gate_1_privacy_consent: passing      # PrivacyNoticeScreen.tsx + /api/profile/personality/{export,delete,reset}
@@ -123,6 +128,38 @@ claims:
     release_gate: null
     status: active
     notes: "Google Search grounding with citation UI required. Non-emergency framing enforced."
+
+  - id: CL-007
+    claim_text: "Reflection lenses — values, communication, friction, repair"
+    placement: compatibility_reflection_screen
+    evidence_label: HEURISTIC
+    instrument: gemini_pair_insight
+    scoring_version: v1.0
+    uncertainty_disclosed: true
+    uncertainty_copy: "Each lens is a reflection drawn from what you both shared, not a verdict."
+    owner: "@personality-reviewers"
+    release_gate: gate_5_mutual_consent
+    status: prototype_only
+    notes: >
+      Four-lens taxonomy (values_alignment, communication, friction_forecast,
+      repair_coping). Each lens may be omitted if mutually-shared signals don't
+      support it. CompatibilityLensSchema enforces structure.
+
+  - id: CL-008
+    claim_text: "Response quality detected — re-take recommended"
+    placement: personality_assessment_quality_gate
+    evidence_label: HEURISTIC
+    instrument: ipip-neo-30
+    scoring_version: ipip-neo-30-v1
+    uncertainty_disclosed: true
+    uncertainty_copy: "We flag rushed or contradictory responses so your results stay meaningful."
+    owner: "@personality-reviewers"
+    release_gate: null
+    status: active
+    notes: >
+      Detects straight-lining (>85% same value), rushing (<1.5s avg), and
+      reverse-key inconsistency (<55% agreement). User can re-take or keep
+      results downgraded to low-tier reliability.
 
   # ── PROPOSED CLAIMS (pre-review, not yet in production) ───────────────────
 

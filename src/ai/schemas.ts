@@ -177,6 +177,42 @@ export const CompatibilityInsightSchema = {
   ],
 };
 
+/**
+ * Compatibility reflection lens taxonomy.
+ *
+ * Per the kesher-compatibility-reflection skill: no single compatibility
+ * score is defensible. Instead, we offer four distinct *lenses* a couple
+ * can use to reflect together. Each lens is independently scoped and
+ * may be shown, skipped, or revisited without affecting the others.
+ *
+ *   1. values_alignment  — shared foundations, where the couple converges
+ *   2. communication     — how each tends to express + receive under stress
+ *   3. friction_forecast — topics worth clarifying early, framed gently
+ *   4. repair_coping     — micro-habits and boundaries for navigating differences
+ */
+export const COMPATIBILITY_LENSES = [
+  "values_alignment",
+  "communication",
+  "friction_forecast",
+  "repair_coping",
+] as const;
+
+export const CompatibilityLensSchema = {
+  type: Type.OBJECT,
+  properties: {
+    lens: { type: Type.STRING, enum: [...COMPATIBILITY_LENSES] },
+    title_he: { type: Type.STRING, description: "Hebrew title for this lens card" },
+    body_he: { type: Type.STRING, description: "1-3 sentence reflection — probabilistic language only" },
+    prompt_he: { type: Type.STRING, description: "One question for the couple to discuss together" },
+    confidence_label: {
+      type: Type.STRING,
+      enum: ["low", "moderate", "high"],
+      description: "How well-supported the lens is by mutually-shared signals",
+    },
+  },
+  required: ["lens", "title_he", "body_he", "prompt_he", "confidence_label"],
+};
+
 export const PairInsightReportSchema = {
   type: Type.OBJECT,
   properties: {
@@ -185,6 +221,19 @@ export const PairInsightReportSchema = {
     friction_loops: {
       type: Type.ARRAY,
       items: CompatibilityInsightSchema,
+    },
+    /**
+     * Four-lens taxonomy. Each lens MUST appear at most once. The model is
+     * allowed to omit a lens if mutually-shared signals don't support it
+     * (lower-noise output beats fabricating content).
+     */
+    lenses: {
+      type: Type.ARRAY,
+      minItems: 1,
+      maxItems: 4,
+      items: CompatibilityLensSchema,
+      description:
+        "Lens cards — at most one per lens type, each grounded in mutually-shared signals only.",
     },
     question_to_explore_he: { type: Type.STRING },
     micro_habit_he: { type: Type.STRING },
@@ -202,6 +251,7 @@ export const PairInsightReportSchema = {
     "evidenceLabel",
     "shared_strengths_he",
     "friction_loops",
+    "lenses",
     "question_to_explore_he",
     "micro_habit_he",
     "gentle_boundary_he",
