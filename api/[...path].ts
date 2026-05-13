@@ -1,13 +1,6 @@
-type VercelRequestLike = {
-  url?: string | null;
-};
+import type { ApiRequest, JsonResponse } from '../server/vercelFunctionTypes.ts';
 
-type JsonResponse = {
-  setHeader(name: string, value: string): void;
-  status(code: number): { json(body: unknown): void };
-};
-
-export default function handler(request: VercelRequestLike, response: JsonResponse) {
+export default function handler(request: ApiRequest, response: JsonResponse) {
   response.setHeader('Cache-Control', 'no-store, max-age=0');
   response.status(404).json({
     status: 'not_found',

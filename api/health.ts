@@ -1,7 +1,4 @@
-type JsonResponse = {
-  setHeader(name: string, value: string): void;
-  status(code: number): { json(body: unknown): void };
-};
+import type { JsonResponse } from '../server/vercelFunctionTypes.ts';
 
 export default function handler(_request: unknown, response: JsonResponse) {
   response.setHeader('Cache-Control', 'no-store, max-age=0');

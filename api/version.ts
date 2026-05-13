@@ -1,9 +1,6 @@
-const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
+import type { JsonResponse } from '../server/vercelFunctionTypes.ts';
 
-type JsonResponse = {
-  setHeader(name: string, value: string): void;
-  status(code: number): { json(body: unknown): void };
-};
+const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
 
 function firstNonEmpty(...values: Array<string | undefined | null>): string {
   return values.find((value) => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
