@@ -40,7 +40,7 @@ const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
-const SKILL_MODULE_COUNT = SKILLS.length;
+const REGISTERED_SKILL_COUNT = SKILLS.length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -269,7 +269,7 @@ export const PrototypeScreen: React.FC = () => {
             <Sparkles className="w-4 h-4" />
             <span>Kesher Skills Hub</span>
           </div>
-          <p className="text-sm text-white/80 italic">Explore all {SKILL_MODULE_COUNT} integrated skill modules powering Kesher's trust-forward personality system.</p>
+          <p className="text-sm text-white/80 italic">Explore all {REGISTERED_SKILL_COUNT} registered skill modules powering Kesher's trust-forward personality system.</p>
           <a
             href="/skills-hub"
             data-testid="prototype-skills-hub-link"

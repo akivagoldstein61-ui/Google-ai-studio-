@@ -1,5 +1,10 @@
 const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
 
+type JsonResponse = {
+  setHeader(name: string, value: string): void;
+  status(code: number): { json(body: unknown): void };
+};
+
 function firstNonEmpty(...values: Array<string | undefined | null>): string {
   return values.find((value) => typeof value === 'string' && value.trim().length > 0)?.trim() ?? '';
 }
@@ -10,7 +15,7 @@ function normalizeHttpsUrl(hostOrUrl: string): string | null {
   return `https://${hostOrUrl}`;
 }
 
-export default function handler(_request: unknown, response: any) {
+export default function handler(_request: unknown, response: JsonResponse) {
   const commitSha = firstNonEmpty(
     process.env.VERCEL_GIT_COMMIT_SHA,
     process.env.GITHUB_SHA,
