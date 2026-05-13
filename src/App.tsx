@@ -278,11 +278,14 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  if (typeof window !== 'undefined' && (window.location.pathname === '/prototype' || window.location.pathname === '/status')) {
-    return <PrototypeScreen />;
-  }
-  if (typeof window !== 'undefined' && window.location.pathname === '/skills-hub') {
-    return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (pathname === '/prototype' || pathname === '/status') {
+      return <PrototypeScreen />;
+    }
+    if (pathname === '/skills-hub') {
+      return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
+    }
   }
   return (
     <BrowserRouter>
