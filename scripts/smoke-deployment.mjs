@@ -71,8 +71,13 @@ async function fetchClientBundleText(pageText) {
   const scriptSrcs = Array.from(pageText.matchAll(/<script[^>]+src="([^"]+)"/gi)).map((match) => match[1]);
   const assetTexts = await Promise.all(scriptSrcs.map(async (src) => {
     const assetUrl = new URL(src, baseUrl).toString();
-    const { text } = await fetchText(assetUrl);
-    return text;
+    try {
+      const { text } = await fetchText(assetUrl);
+      return text;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Unable to fetch client asset ${assetUrl}: ${message}`);
+    }
   }));
   return assetTexts.join('\n');
 }
@@ -88,6 +93,21 @@ function getLocalSourceVisibilityText(pageText) {
     .filter((path) => existsSync(path))
     .map((path) => readFileSync(path, 'utf8'))
     .join('\n');
+}
+
+async function getVisibilityText(pageText) {
+  const bundleText = await fetchClientBundleText(pageText);
+
+  // Vercel serves a static SPA shell, so smoke verification reads the deployed
+  // JavaScript bundle to confirm the visible prototype/skills strings shipped.
+  // Local Vite dev serves source modules instead of bundled assets; source text
+  // fallback keeps the same smoke script useful for local verification.
+  const localSourceText = getLocalSourceVisibilityText(pageText);
+
+  return {
+    bundleText,
+    visibilityText: `${bundleText}\n${localSourceText}`,
+  };
 }
 
 function assertNoSecrets(label, text) {
@@ -146,8 +166,7 @@ function assertNoSecrets(label, text) {
   }
   checks.push('/api/* fallback JSON verified');
 
-  const bundleText = await fetchClientBundleText(prototype.text);
-  const visibilityText = `${bundleText}\n${getLocalSourceVisibilityText(prototype.text)}`;
+  const { bundleText, visibilityText } = await getVisibilityText(prototype.text);
   if (!visibilityText.includes('/skills-hub') || !visibilityText.includes('Kesher Skills Hub')) {
     throw new Error('/prototype client bundle does not expose the visible Kesher Skills Hub link');
   }
@@ -170,7 +189,7 @@ function assertNoSecrets(label, text) {
   }
 
   if (!/data-demo-mode="true"/i.test(demo.text) && !visibilityText.includes('data-demo-mode')) {
-    throw new Error('/demo?demo=1 did not expose expected demo mode marker support');
+    throw new Error('/demo?demo=1 did not expose the rendered data-demo-mode marker or its client implementation');
   }
   checks.push('demo mode marker verified');
 
