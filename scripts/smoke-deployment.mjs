@@ -57,7 +57,7 @@ async function fetchJson(url, expectedStatus = 200) {
   if (!contentType.toLowerCase().includes('application/json')) {
     throw new Error(`${url} did not return JSON (content-type: ${contentType || 'missing'})`);
   }
-  if (/<!doctype html|<html/i.test(text)) {
+  if (/<!doctype\s*html|<html/i.test(text)) {
     throw new Error(`${url} returned the SPA HTML shell instead of API JSON`);
   }
 
@@ -189,6 +189,8 @@ function assertNoSecrets(label, text) {
     checks.push('commit marker verified in deployment metadata');
   }
 
+  // Match rendered HTML attributes (`data-demo-mode=`) and bundled/source code
+  // object keys or JSX props (`data-demo-mode:`) used by local/dev fallback.
   const demoModeMarkerPattern = /data-demo-mode(?:=|:)/i;
   const hasDemoModeMarker = demoModeMarkerPattern.test(demo.text) || demoModeMarkerPattern.test(visibilityText);
   if (!hasDemoModeMarker) {
