@@ -40,8 +40,8 @@ const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
-// SKILLS is the visible registry for this prototype surface; count planned and
-// prototype entries so every registered module is represented.
+// SKILLS is the visible registry for this prototype surface and already
+// includes planned plus prototype entries that reviewers must be able to see.
 const REGISTERED_SKILL_COUNT = SKILLS.length;
 
 const CURRENT_ENV =

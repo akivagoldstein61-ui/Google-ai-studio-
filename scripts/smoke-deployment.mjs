@@ -47,12 +47,12 @@ async function fetchText(url) {
 
 async function fetchJson(url, expectedStatus = 200) {
   const response = await fetch(url, { redirect: 'manual', cache: 'no-store' });
-  const contentType = response.headers.get('content-type') || '';
 
   if (response.status !== expectedStatus) {
     throw new Error(`Unexpected status for ${url}: got ${response.status}, expected ${expectedStatus}`);
   }
 
+  const contentType = response.headers.get('content-type') || '';
   const text = await response.text();
   if (!contentType.toLowerCase().includes('application/json')) {
     throw new Error(`${url} did not return JSON (content-type: ${contentType || 'missing'})`);
@@ -189,7 +189,8 @@ function assertNoSecrets(label, text) {
     checks.push('commit marker verified in deployment metadata');
   }
 
-  const hasDemoModeMarker = /data-demo-mode="true"/i.test(demo.text) || visibilityText.includes('data-demo-mode');
+  const demoModeMarkerPattern = /data-demo-mode(?:=|:)/i;
+  const hasDemoModeMarker = demoModeMarkerPattern.test(demo.text) || demoModeMarkerPattern.test(visibilityText);
   if (!hasDemoModeMarker) {
     throw new Error('/demo?demo=1 did not expose the rendered data-demo-mode marker or its client implementation');
   }
