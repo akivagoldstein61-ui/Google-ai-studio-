@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ExternalLink, GitBranch, Globe, Info, Link2, Server, Sparkles } from 'lucide-react';
 import { STABLE_PROTOTYPE_URL } from '@/lib/prototypeMode';
+import { SKILLS } from '@/features/skills';
 
 const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
 const CI_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/ci.yml/badge.svg`;
@@ -39,6 +40,7 @@ const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_INDEX_URL = new URL('/prototype/skills.html', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
+const SKILL_MODULE_COUNT = SKILLS.filter((skill) => Boolean(skill.skillId)).length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -267,7 +269,7 @@ export const PrototypeScreen: React.FC = () => {
             <Sparkles className="w-4 h-4" />
             <span>Kesher Skills Hub</span>
           </div>
-          <p className="text-sm text-white/80 italic">Explore all 10 integrated skill modules powering Kesher's trust-forward personality system.</p>
+          <p className="text-sm text-white/80 italic">Explore all {SKILL_MODULE_COUNT} integrated skill modules powering Kesher&apos;s trust-forward personality system.</p>
           <a
             href="/skills-hub"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#2D2926] rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[#E5C048] transition-all"
