@@ -38,9 +38,9 @@ const NETLIFY_MIRROR_URL = env.VITE_NETLIFY_MIRROR_URL || '';
 const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
 const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
-const SKILLS_INDEX_URL = new URL('/prototype/skills.html', STABLE_PROTOTYPE_URL).toString();
+const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
-const SKILL_MODULE_COUNT = SKILLS.filter((skill) => Boolean(skill.skillId)).length;
+const SKILL_MODULE_COUNT = SKILLS.length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -68,10 +68,10 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     ),
   },
   {
-    label: 'Prototype skills page',
+    label: 'Kesher Skills Hub',
     value: (
-      <a href={SKILLS_INDEX_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
-        {SKILLS_INDEX_URL}
+      <a href={SKILLS_HUB_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_HUB_URL}
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
     ),
@@ -272,6 +272,7 @@ export const PrototypeScreen: React.FC = () => {
           <p className="text-sm text-white/80 italic">Explore all {SKILL_MODULE_COUNT} integrated skill modules powering Kesher's trust-forward personality system.</p>
           <a
             href="/skills-hub"
+            data-testid="prototype-skills-hub-link"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#2D2926] rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[#E5C048] transition-all"
           >
             Open Skills Hub

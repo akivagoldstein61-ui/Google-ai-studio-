@@ -77,8 +77,13 @@ async function startServer() {
   });
 
   // Health check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      source: "express-server",
+      service: "kesher",
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // AI feature routes — all Gemini SDK usage is server-side only
@@ -92,6 +97,17 @@ async function startServer() {
 
   // Permissioned share-card Routes
   app.use("/api/share", shareRoutes);
+
+  app.use("/api", (req, res) => {
+    res.status(404).json({
+      status: "not_found",
+      source: "express-server",
+      service: "kesher",
+      path: req.originalUrl,
+      message: "API route not implemented in this prototype server.",
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
