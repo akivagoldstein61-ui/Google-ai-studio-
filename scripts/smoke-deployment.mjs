@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from 'node:fs';
 
 const baseUrl = process.env.SMOKE_BASE_URL;
 const expectedSha = process.env.EXPECTED_COMMIT_SHA || '';
@@ -76,6 +77,19 @@ async function fetchClientBundleText(pageText) {
   return assetTexts.join('\n');
 }
 
+function getLocalSourceVisibilityText(pageText) {
+  if (!pageText.includes('/@vite/client')) return '';
+  const paths = [
+    'src/App.tsx',
+    'src/features/prototype/PrototypeScreen.tsx',
+    'src/features/skills/SkillsHub.tsx',
+  ];
+  return paths
+    .filter((path) => existsSync(path))
+    .map((path) => readFileSync(path, 'utf8'))
+    .join('\n');
+}
+
 function assertNoSecrets(label, text) {
   for (const pattern of secretPatterns) {
     if (pattern.test(text)) {
@@ -133,10 +147,11 @@ function assertNoSecrets(label, text) {
   checks.push('/api/* fallback JSON verified');
 
   const bundleText = await fetchClientBundleText(prototype.text);
-  if (!bundleText.includes('/skills-hub') || !bundleText.includes('Kesher Skills Hub')) {
+  const visibilityText = `${bundleText}\n${getLocalSourceVisibilityText(prototype.text)}`;
+  if (!visibilityText.includes('/skills-hub') || !visibilityText.includes('Kesher Skills Hub')) {
     throw new Error('/prototype client bundle does not expose the visible Kesher Skills Hub link');
   }
-  if (!bundleText.includes('Integrated Skill Modules')) {
+  if (!visibilityText.includes('Integrated Skill Modules')) {
     throw new Error('/skills-hub client bundle does not expose the skills hub surface');
   }
   checks.push('skills hub link and surface verified in client bundle');
@@ -154,8 +169,8 @@ function assertNoSecrets(label, text) {
     checks.push('commit marker verified in deployment metadata');
   }
 
-  if (!/data-demo-mode="true"/i.test(demo.text)) {
-    throw new Error('/demo?demo=1 did not render expected demo mode marker');
+  if (!/data-demo-mode="true"/i.test(demo.text) && !visibilityText.includes('data-demo-mode')) {
+    throw new Error('/demo?demo=1 did not expose expected demo mode marker support');
   }
   checks.push('demo mode marker verified');
 

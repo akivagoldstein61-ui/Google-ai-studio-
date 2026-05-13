@@ -24,6 +24,7 @@ import { SkillsRouter } from './features/skills';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
+import { isPrototypeDemoMode } from './lib/prototypeMode';
 
 // ---------------------------------------------------------------------------
 // Auth guard — redirects unauthenticated / onboarding users
@@ -245,8 +246,13 @@ const ExperimentsRoute: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const AppContent: React.FC = () => {
+  const demoMode = isPrototypeDemoMode();
+
   return (
-    <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
+    <div
+      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]"
+      data-demo-mode={demoMode ? 'true' : undefined}
+    >
       <AuthGuard>
         <Routes>
           {/* Tab screens — wrapped in shared layout with bottom nav */}
