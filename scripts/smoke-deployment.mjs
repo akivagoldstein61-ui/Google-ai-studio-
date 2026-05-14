@@ -163,7 +163,7 @@ async function runBrowserChecks(checks) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 900 });
 
-    await page.goto(skillsHubUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.goto(skillsHubUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
 
     const skillsState = await page.evaluate(() => {
@@ -195,7 +195,7 @@ async function runBrowserChecks(checks) {
     await page.waitForFunction(() => document.body.innerText.toLowerCase().includes('interactive demo'), { timeout: 15000 });
     checks.push('implemented skill page opened');
 
-    await page.goto(skillsHubUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.goto(skillsHubUrl, { waitUntil: 'load', timeout: 30000 });
     await page.evaluate(() => {
       const card = Array.from(document.querySelectorAll('main section.grid > button'))
         .find((button) => button.textContent?.toLowerCase().includes('planned'));
@@ -204,7 +204,7 @@ async function runBrowserChecks(checks) {
     await page.waitForFunction(() => document.body.innerText.includes('interactive prototype') || document.body.innerText.includes('implementation is coming soon'), { timeout: 15000 });
     checks.push('planned skill page opened');
 
-    await page.goto(prototypeUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.goto(prototypeUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
     checks.push('/prototype browser rendered skills hub link');
   } finally {

@@ -23,6 +23,8 @@ app.get('/api/health', (_req, res) => {
 
 // Existing server routers, mounted without starting a long-running listener.
 app.use('/api/ai', authMiddleware, aiRouter);
+// Mirror server.ts: trustRoutes intentionally exposes the same trust/account/
+// profile/support action handlers under each public API namespace.
 app.use('/api/safety', trustRoutes);
 app.use('/api/profile', trustRoutes);
 app.use('/api/account', trustRoutes);
@@ -40,7 +42,7 @@ app.use('/api', (req, res) => {
   });
 });
 
-function normalizeApiUrl(request: Request) {
+function normalizeApiUrlInPlace(request: Request) {
   const url = typeof request.url === 'string' ? request.url : '';
   // Direct Vercel Function requests already arrive under /api and can be
   // handed to the Express routers without reconstructing the path.
@@ -62,6 +64,6 @@ function normalizeApiUrl(request: Request) {
 }
 
 export default function handler(request: Request, response: Response) {
-  normalizeApiUrl(request);
+  normalizeApiUrlInPlace(request);
   return app(request, response);
 }
