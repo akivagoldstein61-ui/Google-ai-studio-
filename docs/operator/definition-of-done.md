@@ -5,7 +5,10 @@
 - `npm run lint` passes.
 - `npm run test` passes.
 - `npm run build` passes.
-- `/api/health` returns `{ "status": "ok" }` during local smoke testing.
+- `/api/health` returns JSON with `status: "ok"` and `service: "kesher"` during local and deployment smoke testing.
+- `/api/version` and `/__version` return JSON deployment metadata.
+- Unmatched `/api/*` routes return JSON, not the Vite SPA shell.
+- `/skills-hub` loads without auth and `/prototype` visibly links to it.
 
 ## Safety Checks
 - `GEMINI_API_KEY` is not referenced in Vite client config or client code.

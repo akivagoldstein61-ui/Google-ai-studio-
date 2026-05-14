@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import { aiRouter } from '../server/aiRoutes.ts';
 import { authMiddleware } from '../server/authMiddleware.ts';
 import trustRoutes from '../server/trustRoutes.ts';
@@ -22,6 +23,8 @@ app.get('/api/health', (_req, res) => {
 
 // Existing server routers, mounted without starting a long-running listener.
 app.use('/api/ai', authMiddleware, aiRouter);
+// Mirror server.ts: trustRoutes intentionally exposes the same trust/account/
+// profile/support action handlers under each public API namespace.
 app.use('/api/safety', trustRoutes);
 app.use('/api/profile', trustRoutes);
 app.use('/api/account', trustRoutes);
@@ -30,24 +33,37 @@ app.use('/api/share', shareRoutes);
 
 app.use('/api', (req, res) => {
   res.status(404).json({
-    error: 'Not found',
+    status: 'not_found',
     source: 'vercel-api-function',
-    path: req.path,
+    service: 'kesher',
+    path: req.originalUrl,
+    message: 'This API route is not implemented as a Vercel Function in this prototype deployment.',
+    timestamp: new Date().toISOString(),
   });
 });
 
-function normalizeApiUrl(request: any) {
+function normalizeApiUrlInPlace(request: Request) {
   const url = typeof request.url === 'string' ? request.url : '';
+  // Direct Vercel Function requests already arrive under /api and can be
+  // handed to the Express routers without reconstructing the path.
   if (url.startsWith('/api')) return;
 
   const pathParam = request.query?.path;
   const path = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
   const queryStart = url.indexOf('?');
   const search = queryStart >= 0 ? url.slice(queryStart) : '';
-  request.url = `/api/${path || ''}${search}`;
+  const cleanPath = typeof path === 'string' ? path.replace(/^\/+/, '') : '';
+  const normalizedUrl = `/api/${cleanPath}${search}`;
+  try {
+    new URL(normalizedUrl, 'http://localhost');
+  } catch {
+    request.url = '/api';
+    return;
+  }
+  request.url = normalizedUrl;
 }
 
-export default function handler(request: any, response: any) {
-  normalizeApiUrl(request);
+export default function handler(request: Request, response: Response) {
+  normalizeApiUrlInPlace(request);
   return app(request, response);
 }

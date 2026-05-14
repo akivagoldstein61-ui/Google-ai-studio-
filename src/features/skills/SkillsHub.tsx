@@ -504,7 +504,11 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
             <Sparkles size={18} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Integrated Skill Modules</span>
           </div>
-          <h2 className="text-lg font-serif italic leading-snug">
+          <h2
+            className="text-lg font-serif italic leading-snug"
+            data-testid="skills-hub-count"
+            data-skill-count={SKILLS.length}
+          >
             {SKILLS.length} interconnected capabilities powering Kesher's trust-forward personality system
           </h2>
           <p className="text-sm text-white/60 leading-relaxed italic">
@@ -562,7 +566,10 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${skill.color}`}>
                     <Icon size={18} />
                   </div>
-                  <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${statusBadge(skill.status)}`}>
+                  <span
+                    className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${statusBadge(skill.status)}`}
+                    data-skill-status={skill.status}
+                  >
                     {skill.status}
                   </span>
                 </div>
