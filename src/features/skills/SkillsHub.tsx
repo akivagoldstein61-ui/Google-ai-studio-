@@ -504,7 +504,11 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
             <Sparkles size={18} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Integrated Skill Modules</span>
           </div>
-          <h2 className="text-lg font-serif italic leading-snug">
+          <h2
+            className="text-lg font-serif italic leading-snug"
+            data-testid="skills-hub-count"
+            data-skill-count={SKILLS.length}
+          >
             {SKILLS.length} interconnected capabilities powering Kesher's trust-forward personality system
           </h2>
           <p className="text-sm text-white/60 leading-relaxed italic">

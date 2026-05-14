@@ -1,9 +1,9 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import { aiRouter } from '../server/aiRoutes.ts';
 import { authMiddleware } from '../server/authMiddleware.ts';
 import trustRoutes from '../server/trustRoutes.ts';
 import shareRoutes from '../server/shareRoutes.ts';
-import type { ApiRequest, JsonResponse } from '../server/vercelFunctionTypes.ts';
 
 const app = express();
 
@@ -40,7 +40,7 @@ app.use('/api', (req, res) => {
   });
 });
 
-function normalizeApiUrl(request: ApiRequest) {
+function normalizeApiUrl(request: Request) {
   const url = typeof request.url === 'string' ? request.url : '';
   if (url.startsWith('/api')) return;
 
@@ -48,10 +48,13 @@ function normalizeApiUrl(request: ApiRequest) {
   const path = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
   const queryStart = url.indexOf('?');
   const search = queryStart >= 0 ? url.slice(queryStart) : '';
-  request.url = `/api/${path || ''}${search}`;
+  const cleanPath = typeof path === 'string' ? path.replace(/^\/+/, '') : '';
+  const normalizedUrl = `/api/${cleanPath}${search}`;
+  new URL(normalizedUrl, 'http://localhost');
+  request.url = normalizedUrl;
 }
 
-export default function handler(request: ApiRequest, response: JsonResponse) {
+export default function handler(request: Request, response: Response) {
   normalizeApiUrl(request);
-  return app(request as any, response as any);
+  return app(request, response);
 }

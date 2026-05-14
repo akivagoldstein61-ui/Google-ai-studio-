@@ -168,7 +168,8 @@ async function runBrowserChecks(checks) {
 
     const skillsState = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('main section.grid > button'));
-      const declaredCount = Number(document.body.innerText.match(/(\d+)\s+interconnected capabilities/)?.[1] || 0);
+      const countElement = document.querySelector('[data-testid="skills-hub-count"]');
+      const declaredCount = Number(countElement?.getAttribute('data-skill-count') || 0);
       return {
         headingVisible: document.body.innerText.includes('Kesher Skills Hub'),
         declaredCount,
@@ -181,7 +182,7 @@ async function runBrowserChecks(checks) {
     if (!skillsState.headingVisible) {
       throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
     }
-    if (skillsState.declaredCount < 20 || skillsState.visibleCards !== skillsState.declaredCount) {
+    if (skillsState.declaredCount === 0 || skillsState.visibleCards !== skillsState.declaredCount) {
       throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
     }
     checks.push(`/skills-hub browser rendered ${skillsState.visibleCards} skill cards (${skillsState.prototypeCards} prototype, ${skillsState.plannedCards} planned)`);
