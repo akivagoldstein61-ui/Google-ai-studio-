@@ -13,9 +13,10 @@ const rootUrl = new URL('/', baseUrl).toString();
 const prototypeUrl = new URL('/prototype', baseUrl).toString();
 const skillsHubUrl = new URL('/skills-hub', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
-const healthUrl = new URL('/api/health', baseUrl).toString();
-const apiVersionUrl = new URL('/api/version', baseUrl).toString();
+const dailyUrl = new URL('/daily', baseUrl).toString();
 const versionUrl = new URL('/__version', baseUrl).toString();
+const apiVersionUrl = new URL('/api/version', baseUrl).toString();
+const healthUrl = new URL('/api/health', baseUrl).toString();
 const unknownApiUrl = new URL('/api/__smoke_missing_route', baseUrl).toString();
 const isVercelTarget = new URL(baseUrl).hostname.endsWith('.vercel.app');
 
@@ -119,6 +120,97 @@ function assertNoSecrets(label, text) {
   }
 }
 
+function findChromeExecutable() {
+  const candidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+  ].filter(Boolean);
+
+  return candidates.find((candidate) => {
+    return existsSync(candidate);
+  });
+}
+
+async function runBrowserChecks(checks) {
+  let puppeteer;
+  try {
+    puppeteer = await import('puppeteer');
+  } catch {
+    checks.push('browser smoke skipped (puppeteer not installed)');
+    return;
+  }
+
+  const executablePath = findChromeExecutable();
+  let browser;
+  try {
+    browser = await puppeteer.default.launch({
+      headless: true,
+      ...(executablePath ? { executablePath } : {}),
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unable to launch browser';
+    checks.push(`browser smoke skipped (${message.split('\n')[0]})`);
+    return;
+  }
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1366, height: 900 });
+
+    await page.goto(skillsHubUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
+
+    const skillsState = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('main section.grid > button'));
+      const declaredCount = Number(document.body.innerText.match(/(\d+)\s+interconnected capabilities/)?.[1] || 0);
+      return {
+        headingVisible: document.body.innerText.includes('Kesher Skills Hub'),
+        declaredCount,
+        visibleCards: cards.length,
+        plannedCards: cards.filter((card) => card.querySelector('span')?.textContent?.trim().toLowerCase() === 'planned').length,
+        prototypeCards: cards.filter((card) => card.querySelector('span')?.textContent?.trim().toLowerCase() === 'prototype').length,
+      };
+    });
+
+    if (!skillsState.headingVisible) {
+      throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
+    }
+    if (skillsState.declaredCount < 20 || skillsState.visibleCards !== skillsState.declaredCount) {
+      throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
+    }
+    checks.push(`/skills-hub browser rendered ${skillsState.visibleCards} skill cards (${skillsState.prototypeCards} prototype, ${skillsState.plannedCards} planned)`);
+
+    await page.evaluate(() => {
+      const card = Array.from(document.querySelectorAll('main section.grid > button'))
+        .find((button) => button.textContent?.includes('Personality Assessment'));
+      card?.click();
+    });
+    await page.waitForFunction(() => document.body.innerText.toLowerCase().includes('interactive demo'), { timeout: 15000 });
+    checks.push('implemented skill page opened');
+
+    await page.goto(skillsHubUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.evaluate(() => {
+      const card = Array.from(document.querySelectorAll('main section.grid > button'))
+        .find((button) => button.textContent?.toLowerCase().includes('planned'));
+      card?.click();
+    });
+    await page.waitForFunction(() => document.body.innerText.includes('interactive prototype') || document.body.innerText.includes('implementation is coming soon'), { timeout: 15000 });
+    checks.push('planned skill page opened');
+
+    await page.goto(prototypeUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
+    checks.push('/prototype browser rendered skills hub link');
+  } finally {
+    await browser.close();
+  }
+}
+
 (async () => {
   const checks = [];
 
@@ -134,6 +226,9 @@ function assertNoSecrets(label, text) {
   const demo = await fetchText(demoUrl);
   checks.push(`/demo?demo=1 reachable (${demo.response.status})`);
 
+  const daily = await fetchText(dailyUrl);
+  checks.push(`/daily deep link reachable (${daily.response.status})`);
+
   const health = await fetchJson(healthUrl);
   if (health.json.status !== 'ok' || health.json.service !== 'kesher') {
     throw new Error('/api/health returned unexpected JSON payload');
@@ -141,25 +236,25 @@ function assertNoSecrets(label, text) {
   if (isVercelTarget && health.json.source !== 'vercel-api-function') {
     throw new Error(`/api/health source was ${health.json.source}; expected vercel-api-function`);
   }
-  checks.push('/api/health JSON verified');
+  checks.push(`/api/health JSON verified (${health.json.source || 'unknown source'})`);
 
   const apiVersion = await fetchJson(apiVersionUrl);
-  if (apiVersion.json.status !== 'ok') {
+  if (apiVersion.json.status !== 'ok' || apiVersion.json.repository !== 'akivagoldstein61-ui/Google-ai-studio-') {
     throw new Error('/api/version did not return deployment metadata');
   }
   if (isVercelTarget && apiVersion.json.source !== 'vercel-api-function') {
     throw new Error(`/api/version source was ${apiVersion.json.source}; expected vercel-api-function`);
   }
-  checks.push('/api/version JSON verified');
+  checks.push(`/api/version JSON verified (${apiVersion.json.source || 'unknown source'})`);
 
   const version = await fetchJson(versionUrl);
-  if (version.json.status !== 'ok') {
+  if (version.json.status !== 'ok' || version.json.repository !== 'akivagoldstein61-ui/Google-ai-studio-') {
     throw new Error('/__version did not return deployment metadata');
   }
   if (isVercelTarget && version.json.source !== 'vercel-api-function') {
     throw new Error(`/__version source was ${version.json.source}; expected vercel-api-function`);
   }
-  checks.push('/__version JSON verified');
+  checks.push(`/__version JSON verified (${version.json.source || 'unknown source'})`);
 
   const missingApi = await fetchJson(unknownApiUrl, 404);
   if (missingApi.json.source !== 'vercel-api-function' && missingApi.json.source !== 'express-server') {
@@ -180,8 +275,8 @@ function assertNoSecrets(label, text) {
     const hasSha = requiredShaPatterns.some((sha) => (
       prototype.text.includes(sha) ||
       bundleText.includes(sha) ||
-      apiVersion.text.includes(sha) ||
-      version.text.includes(sha)
+      version.text.includes(sha) ||
+      apiVersion.text.includes(sha)
     ));
     if (!hasSha) {
       throw new Error(`Deployment metadata does not include expected commit SHA marker (${expectedSha})`);
@@ -200,6 +295,9 @@ function assertNoSecrets(label, text) {
 
   assertNoSecrets('root page', root.text);
   assertNoSecrets('prototype page', prototype.text);
+  assertNoSecrets('skills hub page', skillsHub.text);
+
+  await runBrowserChecks(checks);
 
   console.log('✅ Smoke checks passed');
   for (const item of checks) {

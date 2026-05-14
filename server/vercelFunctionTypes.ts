@@ -5,4 +5,5 @@ export type JsonResponse = {
 
 export type ApiRequest = {
   url?: string | null;
+  query?: Record<string, string | string[] | undefined>;
 };

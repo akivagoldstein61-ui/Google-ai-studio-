@@ -43,7 +43,9 @@ const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABL
 // SKILLS is the visible registry for this prototype surface. Count every
 // visible module (prototype and planned), not only entries with a skillId,
 // so /prototype mirrors everything reviewers can open in /skills-hub.
-const REGISTERED_SKILL_COUNT = SKILLS.length;
+const SKILL_MODULE_COUNT = SKILLS.length;
+const PROTOTYPE_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'prototype').length;
+const PLANNED_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'planned').length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -272,7 +274,12 @@ export const PrototypeScreen: React.FC = () => {
             <Sparkles className="w-4 h-4" />
             <span>Kesher Skills Hub</span>
           </div>
-          <p className="text-sm text-white/80 italic">Explore all {REGISTERED_SKILL_COUNT} registered skill modules powering Kesher's trust-forward personality system.</p>
+          <p className="text-sm text-white/80 italic">
+            Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
+          </p>
+          <p className="text-xs text-white/55">
+            {PROTOTYPE_SKILL_COUNT} prototype pages and {PLANNED_SKILL_COUNT} planned pages are visible from the hub.
+          </p>
           <a
             href="/skills-hub"
             data-testid="prototype-skills-hub-link"
