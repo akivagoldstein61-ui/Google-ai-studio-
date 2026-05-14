@@ -1,0 +1,148 @@
+{
+  "_comment": "Kesher Trust-Forward Architecture Agent — Google AI Studio Build Mode Config. Paste the contents of kesher-system-prompt.txt into the System Instructions field in AI Studio.",
+  "model": "gemini-2.5-flash",
+  "generationConfig": {
+    "temperature": 0.2,
+    "topP": 0.95,
+    "maxOutputTokens": 8192,
+    "responseMimeType": "text/plain"
+  },
+  "safetySettings": [
+    { "category": "HARM_CATEGORY_HARASSMENT",        "threshold": "BLOCK_LOW_AND_ABOVE" },
+    { "category": "HARM_CATEGORY_HATE_SPEECH",       "threshold": "BLOCK_LOW_AND_ABOVE" },
+    { "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE" },
+    { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE" }
+  ],
+  "skills": [
+    {
+      "id": "kesher-personality-assessment",
+      "title": "Personality Assessment",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 1",
+      "keyRules": [
+        "BFAS/IPIP only (public domain)",
+        "Deterministic scoring — no LLM scoring",
+        "Quality checks before scoring",
+        "Vertex AI for reflection cards",
+        "Probabilistic language only"
+      ]
+    },
+    {
+      "id": "kesher-consent-ux",
+      "title": "Consent UX",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 2",
+      "keyRules": [
+        "Section 11 notice on every consent screen",
+        "All sensitive toggles default OFF",
+        "Revocation ≤2 taps from Trust Hub",
+        "Grants ledger for every consent action",
+        "No bundled consent"
+      ]
+    },
+    {
+      "id": "kesher-permissioned-sharing",
+      "title": "Permissioned Sharing",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 3",
+      "keyRules": [
+        "Preview before send",
+        "Recipient-scoped consent",
+        "Revocation cascades to mutual reflections",
+        "No raw scores or percentiles in cards",
+        "Deeper card request: once per pair only"
+      ]
+    },
+    {
+      "id": "kesher-ai-runtime-governance",
+      "title": "AI Runtime Governance",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 4",
+      "keyRules": [
+        "Vertex AI (ZDR) for all personality routes",
+        "Firebase AI Logic for non-sensitive features",
+        "Structured JSON output required",
+        "App Check before any personality feature goes live",
+        "All personality feature flags default OFF"
+      ]
+    },
+    {
+      "id": "kesher-privacy-recommendation",
+      "title": "Privacy-Preserving Recommendation",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 5",
+      "keyRules": [
+        "Layer 1: explicit signals only, no personality",
+        "Layer 2: whitelisted public signals only",
+        "Layer 3: BLOCKED until validation complete",
+        "Private taste is owner-only",
+        "No compatibility percentages"
+      ]
+    },
+    {
+      "id": "kesher-why-this-match",
+      "title": "Why This Match",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 6",
+      "keyRules": [
+        "Whitelisted signals only",
+        "Source chips on every explanation item",
+        "Max 3 explanation items per match",
+        "No compatibility scores or AI-knows-you language",
+        "Generic fallback if no overlap found"
+      ]
+    },
+    {
+      "id": "kesher-israeli-privacy",
+      "title": "Israeli Privacy Compliance",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 7",
+      "keyRules": [
+        "Personality data = Special Sensitivity",
+        "Section 11 notice required",
+        "Section 13/14 rights: access, correction, deletion",
+        "DPO appointment before 100K personality users",
+        "Transfer-abroad DPA with AI providers"
+      ]
+    },
+    {
+      "id": "kesher-psychometric-validation",
+      "title": "Psychometric Validation",
+      "status": "planned",
+      "systemPromptSection": "SKILL 8",
+      "keyRules": [
+        "7-phase validation pipeline",
+        "omega ≥ .80 domains, ≥ .70 facets",
+        "Test-retest ≥ .75",
+        "Personality in ranking BLOCKED until all 7 phases pass",
+        "Use ESEM/bifactor, not naive CFA"
+      ]
+    },
+    {
+      "id": "kesher-compatibility-reflection",
+      "title": "Compatibility Reflection",
+      "status": "prototype",
+      "systemPromptSection": "SKILL 9",
+      "keyRules": [
+        "Bilateral consent required",
+        "Max 3 lenses per pair",
+        "No compatibility scores",
+        "Revocation invalidates reflection for both",
+        "Route through Vertex AI"
+      ]
+    },
+    {
+      "id": "kesher-dark-pattern-audit",
+      "title": "Dark Pattern Audit",
+      "status": "planned",
+      "systemPromptSection": "SKILL 10",
+      "keyRules": [
+        "6 prohibited dark pattern categories",
+        "≥80% comprehension on 5 standard questions",
+        "≥85% would make same choice again",
+        "<15% surprised by what was shared",
+        "No premium-gated compatibility scores"
+      ]
+    }
+  ]
+}
