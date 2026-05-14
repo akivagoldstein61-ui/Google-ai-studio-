@@ -566,7 +566,10 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${skill.color}`}>
                     <Icon size={18} />
                   </div>
-                  <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${statusBadge(skill.status)}`}>
+                  <span
+                    className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${statusBadge(skill.status)}`}
+                    data-skill-status={skill.status}
+                  >
                     {skill.status}
                   </span>
                 </div>

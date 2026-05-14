@@ -42,6 +42,8 @@ app.use('/api', (req, res) => {
 
 function normalizeApiUrl(request: Request) {
   const url = typeof request.url === 'string' ? request.url : '';
+  // Direct Vercel Function requests already arrive under /api and can be
+  // handed to the Express routers without reconstructing the path.
   if (url.startsWith('/api')) return;
 
   const pathParam = request.query?.path;
@@ -50,7 +52,12 @@ function normalizeApiUrl(request: Request) {
   const search = queryStart >= 0 ? url.slice(queryStart) : '';
   const cleanPath = typeof path === 'string' ? path.replace(/^\/+/, '') : '';
   const normalizedUrl = `/api/${cleanPath}${search}`;
-  new URL(normalizedUrl, 'http://localhost');
+  try {
+    new URL(normalizedUrl, 'http://localhost');
+  } catch {
+    request.url = '/api';
+    return;
+  }
   request.url = normalizedUrl;
 }
 

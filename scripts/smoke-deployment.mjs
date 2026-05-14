@@ -174,8 +174,8 @@ async function runBrowserChecks(checks) {
         headingVisible: document.body.innerText.includes('Kesher Skills Hub'),
         declaredCount,
         visibleCards: cards.length,
-        plannedCards: cards.filter((card) => card.querySelector('span')?.textContent?.trim().toLowerCase() === 'planned').length,
-        prototypeCards: cards.filter((card) => card.querySelector('span')?.textContent?.trim().toLowerCase() === 'prototype').length,
+        plannedCards: cards.filter((card) => card.querySelector('[data-skill-status="planned"]')).length,
+        prototypeCards: cards.filter((card) => card.querySelector('[data-skill-status="prototype"]')).length,
       };
     });
 
