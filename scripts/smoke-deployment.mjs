@@ -38,12 +38,54 @@ async function fetchText(url) {
   return { response, text };
 }
 
+function getModuleScriptUrls(html, fromUrl) {
+  const urls = [];
+  const scriptPattern = /<script\b[^>]*\bsrc=["']([^"']+\.js(?:\?[^"']*)?)["'][^>]*>/gi;
+  let match;
+
+  while ((match = scriptPattern.exec(html)) !== null) {
+    urls.push(new URL(match[1], fromUrl).toString());
+  }
+
+  return urls;
+}
+
 function assertNoSecrets(label, text) {
   for (const pattern of secretPatterns) {
     if (pattern.test(text)) {
       throw new Error(`${label} contains potential secret pattern: ${pattern}`);
     }
   }
+}
+
+async function assertDemoBundleSupportsSeededMode(html, fromUrl) {
+  if (/data-demo-mode="true"/i.test(html)) {
+    return 'demo mode marker verified';
+  }
+
+  const scriptUrls = getModuleScriptUrls(html, fromUrl);
+  if (scriptUrls.length === 0) {
+    throw new Error('/demo?demo=1 did not expose an app bundle to inspect');
+  }
+
+  const bundles = await Promise.all(
+    scriptUrls.map(async (scriptUrl) => ({
+      scriptUrl,
+      text: (await fetchText(scriptUrl)).text,
+    }))
+  );
+
+  const hasDemoModeBundle = bundles.some(({ text }) => (
+    text.includes('kesher.prototypeDemoMode') &&
+    text.includes('/daily?demo=1') &&
+    text.includes('data-demo-mode')
+  ));
+
+  if (!hasDemoModeBundle) {
+    throw new Error('/demo?demo=1 bundle is missing seeded demo-mode routing markers');
+  }
+
+  return 'seeded demo-mode bundle verified';
 }
 
 (async () => {
@@ -66,10 +108,7 @@ function assertNoSecrets(label, text) {
     checks.push('commit marker verified on /prototype');
   }
 
-  if (!/data-demo-mode="true"/i.test(demo.text)) {
-    throw new Error('/demo?demo=1 did not render expected demo mode marker');
-  }
-  checks.push('demo mode marker verified');
+  checks.push(await assertDemoBundleSupportsSeededMode(demo.text, demoUrl));
 
   assertNoSecrets('root page', root.text);
   assertNoSecrets('prototype page', prototype.text);

@@ -244,8 +244,13 @@ const ExperimentsRoute: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const AppContent: React.FC = () => {
+  const { isDemoMode } = useApp();
+
   return (
-    <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
+    <div
+      data-demo-mode={isDemoMode ? 'true' : 'false'}
+      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]"
+    >
       <AuthGuard>
         <Routes>
           {/* Tab screens — wrapped in shared layout with bottom nav */}
@@ -267,6 +272,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
           <Route path="/skills" element={<SkillsRoute />} />
+          <Route path="/demo" element={<Navigate to="/daily?demo=1" replace />} />
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/daily" replace />} />

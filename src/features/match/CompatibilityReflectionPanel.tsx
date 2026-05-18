@@ -133,7 +133,7 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
         <span>Reflect together — mutual consent</span>
       </div>
       <p className="text-sm text-white/80 leading-relaxed italic font-serif">
-        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a compatibility score, and the reflection only uses mutually visible signals.
+        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We do not create numeric fit ratings, and the reflection only uses mutually visible signals.
       </p>
       {!bothOptedIn && (
         <p className="text-[11px] text-amber-300 italic">
@@ -148,7 +148,7 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
           className="mt-1 accent-[#D4AF37]"
         />
         <span>
-          I understand this is a reflection, not a prediction. Raw scores, private taste and private messages are not used.
+          I understand this is a reflection, not a prediction. Raw assessment outputs, private taste and private messages are not used.
         </span>
       </label>
       <Button

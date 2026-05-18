@@ -285,9 +285,9 @@ describe('AI Trust Hub copy', () => {
     expect(all.toLowerCase()).toMatch(/private taste profile/);
   });
 
-  it('rules out compatibility / attractiveness scores', () => {
+  it('rules out fit ratings / attractiveness scores', () => {
     const reds = TRUST_HUB_RED_LINES.join(' ').toLowerCase();
-    expect(reds).toMatch(/compatibility score/);
+    expect(reds).toMatch(/numeric fit rating/);
     expect(reds).toMatch(/attractiveness/);
   });
 

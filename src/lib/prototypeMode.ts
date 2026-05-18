@@ -10,6 +10,8 @@ export const AUTHORIZED_FIREBASE_HOSTNAMES = new Set([
   '127.0.0.1',
 ]);
 
+const DEMO_SESSION_KEY = 'kesher.prototypeDemoMode';
+
 export function isBrowserRuntime(): boolean {
   return typeof window !== 'undefined';
 }
@@ -24,11 +26,22 @@ export function isPrototypeDemoMode(): boolean {
   if (!isBrowserRuntime()) return false;
 
   const url = new URL(window.location.href);
+  const demoParam = url.searchParams.get('demo');
+  if (demoParam === '0' || demoParam === 'false') {
+    window.sessionStorage?.removeItem(DEMO_SESSION_KEY);
+    return false;
+  }
+
   if (
     url.searchParams.has('demo') ||
     url.pathname === '/demo' ||
     url.pathname.startsWith('/demo/')
   ) {
+    window.sessionStorage?.setItem(DEMO_SESSION_KEY, '1');
+    return true;
+  }
+
+  if (window.sessionStorage?.getItem(DEMO_SESSION_KEY) === '1') {
     return true;
   }
 
@@ -41,6 +54,7 @@ export function isPrototypeDemoMode(): boolean {
 
 export function getPrototypeDemoUrl(): string {
   const url = new URL(CANONICAL_ORIGIN);
+  url.pathname = '/demo';
   url.searchParams.set('demo', '1');
   return url.toString();
 }

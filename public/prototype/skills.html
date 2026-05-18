@@ -5,43 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kesher Personality Skills Prototype</title>
     <style>
-      :root {
-        color-scheme: light;
-        --ink: #1f2933;
-        --muted: #62717f;
-        --line: #d9e2ec;
-        --paper: #fbfcfd;
-        --panel: #ffffff;
-        --accent: #126e82;
-        --accent-2: #8a5a18;
-        --soft: #eef8f9;
-      }
-
+      :root { color-scheme: light; --ink:#1f2933; --muted:#62717f; --line:#d9e2ec; --paper:#fbfcfd; --panel:#ffffff; --accent:#126e82; --accent-2:#8a5a18; --soft:#eef8f9; }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--paper); color: var(--ink); }
-      header { border-bottom: 1px solid var(--line); background: #ffffff; }
-      .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-      .hero { min-height: 320px; display: grid; align-items: center; padding: 56px 0 40px; }
-      .eyebrow { margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
-      h1 { max-width: 820px; margin: 0; font-size: clamp(36px, 6vw, 72px); line-height: 0.95; letter-spacing: 0; }
-      .intro { max-width: 760px; margin: 20px 0 0; font-size: 18px; line-height: 1.6; color: var(--muted); }
-      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-      .button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--accent); border-radius: 8px; padding: 10px 16px; color: #ffffff; background: var(--accent); font-weight: 800; text-decoration: none; }
-      .button.secondary { color: var(--accent); background: #ffffff; }
-      main { padding: 28px 0 56px; }
-      .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 28px; }
-      .metric { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel); }
-      .metric strong { display: block; font-size: 28px; line-height: 1; }
-      .metric span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
-      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-      .skill { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 18px; }
-      .skill h2 { margin: 0 0 8px; font-size: 20px; letter-spacing: 0; }
-      .skill p { margin: 0; color: var(--muted); line-height: 1.55; }
-      .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-      .tag { border-radius: 999px; padding: 5px 9px; color: var(--accent-2); background: #fff5e6; font-size: 12px; font-weight: 800; }
-      .skill a { display: inline-block; margin-top: 14px; color: var(--accent); font-weight: 800; text-decoration: none; }
-      .note { margin-top: 28px; border: 1px solid #b6e1e6; border-radius: 8px; padding: 16px; background: var(--soft); color: #254b54; line-height: 1.5; }
-      @media (max-width: 780px) { .summary, .grid { grid-template-columns: 1fr; } }
+      body { margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--paper); color:var(--ink); }
+      header { border-bottom:1px solid var(--line); background:#ffffff; }
+      .wrap { width:min(1120px, calc(100% - 32px)); margin:0 auto; }
+      .hero { min-height:320px; display:grid; align-items:center; padding:56px 0 40px; }
+      .eyebrow { margin:0 0 12px; font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--accent); text-transform:uppercase; }
+      h1 { max-width:860px; margin:0; font-size:clamp(36px, 6vw, 72px); line-height:.95; letter-spacing:0; }
+      .intro { max-width:780px; margin:20px 0 0; font-size:18px; line-height:1.6; color:var(--muted); }
+      .actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+      .button { display:inline-flex; min-height:44px; align-items:center; justify-content:center; gap:8px; border:1px solid var(--accent); border-radius:8px; padding:10px 16px; color:#ffffff; background:var(--accent); font-weight:800; text-decoration:none; }
+      .button.secondary { color:var(--accent); background:#ffffff; }
+      main { padding:28px 0 56px; }
+      .summary { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; margin-bottom:28px; }
+      .metric { border:1px solid var(--line); border-radius:8px; padding:16px; background:var(--panel); }
+      .metric strong { display:block; font-size:28px; line-height:1; }
+      .metric span { display:block; margin-top:6px; color:var(--muted); font-size:13px; }
+      .grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+      .skill { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:18px; }
+      .skill h2 { margin:10px 0 6px; font-size:20px; letter-spacing:0; }
+      .skill p { margin:0; color:var(--muted); line-height:1.55; }
+      .subtitle { color:#314653 !important; font-size:13px; font-weight:800; }
+      .meta { display:flex; flex-wrap:wrap; gap:8px; }
+      .meta span { border-radius:999px; padding:5px 9px; color:var(--accent-2); background:#fff5e6; font-size:12px; font-weight:800; }
+      .skill a { display:inline-block; margin-top:14px; color:var(--accent); font-weight:800; text-decoration:none; }
+      .note { margin-top:28px; border:1px solid #b6e1e6; border-radius:8px; padding:16px; background:var(--soft); color:#254b54; line-height:1.5; }
+      @media (max-width:780px) { .summary, .grid { grid-template-columns:1fr; } }
     </style>
   </head>
   <body>
@@ -50,10 +40,12 @@
         <div>
           <p class="eyebrow">Kesher prototype asset</p>
           <h1>Personality feature skills bundle</h1>
-          <p class="intro">A browsable prototype index for Kesher skills. The downloadable archive ships a bundled copy of the repository <code>/skills</code> folder from this deployed build.</p>
+          <p class="intro">A browsable prototype index for Kesher skill modules. The Codex archive ships installable <code>skill-folder/SKILL.md</code> skills; the full archive preserves the raw repository <code>/skills</code> folder, including legacy <code>.skill</code> bundles.</p>
           <div class="actions">
-            <a class="button" href="/downloads/kesher-personality-skills.zip" download>Download full /skills zip</a>
+            <a class="button" href="/downloads/kesher-codex-skills-shareable.zip" download>Download Codex skills zip</a>
+            <a class="button secondary" href="/downloads/kesher-personality-skills.zip" download>Download full /skills zip</a>
             <a class="button secondary" href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills">View on GitHub</a>
+            <a class="button secondary" href="/skills-hub">Open app Skills Hub</a>
           </div>
         </div>
       </div>
@@ -61,24 +53,44 @@
     <main>
       <div class="wrap">
         <section class="summary" aria-label="Bundle summary">
-          <div class="metric"><strong>skills/</strong><span>bundle source directory</span></div>
-          <div class="metric"><strong>.zip</strong><span>downloadable archive format</span></div>
-          <div class="metric"><strong>selected</strong><span>highlighted personality skills</span></div>
-          <div class="metric"><strong>Vercel</strong><span>served from prototype static assets</span></div>
+          <div class="metric"><strong>25</strong><span>installable skill folders</span></div>
+          <div class="metric"><strong>30</strong><span>app hub modules</span></div>
+          <div class="metric"><strong>12</strong><span>prototype modules</span></div>
+          <div class="metric"><strong>18</strong><span>planned modules</span></div>
         </section>
         <section class="grid" aria-label="Skills">
-          <article class="skill"><h2>kesher-personality-research</h2><p>Evidence-tagged grounding for personality, compatibility, sharing, trust copy, and research claims.</p><div class="tags"><span class="tag">research</span><span class="tag">claims</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-research">Open folder</a></article>
-          <article class="skill"><h2>kesher-bfas-assessment</h2><p>Deterministic BFAS assessment scoring, consent copy, reset/delete behavior, and non-clinical framing.</p><div class="tags"><span class="tag">assessment</span><span class="tag">scoring</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-bfas-assessment">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-profile</h2><p>Private personality profile interpretation, Hebrew-first insight cards, schema validation, and fallbacks.</p><div class="tags"><span class="tag">profile</span><span class="tag">Gemini</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-profile">Open folder</a></article>
-          <article class="skill"><h2>kesher-compatibility-reflection</h2><p>Mutual-consent pair reflection with whitelisted inputs and no score, destiny, or verdict language.</p><div class="tags"><span class="tag">consent</span><span class="tag">reflection</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-compatibility-reflection">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-visibility</h2><p>Public, private, mutual-consent, and system-only visibility rules for personality-derived data.</p><div class="tags"><span class="tag">privacy</span><span class="tag">visibility</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-visibility">Open folder</a></article>
-          <article class="skill"><h2>kesher-permissioned-sharing</h2><p>Previewable share cards with recipient, scope, expiry, revoke, audit copy, and access control guardrails.</p><div class="tags"><span class="tag">sharing</span><span class="tag">revoke</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-permissioned-sharing">Open folder</a></article>
-          <article class="skill"><h2>kesher-private-taste</h2><p>Owner-only taste learning for personality-aware recommendations, consent, reset semantics, and no-leak explanations.</p><div class="tags"><span class="tag">taste</span><span class="tag">recommendations</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-taste">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-why-match</h2><p>Safe "Why This Match" explanations using visible signals, uncertainty notes, and leakage prevention.</p><div class="tags"><span class="tag">explanations</span><span class="tag">safety</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-why-match">Open folder</a></article>
-          <article class="skill"><h2>kesher-pacing-coach</h2><p>Anti-burnout nudges using coarse session signals, dismissible UX, and non-manipulative copy.</p><div class="tags"><span class="tag">pacing</span><span class="tag">wellbeing</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-pacing-coach">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-delivery</h2><p>Verification, browser testing, GitHub, Vercel, CI, review, and platform delivery guidance.</p><div class="tags"><span class="tag">delivery</span><span class="tag">plugins</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-delivery">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>personality</span></div><h2>Personality Assessment</h2><p class="subtitle">Progressive BFAS/IPIP Administration</p><p>Progressive personality questionnaire with save-and-resume, domain/facet scoring, quality checks, and bilingual reflection card generation.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-bfas-assessment">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>personality</span></div><h2>Personality Profile</h2><p class="subtitle">Private Reflection Cards</p><p>Translates deterministic BFAS domain/aspect scores into warm, private reflection cards via Gemini structured output. Owner-only by default.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-profile">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>personality</span></div><h2>Personality Engine</h2><p class="subtitle">BFAS Scoring &amp; Reflection Pipeline</p><p>BFAS personality assessment system including test administration, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five Aspect Scales and Gemini structured outputs.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-engine">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>personality</span></div><h2>Personality &amp; OCEAN</h2><p class="subtitle">Jewish Observance Integration</p><p>OCEAN model implementation integrated with Jewish observance layers and Hebrew-first localization. Generates culturally aware reflection reports and consent-scoped discovery experiments with careful boundaries.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-ocean">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>personality</span></div><h2>Personality Visibility</h2><p class="subtitle">Four-Layer Visibility Model</p><p>Defines which personality-derived data can appear at each surface: public browse, private owner, mutual-consent, or system-only. Governs all discovery, profile, match, settings, and chat surfaces.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-visibility">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>privacy</span></div><h2>Consent UX</h2><p class="subtitle">Trust Hub &amp; Grants Ledger</p><p>Section 11 consent gates, Trust Hub dashboard, grants ledger, revocation flows, and anti-dark-pattern consent microcopy.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>privacy</span></div><h2>Israeli Privacy Compliance</h2><p class="subtitle">Amendment 13 &amp; PPA Guidance</p><p>Data classification matrix, Section 11 notice, access/correction/deletion rights, DPO triggers, and transfer-abroad controls.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>privacy</span></div><h2>Privacy-Preserving Recommendation</h2><p class="subtitle">Three-Layer Architecture</p><p>Silent personalization, safe explanation, and permissioned personality layers with signal allowlists and anti-leakage controls.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>privacy</span></div><h2>Private Taste</h2><p class="subtitle">Owner-Only Preference Learning</p><p>Consent-gated implicit and explicit preference learning. Owner-only taste profile with editable controls, reset semantics, and strict explanation-layer separation.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-taste">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>privacy</span></div><h2>Private Recommendations</h2><p class="subtitle">Permissioned Sharing &amp; Privacy</p><p>Implements permissioned sharing, private taste profiles, and privacy-preserving recommendations. Manages consent flows, staged disclosure patterns, and sensitive data exclusion schemas.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-recommendations">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>personality</span></div><h2>Why This Match</h2><p class="subtitle">Provenance-Labeled Explanations</p><p>Source chip UI, signal allowlist enforcement, safe formulation patterns, and anti-leakage controls for match explanations.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-why-match">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>privacy</span></div><h2>Permissioned Sharing</h2><p class="subtitle">Share Cards &amp; Mutual Consent</p><p>Basic/deeper share cards, recipient-scoped previews, deeper card requests, mutual reflection flow, and revocation cascades.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-permissioned-sharing">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>personality</span></div><h2>Compatibility Reflection</h2><p class="subtitle">Bilateral Personality Insights</p><p>Values alignment, communication lens, friction forecast, and growth edge reflections with bilateral consent and anti-pattern enforcement.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-compatibility-reflection">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>governance</span></div><h2>Explainable AI</h2><p class="subtitle">Trust Language &amp; Transparency</p><p>Governs how Kesher's AI communicates reasoning to users. Explanations use whitelisted signals, protect privacy, and fall back to deterministic templates when the model fails.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-explainable-ai">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>ux</span></div><h2>Filtering &amp; Marketplace</h2><p class="subtitle">Grammar, Reciprocal Ranking &amp; Fairness</p><p>Filtering grammar, marketplace mechanics, and reciprocal ranking. Covers hard vs. soft filters, Daily Picks vs. Explore surface distinction, and anti-starvation exposure fairness.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-filtering-marketplace">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>ux</span></div><h2>Learned Taste</h2><p class="subtitle">Implicit &amp; Explicit Preference Learning</p><p>Event capture taxonomy, taste weight calculation, dual memory (fast/slow), and hybrid on-device/server architecture for privacy-preserving preference learning.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-learned-taste">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>Maps Date Planner</h2><p class="subtitle">Google Maps-Grounded Date Planning</p><p>Google Maps-grounded date suggestion with fairness preview, observance-aware scheduling, safe-venue defaults, and accessibility concierge. Plan is always user-reviewed before sending.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-maps-date-planner">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>ux</span></div><h2>Pacing Coach</h2><p class="subtitle">Anti-Burnout Discovery</p><p>Gentle, dismissible pacing interventions based on session length, swipe velocity, and pass streaks. Never blocks access, never shames, never uses scarcity pressure.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-pacing-coach">Open folder</a></article>
+<article class="skill"><div class="meta"><span>prototype</span><span>governance</span></div><h2>AI Runtime Governance</h2><p class="subtitle">Vertex AI &amp; ZDR Controls</p><p>Provider routing decisions, zero-data-retention controls, structured outputs, App Check, feature registry, and provenance ledger.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-ai-governance">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>governance</span></div><h2>AI Feature Modules</h2><p class="subtitle">F01–F11 Feature Registry</p><p>All 11 AI feature modules (F01–F11): bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, and personality coaching.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-ai-feature-modules">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>Gemini Integration</h2><p class="subtitle">Core Patterns &amp; Server-Side Proxy</p><p>Core patterns for Gemini integration: structured outputs, function calling, grounding, system instructions, server-side proxy architecture, and trust-preserving interaction patterns.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-gemini-integration">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>Low-Latency AI</h2><p class="subtitle">Server-Side Proxy Architecture</p><p>Server-side AI proxy architecture for low-latency responses. Covers model routing matrix, latency targets, streaming patterns, feature registry, and policy-aware AI request handling.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-low-latency-ai">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>High-Thinking Routing</h2><p class="subtitle">Gemini Thinking Mode Strategy</p><p>Routing strategy for Gemini &quot;high thinking&quot; mode. Covers when to enable thinking controls, configuring thinkingLevel/thinkingBudget, hybrid fast+thinking patterns, and A/B test design.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-high-thinking-routing">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>Grounded Search</h2><p class="subtitle">Google Search Integration</p><p>Google Search grounding integration for Q&amp;A, event discovery, safety center resources, citation rendering, and URL context features using Gemini grounding capabilities.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>governance</span></div><h2>Image Analysis</h2><p class="subtitle">Trust-Forward Photo Checks</p><p>Trust-forward image analysis for photo readiness checks, content moderation assistance, accessibility alt-text generation, and moderation appeal support with tiered decisioning.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>platform</span></div><h2>Voice Integration</h2><p class="subtitle">Gemini Live API</p><p>Voice AI integration using the Gemini Live API. Covers WebSocket sessions, ephemeral token authentication, push-to-talk interfaces, and accessibility-focused voice features.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>governance</span></div><h2>System Prompt</h2><p class="subtitle">Kesher OS Master Framework</p><p>Kesher OS master prompt and strategic framework. Deep research, strategic evaluation, architecture design, and execution planning. Covers run modes, evaluation rubrics, product principles, and connector design.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-system-prompt">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>ux</span></div><h2>Calm UX</h2><p class="subtitle">Hebrew-First &amp; Anti-Casino Design</p><p>Premium calm UX strategy: Hebrew-first RTL design, calm aesthetic principles, accessibility standards, and competitive differentiation against casino-mechanic dating apps.</p><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-calm-ux">Open folder</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>personality</span></div><h2>Psychometric Validation</h2><p class="subtitle">ESEM/Bifactor Pipeline</p><p>Adaptation lab, reliability analysis, test-retest stability, response quality audit, measurement invariance, and incremental validity testing.</p><a href="/skills-hub">Open in Skills Hub</a></article>
+<article class="skill"><div class="meta"><span>planned</span><span>governance</span></div><h2>Dark Pattern Audit</h2><p class="subtitle">EU Taxonomy &amp; Comprehension Tests</p><p>Six-category dark pattern taxonomy audit, comprehension benchmarks, regret/surprise measures, and premium boundary ethics verification.</p><a href="/skills-hub">Open in Skills Hub</a></article>
         </section>
-        <p class="note">Duplicate local folders named <code>skills 2</code> and <code>skills 3</code> are intentionally excluded from the prototype because they mirror the canonical skill folders listed above.</p>
+        <p class="note">Personality remains a reflective, permissioned, private-by-default layer. This bundle intentionally preserves gates against LLM scoring, numeric fit claims, raw assessment-output exposure, and hidden personality-driven ordering.</p>
       </div>
     </main>
   </body>

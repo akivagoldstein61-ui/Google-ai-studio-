@@ -27,7 +27,7 @@ export const TRUST_HUB_DOES = [
 /** Hard "no"s — what AI will not do, ever. */
 export const TRUST_HUB_RED_LINES = [
   "No public attractiveness ratings or scores.",
-  "No compatibility score or marriage probability.",
+  "No numeric fit rating or relationship-outcome prediction.",
   "No auto-chatting or AI sending messages on your behalf.",
   "No sensitive identity inference from photos (race, ethnicity, religion).",
   "No hidden ranking manipulation or opaque filter overrides.",

@@ -148,7 +148,7 @@ export const DarkPatternAuditSkill: React.FC<{ onBack: () => void }> = ({ onBack
               'Reflection available to all who complete assessment',
               'Sharing available to all (not premium-gated)',
               'No "personality boost" that increases visibility',
-              'No "compatibility score unlock" for premium',
+              'No premium unlocks for numeric fit ratings',
             ].map(rule => (
               <div key={rule} className="flex items-start gap-2 p-3 bg-green-50 rounded-xl text-xs border border-green-100">
                 <Check size={14} className="mt-0.5 shrink-0 text-green-600" />

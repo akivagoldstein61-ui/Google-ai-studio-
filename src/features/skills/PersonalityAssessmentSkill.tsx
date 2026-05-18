@@ -162,8 +162,8 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 space-y-3">
                 <h3 className="text-xs font-bold text-violet-800">Scoring Complete (Demo)</h3>
                 <p className="text-xs text-violet-700 italic">
-                  In production, scores are computed server-side via Vertex AI with structured output.
-                  Reverse-keyed items use formula: reverse = 6 - raw.
+                  In production, scoring must be deterministic, versioned, and server-side.
+                  AI may interpret approved bands later, but it never scores answers. Reverse-keyed items use formula: reverse = 6 - raw.
                 </p>
                 <div className="space-y-2">
                   {Object.entries(DOMAIN_LABELS).map(([scientific, friendly]) => (

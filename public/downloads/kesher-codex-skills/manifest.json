@@ -1,0 +1,183 @@
+{
+  "name": "kesher-codex-skills",
+  "generatedAt": "2026-05-12T17:55:32.597Z",
+  "source": "https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills",
+  "installableSkillCount": 25,
+  "appHubModuleCount": 30,
+  "legacyArchiveCount": 21,
+  "installableSkills": [
+    {
+      "name": "google-ai-studio-app-builder",
+      "description": "Build, deploy, and harden full-stack AI applications using Google AI Studio. Use when prototyping with Build mode, designing prompt-to-code apps, integrating Firebase AI Logic, deploying to Cloud Run, or following the 7-day hardening plan from prototype to MVP.",
+      "folder": "google-ai-studio-app-builder",
+      "path": "skills/google-ai-studio-app-builder/SKILL.md"
+    },
+    {
+      "name": "kesher-ai-feature-modules",
+      "description": "All 11 AI feature modules for the Kesher dating app. Use when implementing, evaluating, or deploying a specific feature module such as bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, or personality coaching.",
+      "folder": "kesher-ai-feature-modules",
+      "path": "skills/kesher-ai-feature-modules/SKILL.md"
+    },
+    {
+      "name": "kesher-ai-governance",
+      "description": "Implement Kesher AI feature allocation, system boundaries, registry governance, model routing, human-in-the-loop triggers, and safety policy enforcement. Use when changing AI feature registry entries, model route choices, trust hub copy, policy checks, or governance docs.",
+      "folder": "kesher-ai-governance",
+      "path": "skills/kesher-ai-governance/SKILL.md"
+    },
+    {
+      "name": "kesher-bfas-assessment",
+      "description": "Implement and review Kesher's opt-in BFAS/Big Five Aspects assessment flow, deterministic scoring, answer handling, consent copy, reset/delete behavior, and non-clinical dating-style framing. Use when changing PersonalityAssessment, personality score types, onboarding assessment flows, Firestore/Firebase persistence for answers or scores, or tests for BFAS scoring and assessment privacy.",
+      "folder": "kesher-bfas-assessment",
+      "path": "skills/kesher-bfas-assessment/SKILL.md"
+    },
+    {
+      "name": "kesher-calm-ux",
+      "description": "Design premium calm UX for the Kesher dating app. Use when designing screens, user flows, onboarding, profile builders, matching interfaces, safety tools, Hebrew-first RTL layouts, accessibility standards, and anti-casino dating mechanics.",
+      "folder": "kesher-calm-ux",
+      "path": "skills/kesher-calm-ux/SKILL.md"
+    },
+    {
+      "name": "kesher-compatibility-reflection",
+      "description": "Implement and review Kesher's mutual-consent compatibility reflection engine, pair insight schemas, consent gates, whitelisted shared inputs, and no-score safety validation. Use when changing compatibility-reflection API routes, PairInsightReportSchema, compatibility prompts, match-sheet reflection UI, consent checks, or tests for forbidden compatibility language.",
+      "folder": "kesher-compatibility-reflection",
+      "path": "skills/kesher-compatibility-reflection/SKILL.md"
+    },
+    {
+      "name": "kesher-explainable-ai",
+      "description": "Implement Kesher trust language, explanation provenance, and transparency for AI recommendations. Use when generating safe explanations, source chips, signal allowlists, fallback templates, or management controls for why-match and recommendation surfaces.",
+      "folder": "kesher-explainable-ai",
+      "path": "skills/kesher-explainable-ai/SKILL.md"
+    },
+    {
+      "name": "kesher-filtering-marketplace",
+      "description": "Implement Kesher filtering grammar, discovery marketplace mechanics, reciprocal recommendation ordering, Daily Picks versus Explore distinctions, hard and soft filters, exposure fairness, and anti-starvation safeguards.",
+      "folder": "kesher-filtering-marketplace",
+      "path": "skills/kesher-filtering-marketplace/SKILL.md"
+    },
+    {
+      "name": "kesher-gemini-integration",
+      "description": "Integrate Gemini AI into Kesher with structured outputs, function calling, grounding, system instructions, server-side proxy architecture, trust-preserving interaction patterns, and safe fallback behavior.",
+      "folder": "kesher-gemini-integration",
+      "path": "skills/kesher-gemini-integration/SKILL.md"
+    },
+    {
+      "name": "kesher-high-thinking-routing",
+      "description": "Route Kesher Gemini thinking-mode work. Use when deciding when to enable high-thinking controls, configuring thinking budgets, designing fast-plus-thinking patterns, or planning A/B tests for reasoning-heavy AI features.",
+      "folder": "kesher-high-thinking-routing",
+      "path": "skills/kesher-high-thinking-routing/SKILL.md"
+    },
+    {
+      "name": "kesher-learned-taste",
+      "description": "Implement Kesher implicit and explicit preference learning, taste profiles, event capture, taste weights, and hybrid on-device/server recommendation architecture while preserving privacy and user controls.",
+      "folder": "kesher-learned-taste",
+      "path": "skills/kesher-learned-taste/SKILL.md"
+    },
+    {
+      "name": "kesher-low-latency-ai",
+      "description": "Design server-side AI proxy architecture for low-latency Kesher responses. Use when implementing model routing matrices, latency targets, streaming patterns, feature registry routing, and policy-aware AI request handling.",
+      "folder": "kesher-low-latency-ai",
+      "path": "skills/kesher-low-latency-ai/SKILL.md"
+    },
+    {
+      "name": "kesher-maps-date-planner",
+      "description": "Build Google Maps-grounded Kesher date planning with venue suggestions, fairness previews, observance-aware scheduling, safe-venue defaults, accessibility-conscious planning, citation UI, and user-reviewed sending.",
+      "folder": "kesher-maps-date-planner",
+      "path": "skills/kesher-maps-date-planner/SKILL.md"
+    },
+    {
+      "name": "kesher-pacing-coach",
+      "description": "Implement and review Kesher's anti-burnout pacing coach, including swipe/session signals, gentle dismissible interventions, PacingInterventionSchema, prompt safety, and non-manipulative UX. Use when changing pacing_coach registry entries, pacing-intervention routes, discovery session tracking, or break/reflection UI.",
+      "folder": "kesher-pacing-coach",
+      "path": "skills/kesher-pacing-coach/SKILL.md"
+    },
+    {
+      "name": "kesher-permissioned-sharing",
+      "description": "Implement and review Kesher's permissioned personality sharing flows: previewable share cards, recipient/scope selection, expiry, revoke, audit copy, and mutual-consent disclosure. Use when building personality share-card UI, share/revoke APIs, privacy settings, trust hub controls, or data models for temporary personality access.",
+      "folder": "kesher-permissioned-sharing",
+      "path": "skills/kesher-permissioned-sharing/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-delivery",
+      "description": "Coordinate implementation, verification, review, CI, deployment, and platform parity for Kesher personality features using the appropriate repo, browser, CI, review, deploy, database, and native-app plugins. Use after or during personality feature work when planning tasks, running checks, opening browser flows, preparing GitHub/CircleCI/CodeRabbit review, or considering Netlify/Vercel/Cloudflare/Neon/Expo/iOS/macOS delivery.",
+      "folder": "kesher-personality-delivery",
+      "path": "skills/kesher-personality-delivery/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-engine",
+      "description": "Implement Kesher personality measurement, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five or BFAS-style structures without deterministic fit claims.",
+      "folder": "kesher-personality-engine",
+      "path": "skills/kesher-personality-engine/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-ocean",
+      "description": "Implement Kesher OCEAN/Big Five personality reflection with Jewish observance context and Hebrew-first localization. Use when generating culturally aware reflection cards, consent-scoped discovery experiments, or non-deterministic personality interpretation.",
+      "folder": "kesher-personality-ocean",
+      "path": "skills/kesher-personality-ocean/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-profile",
+      "description": "Implement and review Kesher's private personality profile interpreter, including Gemini structured output, Hebrew-first insight cards, fallback rendering, provenance, and user controls. Use when changing personality-profile routes, PersonalityProfileScreen, PersonalitySummarySchema, personality prompts, output validators, or AI Trust Hub copy for personality insights.",
+      "folder": "kesher-personality-profile",
+      "path": "skills/kesher-personality-profile/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-research",
+      "description": "Convert Kesher personality PDF dossiers and research findings into implementable, evidence-labeled product and engineering guidance. Use when grounding Kesher BFAS/Big Five measurement, instrument licensing, Hebrew feasibility, Israeli privacy, consent, visibility, permissioned sharing, Gemini/Vertex runtime governance, validation gates, repository delivery, or trust-forward personality feature decisions from the PDF corpus.",
+      "folder": "kesher-personality-research",
+      "path": "skills/kesher-personality-research/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-visibility",
+      "description": "Design and implement Kesher's personality visibility model across browse, profile, match, settings, and chat surfaces. Use when deciding what personality-derived data can appear publicly, privately, or after mutual consent; when changing profile cards, ProfileDetail, DailyPicks, AITrustHub, PrivateTasteProfile, Settings, or visibility copy.",
+      "folder": "kesher-personality-visibility",
+      "path": "skills/kesher-personality-visibility/SKILL.md"
+    },
+    {
+      "name": "kesher-personality-why-match",
+      "description": "Implement and review personality-safe \"Why This Match\" explanations for Kesher using whitelisted visible signals, structured Gemini output, uncertainty notes, and leakage prevention. Use when changing explain-match routes, WhyThisMatchPayloadSchema, output validators, DailyPicks/ProfileCard explanation UI, or reason-code generation for personality-aware recommendations.",
+      "folder": "kesher-personality-why-match",
+      "path": "skills/kesher-personality-why-match/SKILL.md"
+    },
+    {
+      "name": "kesher-private-recommendations",
+      "description": "Implement Kesher permissioned sharing, private taste profiles, privacy-preserving recommendations, staged disclosure, consent flows, and sensitive-data exclusion schemas without leaking private recommender state.",
+      "folder": "kesher-private-recommendations",
+      "path": "skills/kesher-private-recommendations/SKILL.md"
+    },
+    {
+      "name": "kesher-private-taste",
+      "description": "Implement and review Kesher's owner-only private taste learning for personality-aware recommendations, including consent, event minimization, editable/resettable taste profile UI, recommender inputs, and no-leak explanations. Use when changing taste_profile routes, PrivateTasteProfile, recommendation feedback, more/less-like-this controls, taste schemas, or private recommendation copy.",
+      "folder": "kesher-private-taste",
+      "path": "skills/kesher-private-taste/SKILL.md"
+    },
+    {
+      "name": "kesher-system-prompt",
+      "description": "Use the Kesher OS strategic framework for deep research, product evaluation, architecture design, execution planning, run modes, evaluation rubrics, product principles, platform role assignments, and connector design.",
+      "folder": "kesher-system-prompt",
+      "path": "skills/kesher-system-prompt/SKILL.md"
+    }
+  ],
+  "legacyArchives": [
+    "google-ai-studio-app-builder.skill",
+    "kesher-ai-feature-modules.skill",
+    "kesher-ai-governance.skill",
+    "kesher-calm-ux.skill",
+    "kesher-explainable-ai.skill",
+    "kesher-filtering-marketplace.skill",
+    "kesher-gemini-integration.skill",
+    "kesher-grounded-search.skill",
+    "kesher-high-thinking-routing.skill",
+    "kesher-image-analysis.skill",
+    "kesher-learned-taste.skill",
+    "kesher-low-latency-ai.skill",
+    "kesher-maps-date-planner.skill",
+    "kesher-personality-engine.skill",
+    "kesher-personality-ocean (1).skill",
+    "kesher-personality-ocean.skill",
+    "kesher-private-recommendations.skill",
+    "kesher-system-prompt.skill",
+    "kesher-voice-integration.skill",
+    "sparkmatch-dating-app-skill.skill",
+    "video-generator.skill"
+  ]
+}

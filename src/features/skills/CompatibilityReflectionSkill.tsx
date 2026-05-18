@@ -26,7 +26,7 @@ const LENSES = [
 
 const ANTI_PATTERNS = [
   { pattern: '"Numeric fit claim"', reason: 'No scientific basis; creates false precision' },
-  { pattern: '"Soulmate match"', reason: 'Destiny framing creates unhealthy expectations' },
+  { pattern: '"Perfect-pair claim"', reason: 'Fixed-outcome framing creates unhealthy expectations' },
   { pattern: '"You complete each other"', reason: 'Essentializing and deterministic' },
   { pattern: '"Based on science"', reason: 'Overclaims; FTC scrutiny risk' },
   { pattern: '"Better than your other matches"', reason: 'Comparative ranking without invariance' },
@@ -60,7 +60,7 @@ export const CompatibilityReflectionSkill: React.FC<{ onBack: () => void }> = ({
           </div>
           <p className="text-xs text-rose-800 leading-relaxed">
             This is the highest-sensitivity feature in Kesher's personality stack. The scientific evidence does NOT support
-            deterministic compatibility scoring — personality similarity shows mixed or negligible incremental validity for relationship satisfaction.
+            deterministic fit scoring — personality similarity shows mixed or negligible incremental validity for relationship satisfaction.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -73,7 +73,7 @@ export const CompatibilityReflectionSkill: React.FC<{ onBack: () => void }> = ({
             </div>
             <div className="space-y-2">
               <h4 className="text-[9px] font-bold uppercase tracking-widest text-red-700">What it is NOT:</h4>
-              {['A compatibility score', 'A prediction of success', 'A recommendation to pursue/avoid', 'A deterministic type match'].map(item => (
+              {['A numeric fit rating', 'A prediction of success', 'A recommendation to pursue/avoid', 'A deterministic type match'].map(item => (
                 <div key={item} className="flex items-start gap-1 text-xs text-red-700">
                   <X size={12} className="mt-0.5 shrink-0" /><span>{item}</span>
                 </div>

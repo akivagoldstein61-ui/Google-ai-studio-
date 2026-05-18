@@ -45,8 +45,8 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
                 <span className="text-xs font-bold">Basic Share Card</span>
               </div>
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
-                <li>• Domain-level scores only (2-3 behavioral sentences per domain)</li>
-                <li>• No raw scores, no aspect detail</li>
+                <li>• Summary-only reflection (2-3 behavioral sentences per theme)</li>
+                <li>• No numeric scores, no raw answers, no aspect detail</li>
                 <li>• Suitable for early-stage connections</li>
               </ul>
             </div>
@@ -56,7 +56,7 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
                 <span className="text-xs font-bold">Deeper Share Card</span>
               </div>
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
-                <li>• Domain + aspect scores (5-7 sentences)</li>
+                <li>• Domain + aspect-informed reflection (5-7 sentences)</li>
                 <li>• May include self-identified relational style</li>
                 <li>• Requires separate consent beyond basic card</li>
                 <li>• Only available after full assessment completion</li>
@@ -70,7 +70,7 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
                 <li>• Generated from BOTH users' shared cards</li>
                 <li>• Requires bilateral consent before generation</li>
-                <li>• Shows interaction patterns, not compatibility scores</li>
+                <li>• Shows interaction patterns, not numeric fit ratings</li>
                 <li>• Both users see identical content</li>
               </ul>
             </div>
@@ -227,7 +227,7 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
             </div>
             <div className="space-y-2">
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-red-700">Never in mutual reflections:</h3>
-              {['Compatibility scores', 'Relationship predictions', 'Advice to pursue/avoid', 'Info not in shared cards', 'One-sided information'].map(item => (
+              {['Numeric fit ratings', 'Relationship predictions', 'Advice to pursue/avoid', 'Info not in shared cards', 'One-sided information'].map(item => (
                 <div key={item} className="flex items-start gap-1 text-xs text-red-700">
                   <X size={12} className="mt-0.5 shrink-0" /><span>{item}</span>
                 </div>

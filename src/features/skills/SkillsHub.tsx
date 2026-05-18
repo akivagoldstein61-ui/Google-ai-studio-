@@ -55,7 +55,7 @@ export const SKILLS: SkillMeta[] = [
     color: 'bg-violet-100 text-violet-700 border-violet-200',
     status: 'planned',
     category: 'personality',
-    description: 'BFAS personality assessment system including test administration, deterministic scoring, reflection reports, compatibility comparisons, and personality-aware match explanations using Big Five Aspect Scales and Gemini structured outputs.',
+    description: 'BFAS personality assessment system including test administration, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five Aspect Scales and Gemini structured outputs.',
     keyFeatures: ['Deterministic scoring (no LLM for scoring)', 'Structured output schemas for all reflection types', 'Versioned item bank with migration path', 'Bilingual Hebrew/English with invariance testing'],
   },
   {
@@ -67,8 +67,8 @@ export const SKILLS: SkillMeta[] = [
     color: 'bg-amber-100 text-amber-700 border-amber-200',
     status: 'planned',
     category: 'personality',
-    description: 'OCEAN model implementation integrated with Jewish observance layers and Hebrew-first localization. Generates culturally-aware compatibility reports and personality-based filtering with nuanced matching.',
-    keyFeatures: ['OCEAN traits mapped to dating-relevant dimensions', 'Observance-layer signals overlay', 'Hebrew-first with RTL layout support', 'Cultural context in reflection cards'],
+    description: 'OCEAN model implementation integrated with Jewish observance layers and Hebrew-first localization. Generates culturally aware reflection reports and consent-scoped discovery experiments with careful boundaries.',
+    keyFeatures: ['OCEAN traits mapped to dating-relevant reflection dimensions', 'Observance-layer signals overlay', 'Hebrew-first with RTL layout support', 'Cultural context in private reflection cards'],
   },
   {
     id: 'personality-visibility',
@@ -177,7 +177,7 @@ export const SKILLS: SkillMeta[] = [
     status: 'prototype',
     category: 'personality',
     description: 'Values alignment, communication lens, friction forecast, and growth edge reflections with bilateral consent and anti-pattern enforcement.',
-    keyFeatures: ['Mutual consent required from both parties', 'Reflection not prediction — conversation starter only', 'Forbidden: compatibility scores, soulmate claims', 'Either party can remove reflection at any time'],
+    keyFeatures: ['Mutual consent required from both parties', 'Reflection not prediction — conversation starter only', 'No fixed-outcome or score-like claims', 'Either party can remove reflection at any time'],
   },
   {
     id: 'explainable-ai',

@@ -17,6 +17,8 @@
     "test:scoring": "node scripts/test-personality-scoring.mjs",
     "redteam:personality": "node scripts/redteam-personality.mjs",
     "test:rtl": "node scripts/test-rtl.mjs",
+    "test:skills": "node scripts/validate-skills.mjs",
+    "build:skills": "node scripts/build-skills-bundle.mjs",
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
     "scan:logs": "node scripts/scan-logs.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs"
