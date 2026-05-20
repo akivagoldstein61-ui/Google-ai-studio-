@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Gemini Integration"
+  short_description: "Server-side Gemini implementation"
+  default_prompt: "Use $kesher-gemini-integration to add or review a Gemini-backed Kesher route."

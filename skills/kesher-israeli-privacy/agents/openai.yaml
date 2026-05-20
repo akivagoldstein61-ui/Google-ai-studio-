@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Israeli Privacy"
+  short_description: "Israel privacy implementation checks"
+  default_prompt: "Use $kesher-israeli-privacy to review a Kesher sensitive-data flow against implementation privacy guardrails."

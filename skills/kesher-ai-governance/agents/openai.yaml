@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher AI Governance"
+  short_description: "AI routing and safety policy checks"
+  default_prompt: "Use $kesher-ai-governance to review Kesher model routing, feature registry, or AI policy changes."

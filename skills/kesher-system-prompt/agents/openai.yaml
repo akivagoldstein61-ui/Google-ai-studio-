@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher System Prompt"
+  short_description: "Kesher operating framework"
+  default_prompt: "Use $kesher-system-prompt to frame a high-level Kesher strategy or execution plan."

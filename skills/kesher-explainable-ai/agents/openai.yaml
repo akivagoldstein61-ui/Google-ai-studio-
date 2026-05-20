@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Explainable AI"
+  short_description: "Safe recommendation explanations"
+  default_prompt: "Use $kesher-explainable-ai to write or review provenance-labeled Kesher explanation copy."

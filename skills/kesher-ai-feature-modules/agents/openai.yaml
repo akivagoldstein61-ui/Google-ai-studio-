@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher AI Feature Modules"
+  short_description: "Bounded Kesher AI feature registry"
+  default_prompt: "Use $kesher-ai-feature-modules to plan or review a Kesher AI feature module."

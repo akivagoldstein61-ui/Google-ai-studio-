@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Consent UX"
+  short_description: "Consent gates and Trust Hub UX"
+  default_prompt: "Use $kesher-consent-ux to review a Kesher consent flow for clarity, reversibility, and privacy."
