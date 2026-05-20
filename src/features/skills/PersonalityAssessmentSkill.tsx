@@ -83,7 +83,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               </thead>
               <tbody>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">BFAS (100 items)</td>
+                  <td className="py-2 pr-4">IPIP-BFAS 100</td>
                   <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Public domain</span></td>
                   <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Implementable</span></td>
                 </tr>
@@ -162,8 +162,8 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 space-y-3">
                 <h3 className="text-xs font-bold text-violet-800">Scoring Complete (Demo)</h3>
                 <p className="text-xs text-violet-700 italic">
-                  In production, scores are computed server-side via Vertex AI with structured output.
-                  Reverse-keyed items use formula: reverse = 6 - raw.
+                  The prototype uses deterministic IPIP-BFAS scoring. AI may interpret bands later,
+                  but it never scores responses. Reverse-keyed items use formula: reverse = 6 - response.
                 </p>
                 <div className="space-y-2">
                   {Object.entries(DOMAIN_LABELS).map(([scientific, friendly]) => (
@@ -238,7 +238,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               'Present in user\'s app language',
               'Score identically regardless of language',
               'Do NOT compare scores across languages until invariance established',
-              'Generate reflection cards in user\'s language via Vertex AI',
+              'Generate reflection cards from validated bands only after the scoring layer completes',
             ].map((rule, i) => (
               <li key={i} className="flex items-start gap-2">
                 <Check size={14} className="mt-0.5 shrink-0 text-violet-500" />

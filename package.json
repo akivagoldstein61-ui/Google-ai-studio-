@@ -14,11 +14,13 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "test:schemas": "node scripts/personality-smoke-tests.mjs",
+    "test:skills": "node scripts/test-skills.mjs",
     "test:scoring": "node scripts/test-personality-scoring.mjs",
     "redteam:personality": "node scripts/redteam-personality.mjs",
     "test:rtl": "node scripts/test-rtl.mjs",
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
     "scan:logs": "node scripts/scan-logs.mjs",
+    "build:skills": "node scripts/build-shareable-skills.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs"
   },
   "dependencies": {

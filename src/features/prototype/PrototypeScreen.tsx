@@ -39,13 +39,13 @@ const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
 const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
+const PERSONALITY_PROTOTYPE_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
 // SKILLS is the visible registry for this prototype surface. Count every
-// visible module (prototype and planned), not only entries with a skillId,
-// so /prototype mirrors everything reviewers can open in /skills-hub.
+// visible module, not only entries with a skillId, so /prototype mirrors
+// everything reviewers can open in /skills-hub.
 const SKILL_MODULE_COUNT = SKILLS.length;
 const PROTOTYPE_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'prototype').length;
-const PLANNED_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'planned').length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -77,6 +77,15 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     value: (
       <a href={SKILLS_HUB_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {SKILLS_HUB_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  {
+    label: 'Personality prototype journey',
+    value: (
+      <a href={PERSONALITY_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {PERSONALITY_PROTOTYPE_URL}
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
     ),
@@ -278,8 +287,16 @@ export const PrototypeScreen: React.FC = () => {
             Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
           </p>
           <p className="text-xs text-white/55">
-            {PROTOTYPE_SKILL_COUNT} prototype pages and {PLANNED_SKILL_COUNT} planned pages are visible from the hub.
+            All {PROTOTYPE_SKILL_COUNT} prototype pages are visible from the hub.
           </p>
+          <a
+            href="/prototype/personality"
+            data-testid="prototype-personality-link"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white/15 transition-all mr-3"
+          >
+            Open Personality Prototype
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
           <a
             href="/skills-hub"
             data-testid="prototype-skills-hub-link"

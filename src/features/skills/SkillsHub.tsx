@@ -44,7 +44,7 @@ export const SKILLS: SkillMeta[] = [
     status: 'prototype',
     category: 'personality',
     description: 'Translates deterministic BFAS domain/aspect scores into warm, private reflection cards via Gemini structured output. Owner-only by default.',
-    keyFeatures: ['Domain + aspect cards in user\'s language', 'AI receives percentile bands only (not raw scores)', 'Forbidden: clinical language, fixed labels, match claims', 'Export, reset, and delete controls always visible'],
+    keyFeatures: ['Domain + aspect cards in user\'s language', 'AI receives tendency bands only (not exact values)', 'Forbidden: clinical language, fixed labels, match claims', 'Export, reset, and delete controls always visible'],
   },
   {
     id: 'personality-engine',
@@ -53,9 +53,9 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'BFAS Scoring & Reflection Pipeline',
     icon: Cpu,
     color: 'bg-violet-100 text-violet-700 border-violet-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'personality',
-    description: 'BFAS personality assessment system including test administration, deterministic scoring, reflection reports, compatibility comparisons, and personality-aware match explanations using Big Five Aspect Scales and Gemini structured outputs.',
+    description: 'BFAS personality assessment system including test administration, deterministic scoring, private reflection reports, pair reflections, and personality-aware explanation guardrails using Big Five Aspect Scales and Gemini structured outputs.',
     keyFeatures: ['Deterministic scoring (no LLM for scoring)', 'Structured output schemas for all reflection types', 'Versioned item bank with migration path', 'Bilingual Hebrew/English with invariance testing'],
   },
   {
@@ -65,7 +65,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Evidence & Claims Grounding',
     icon: BookOpen,
     color: 'bg-violet-100 text-violet-700 border-violet-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'personality',
     description: 'Evidence-tagged grounding for personality claims, compatibility language, and trust copy so feature contracts remain scientifically and ethically defensible.',
     keyFeatures: ['Claim-evidence traceability', 'Research citation discipline', 'Compatibility language safety rails', 'Grounding checks for trust copy'],
@@ -79,7 +79,7 @@ export const SKILLS: SkillMeta[] = [
     color: 'bg-amber-100 text-amber-700 border-amber-200',
     status: 'prototype',
     category: 'personality',
-    description: 'OCEAN model implementation integrated with Jewish observance layers and Hebrew-first localization. Generates culturally-aware compatibility reports and personality-based filtering with nuanced matching.',
+    description: 'OCEAN model implementation integrated with Jewish observance layers and Hebrew-first localization. Generates culturally aware pair reflections and validates personality-informed filtering only behind release gates.',
     keyFeatures: ['OCEAN traits mapped to dating-relevant dimensions', 'Observance-layer signals overlay', 'Hebrew-first with RTL layout support', 'Cultural context in reflection cards'],
   },
   {
@@ -122,7 +122,7 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'privacy-recommendation',
-    skillId: 'kesher-private-recommendations',
+    skillId: 'kesher-privacy-preserving-recommendation',
     title: 'Privacy-Preserving Recommendation',
     subtitle: 'Three-Layer Architecture',
     icon: Layers,
@@ -151,7 +151,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Permissioned Sharing & Privacy',
     icon: Users,
     color: 'bg-purple-100 text-purple-700 border-purple-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'privacy',
     description: 'Implements permissioned sharing, private taste profiles, and privacy-preserving recommendations. Manages consent flows, staged disclosure patterns, and sensitive data exclusion schemas.',
     keyFeatures: ['Staged disclosure architecture', 'Sensitive data exclusion schemas', 'Consent flow design for each sharing level', 'Private taste integration with recommendation engine'],
@@ -192,7 +192,7 @@ export const SKILLS: SkillMeta[] = [
     status: 'prototype',
     category: 'personality',
     description: 'Values alignment, communication lens, friction forecast, and growth edge reflections with bilateral consent and anti-pattern enforcement.',
-    keyFeatures: ['Mutual consent required from both parties', 'Reflection not prediction — conversation starter only', 'Forbidden: compatibility scores, soulmate claims', 'Either party can remove reflection at any time'],
+    keyFeatures: ['Mutual consent required from both parties', 'Reflection not prediction — conversation starter only', 'Forbidden: numeric fit ratings and certainty claims', 'Either party can remove reflection at any time'],
   },
   {
     id: 'explainable-ai',
@@ -201,7 +201,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Trust Language & Transparency',
     icon: Lightbulb,
     color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'governance',
     description: 'Governs how Kesher\'s AI communicates reasoning to users. Explanations use whitelisted signals, protect privacy, and fall back to deterministic templates when the model fails.',
     keyFeatures: ['Signal whitelist enforcement', 'Generative + deterministic fallback pipeline', 'Trust-building copy guidelines (Hebrew-first)', '"Less like this" and management controls alongside explanations'],
@@ -239,7 +239,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Google Maps-Grounded Date Planning',
     icon: Map,
     color: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Google Maps-grounded date suggestion with fairness preview, observance-aware scheduling, safe-venue defaults, and accessibility concierge. Plan is always user-reviewed before sending.',
     keyFeatures: ['Midpoint venue planning with travel-time fairness preview', 'Shabbat/kashrut/holiday awareness via @hebcal/core', 'Coarse locations only (neighborhood, not address)', 'Manual send only — never auto-sent to match'],
@@ -277,7 +277,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'F01–F11 Feature Registry',
     icon: GitBranch,
     color: 'bg-slate-100 text-slate-700 border-slate-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'governance',
     description: 'All 11 AI feature modules (F01–F11): bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, and personality coaching.',
     keyFeatures: ['F01–F11 feature registry with risk tiers', 'Model routing per feature', 'Consent requirements per feature', 'Data inputs and exclusions documented per module'],
@@ -289,7 +289,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Core Patterns & Server-Side Proxy',
     icon: Cpu,
     color: 'bg-blue-100 text-blue-700 border-blue-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Core patterns for Gemini integration: structured outputs, function calling, grounding, system instructions, server-side proxy architecture, and trust-preserving interaction patterns.',
     keyFeatures: ['Server-side only — no API keys in client bundle', 'Structured JSON output for every feature', 'System instruction templates per feature class', 'Prompt sanitization before every call'],
@@ -301,7 +301,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Server-Side Proxy Architecture',
     icon: Zap,
     color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Server-side AI proxy architecture for low-latency responses. Covers model routing matrix, latency targets, streaming patterns, feature registry, and policy-aware AI request handling.',
     keyFeatures: ['Latency targets per feature tier', 'Streaming for long-form outputs', 'Model routing matrix by sensitivity and cost', 'Policy-aware request gating'],
@@ -313,7 +313,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Gemini Thinking Mode Strategy',
     icon: Brain,
     color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Routing strategy for Gemini "high thinking" mode. Covers when to enable thinking controls, configuring thinkingLevel/thinkingBudget, hybrid fast+thinking patterns, and A/B test design.',
     keyFeatures: ['thinkingLevel / thinkingBudget configuration', 'Fast path + deep-thinking hybrid pattern', 'A/B test framework for thinking-enabled features', 'Cost and latency trade-off decision matrix'],
@@ -324,7 +324,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Google Search Integration',
     icon: Search,
     color: 'bg-teal-100 text-teal-700 border-teal-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Google Search grounding integration for Q&A, event discovery, safety center resources, citation rendering, and URL context features using Gemini grounding capabilities.',
     keyFeatures: ['Search-grounded Q&A with citations', 'Event discovery for date planning', 'Safety center resource grounding', 'Citation UI with source chips'],
@@ -335,7 +335,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Trust-Forward Photo Checks',
     icon: Image,
     color: 'bg-rose-100 text-rose-700 border-rose-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'governance',
     description: 'Trust-forward image analysis for photo readiness checks, content moderation assistance, accessibility alt-text generation, and moderation appeal support with tiered decisioning.',
     keyFeatures: ['Photo readiness checks (not attractiveness scoring)', 'Content moderation assistance for human review', 'Accessibility alt-text generation', 'No attractiveness, race, or protected-trait inference'],
@@ -346,7 +346,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Gemini Live API',
     icon: Mic,
     color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Voice AI integration using the Gemini Live API. Covers WebSocket sessions, ephemeral token authentication, push-to-talk interfaces, and accessibility-focused voice features.',
     keyFeatures: ['Gemini Live API WebSocket sessions', 'Ephemeral token auth (no long-lived keys on client)', 'Push-to-talk UI with accessibility labels', 'Graceful fallback when voice unavailable'],
@@ -358,7 +358,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Rapid Prototype Composition',
     icon: Cpu,
     color: 'bg-blue-100 text-blue-700 border-blue-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Captures Google AI Studio app-builder workflows for quickly composing and iterating feature prototypes aligned to Kesher constraints.',
     keyFeatures: ['AI Studio prototype workflows', 'Rapid feature scaffolding guidance', 'Iteration loop for concept validation', 'Alignment with trust-forward constraints'],
@@ -369,7 +369,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Reference App Patterns',
     icon: Heart,
     color: 'bg-pink-100 text-pink-700 border-pink-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Reference skill package for dating-app flow patterns used as a comparative prototype blueprint for feature-level UX and product decisions.',
     keyFeatures: ['Dating flow reference patterns', 'Feature-level UX blueprinting', 'Prototype parity checks', 'Decision-support examples'],
@@ -380,7 +380,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Multimodal Prototype Utility',
     icon: Image,
     color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'platform',
     description: 'Prototype utility for video-generation workflows where multimodal outputs are needed for demos, storytelling, and concept validation.',
     keyFeatures: ['Video generation workflow reference', 'Multimodal demo support', 'Concept storytelling assets', 'Prototype-ready output guidance'],
@@ -392,7 +392,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Kesher OS Master Framework',
     icon: BookOpen,
     color: 'bg-gray-100 text-gray-700 border-gray-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'governance',
     description: 'Kesher OS master prompt and strategic framework. Deep research, strategic evaluation, architecture design, and execution planning. Covers run modes, evaluation rubrics, product principles, and connector design.',
     keyFeatures: ['Master system instruction architecture', 'Run mode switching (prototype / production)', 'Evaluation rubrics per feature class', 'Product principles and red-line enforcement'],
@@ -406,7 +406,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Hebrew-First & Anti-Casino Design',
     icon: Palette,
     color: 'bg-stone-100 text-stone-700 border-stone-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'ux',
     description: 'Premium calm UX strategy: Hebrew-first RTL design, calm aesthetic principles, accessibility standards, and competitive differentiation against casino-mechanic dating apps.',
     keyFeatures: ['Hebrew RTL layout system', 'No infinite scroll / casino mechanics', 'Finite daily discovery batch', 'Calm color palette and typography system'],
@@ -444,7 +444,7 @@ export const SKILLS: SkillMeta[] = [
     subtitle: 'Verification & Release Workflow',
     icon: GitBranch,
     color: 'bg-slate-100 text-slate-700 border-slate-200',
-    status: 'planned',
+    status: 'prototype',
     category: 'governance',
     description: 'Coordinates implementation handoff, verification, review, CI, and deployment checks for personality-related features across supported delivery paths.',
     keyFeatures: ['Verification matrix before release', 'Browser + CI check orchestration', 'Platform-aware delivery decisions', 'Explicit approval stop points for risky ops'],
@@ -515,6 +515,13 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
             Each skill module enforces privacy boundaries, Israeli Amendment 13 compliance, and scientific rigor.
             Tap any module to explore its architecture, rules, and interactive prototype.
           </p>
+          <a
+            href="/prototype/personality"
+            data-testid="skills-hub-personality-prototype-link"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4AF37] text-[#2D2926] rounded-full text-[10px] font-bold uppercase tracking-widest"
+          >
+            Open IPIP-BFAS journey
+          </a>
           <div className="flex flex-wrap gap-3 pt-2">
             {SKILL_COUNTS.live > 0 && (
               <span className="px-3 py-1 bg-green-900/30 text-green-300 text-[9px] font-bold uppercase tracking-widest rounded-full border border-green-700/30">
@@ -524,9 +531,11 @@ export const SkillsHub: React.FC<{ onBack: () => void; onSelect: (id: string) =>
             <span className="px-3 py-1 bg-amber-900/30 text-amber-300 text-[9px] font-bold uppercase tracking-widest rounded-full border border-amber-700/30">
               Prototype: {SKILL_COUNTS.prototype}
             </span>
-            <span className="px-3 py-1 bg-slate-700/30 text-slate-300 text-[9px] font-bold uppercase tracking-widest rounded-full border border-slate-600/30">
-              Planned: {SKILL_COUNTS.planned}
-            </span>
+            {SKILL_COUNTS.planned > 0 && (
+              <span className="px-3 py-1 bg-slate-700/30 text-slate-300 text-[9px] font-bold uppercase tracking-widest rounded-full border border-slate-600/30">
+                Planned: {SKILL_COUNTS.planned}
+              </span>
+            )}
           </div>
         </section>
 

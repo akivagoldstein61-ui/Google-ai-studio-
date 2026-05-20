@@ -45,8 +45,8 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
                 <span className="text-xs font-bold">Basic Share Card</span>
               </div>
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
-                <li>• Domain-level scores only (2-3 behavioral sentences per domain)</li>
-                <li>• No raw scores, no aspect detail</li>
+                <li>• Domain-level tendency bands only (2-3 behavioral sentences per domain)</li>
+                <li>• No exact values, no aspect detail</li>
                 <li>• Suitable for early-stage connections</li>
               </ul>
             </div>
@@ -56,7 +56,7 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
                 <span className="text-xs font-bold">Deeper Share Card</span>
               </div>
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
-                <li>• Domain + aspect scores (5-7 sentences)</li>
+                <li>• Domain + aspect tendency bands (5-7 sentences)</li>
                 <li>• May include self-identified relational style</li>
                 <li>• Requires separate consent beyond basic card</li>
                 <li>• Only available after full assessment completion</li>
@@ -70,7 +70,7 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
               <ul className="text-xs text-[#6B5E52] space-y-1 pl-4">
                 <li>• Generated from BOTH users' shared cards</li>
                 <li>• Requires bilateral consent before generation</li>
-                <li>• Shows interaction patterns, not compatibility scores</li>
+                <li>• Shows interaction patterns, not numeric fit ratings</li>
                 <li>• Both users see identical content</li>
               </ul>
             </div>

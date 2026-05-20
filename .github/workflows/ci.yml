@@ -40,6 +40,9 @@ jobs:
       - name: Personality schema tests
         run: npm run test:schemas
 
+      - name: Skills bundle tests
+        run: npm run test:skills
+
       - name: Personality scoring tests
         run: npm run test:scoring
 
