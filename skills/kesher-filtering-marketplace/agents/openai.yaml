@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Filtering Marketplace"
+  short_description: "Discovery filters and fairness checks"
+  default_prompt: "Use $kesher-filtering-marketplace to review Kesher discovery filters, ordering, or fairness controls."

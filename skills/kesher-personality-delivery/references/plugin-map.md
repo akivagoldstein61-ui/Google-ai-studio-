@@ -1,18 +1,27 @@
 # Personality Delivery Plugin Map
 
-Use plugins only when the task needs them.
+Use plugins only when the task needs them. This repo is a React/Vite app with an Express API, Firebase auth/data, and server-side Gemini routes.
 
-- Superpowers: planning, systematic debugging, TDD, verification discipline for larger personality changes.
-- Browser Use: open localhost, test onboarding/settings/discovery flows, inspect screenshots and interaction states.
-- GitHub: inspect remote repo, issues, PRs, branches, or prepare review/publish steps when approved.
-- CircleCI: inspect CI config, builds, and failures when CI status matters.
-- CodeRabbit: request or address AI code review when preparing a PR or review pass.
-- Netlify: manage or inspect Netlify deploys/config only if the app is deployed there.
-- Vercel: manage or inspect Vercel deploys/config only if the app is deployed there.
-- Cloudflare: use for Workers, caching, edge functions, or Cloudflare platform concerns.
-- Neon Postgres: use if personality persistence or audit storage moves to Neon/Postgres. Current repo uses Firebase-facing services, so do not invent a Neon dependency.
-- Expo: use for React Native/Expo parity work if personality flows are ported to mobile.
-- Build iOS Apps: use for native iOS SwiftUI/App Intents parity, simulator debugging, or iOS performance work.
-- Build macOS Apps: use for native macOS companion/admin tooling, packaging, or desktop app debugging.
-- Quicknode: use only if a concrete web3/blockchain requirement is added. It is not part of the current personality architecture.
-- YepCode: use only if approved external workflow automation is requested. Do not route product logic through it by default.
+## Primary For This Project
+
+- Codex / Superpowers: local repo edits, implementation plans, verification discipline, TDD, systematic debugging, and finishing branches.
+- GitHub: source of truth for issues, branches, PRs, CI, review, preview deploy traceability, and release handoff.
+- Browser: open localhost or deployed preview URLs, test `/prototype`, `/skills-hub`, onboarding/settings/discovery flows, and capture UI state.
+- Vercel: primary live web deployment and preview platform. Inspect previews and statuses; do not change production settings without approval.
+- Google AI Studio / Gemini: prompt and prototype evidence source for Gemini-native features. Keep API keys server-side in repo implementations.
+- PDF / extracted research skills: use local dossiers and `kesher-personality-research` as evidence, not automatic implementation permission.
+- Skill Creator: create or normalize repo-local Codex skills, `agents/openai.yaml`, and validation structure.
+
+## Secondary Or Conditional
+
+- Netlify: static mirror only in this repo. Do not assume Express/API parity unless Netlify Functions are explicitly implemented.
+- Render: optional Node host path for `dist/server.cjs`, not current source of truth.
+- Supabase / Neon Postgres: not current; the app uses Firebase. Do not introduce a new database path without an approved design.
+- Expo / Build iOS Apps: future native parity for personality or trust flows only; not part of the current React/Vite web slice.
+- Build macOS Apps: future native admin/companion tooling only.
+- CircleCI / CodeRabbit: use only if CI or review tooling is explicitly connected for the PR.
+- Cloudflare / Quicknode / YepCode: not part of the current architecture unless a concrete approved integration is added.
+
+## Stop Points
+
+Stop for explicit approval before changing Firebase production data, Firestore rules, auth mode, deployment config, billing, external credentials, secrets, production domains, or database provider.

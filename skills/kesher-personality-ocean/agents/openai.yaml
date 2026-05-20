@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Personality OCEAN"
+  short_description: "OCEAN reflection guardrails"
+  default_prompt: "Use $kesher-personality-ocean to review broad Big Five or OCEAN personality copy."

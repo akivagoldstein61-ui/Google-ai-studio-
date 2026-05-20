@@ -61,18 +61,20 @@ Set all four safety categories to **Block low and above** (strict mode for a dat
 
 The system prompt encodes all 10 skills. Each skill maps to a section in the prompt:
 
-| # | Skill ID | Section in Prompt | Status |
-|---|---|---|---|
-| 1 | `kesher-personality-assessment` | SKILL 1 | Prototype |
-| 2 | `kesher-consent-ux` | SKILL 2 | Prototype |
-| 3 | `kesher-permissioned-sharing` | SKILL 3 | Prototype |
-| 4 | `kesher-ai-runtime-governance` | SKILL 4 | Prototype |
-| 5 | `kesher-privacy-recommendation` | SKILL 5 | Prototype |
-| 6 | `kesher-why-this-match` | SKILL 6 | Prototype |
-| 7 | `kesher-israeli-privacy` | SKILL 7 | Prototype |
-| 8 | `kesher-psychometric-validation` | SKILL 8 | Planned |
-| 9 | `kesher-compatibility-reflection` | SKILL 9 | Prototype |
-| 10 | `kesher-dark-pattern-audit` | SKILL 10 | Planned |
+| # | AI Studio Skill ID | Canonical Codex Skill | Section in Prompt | Status |
+|---|---|---|---|---|
+| 1 | `kesher-personality-assessment` | `kesher-bfas-assessment` | SKILL 1 | Prototype |
+| 2 | `kesher-consent-ux` | `kesher-consent-ux` | SKILL 2 | Prototype |
+| 3 | `kesher-permissioned-sharing` | `kesher-permissioned-sharing` | SKILL 3 | Prototype |
+| 4 | `kesher-ai-runtime-governance` | `kesher-ai-governance` | SKILL 4 | Prototype |
+| 5 | `kesher-privacy-recommendation` | `kesher-private-recommendations` | SKILL 5 | Prototype |
+| 6 | `kesher-why-this-match` | `kesher-personality-why-match` | SKILL 6 | Prototype |
+| 7 | `kesher-israeli-privacy` | `kesher-israeli-privacy` | SKILL 7 | Prototype |
+| 8 | `kesher-psychometric-validation` | `kesher-psychometric-validation` | SKILL 8 | Planned |
+| 9 | `kesher-compatibility-reflection` | `kesher-compatibility-reflection` | SKILL 9 | Prototype |
+| 10 | `kesher-dark-pattern-audit` | `kesher-dark-pattern-audit` | SKILL 10 | Planned |
+
+See `docs/operator/skill-inventory.md` for the full repo-local skill map, legacy `.skill` artifacts, and globally installed skill alignment.
 
 ---
 

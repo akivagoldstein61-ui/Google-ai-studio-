@@ -98,6 +98,7 @@ export const SKILLS: SkillMeta[] = [
   // ── Privacy & consent ──────────────────────────────────────────────────────
   {
     id: 'consent-ux',
+    skillId: 'kesher-consent-ux',
     title: 'Consent UX',
     subtitle: 'Trust Hub & Grants Ledger',
     icon: Shield,
@@ -109,6 +110,7 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'israeli-privacy',
+    skillId: 'kesher-israeli-privacy',
     title: 'Israeli Privacy Compliance',
     subtitle: 'Amendment 13 & PPA Guidance',
     icon: Lock,
@@ -120,6 +122,7 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'privacy-recommendation',
+    skillId: 'kesher-private-recommendations',
     title: 'Privacy-Preserving Recommendation',
     subtitle: 'Three-Layer Architecture',
     icon: Layers,
@@ -317,7 +320,6 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'grounded-search',
-    skillId: 'kesher-grounded-search',
     title: 'Grounded Search',
     subtitle: 'Google Search Integration',
     icon: Search,
@@ -329,7 +331,6 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'image-analysis',
-    skillId: 'kesher-image-analysis',
     title: 'Image Analysis',
     subtitle: 'Trust-Forward Photo Checks',
     icon: Image,
@@ -341,7 +342,6 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'voice-integration',
-    skillId: 'kesher-voice-integration',
     title: 'Voice Integration',
     subtitle: 'Gemini Live API',
     icon: Mic,
@@ -365,7 +365,6 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'sparkmatch-dating-app-skill',
-    skillId: 'sparkmatch-dating-app-skill',
     title: 'SparkMatch Dating App',
     subtitle: 'Reference App Patterns',
     icon: Heart,
@@ -377,7 +376,6 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'video-generator',
-    skillId: 'video-generator',
     title: 'Video Generator',
     subtitle: 'Multimodal Prototype Utility',
     icon: Image,
@@ -417,6 +415,7 @@ export const SKILLS: SkillMeta[] = [
   // ── Quality & validation ───────────────────────────────────────────────────
   {
     id: 'psychometric-validation',
+    skillId: 'kesher-psychometric-validation',
     title: 'Psychometric Validation',
     subtitle: 'ESEM/Bifactor Pipeline',
     icon: Scale,
@@ -428,6 +427,7 @@ export const SKILLS: SkillMeta[] = [
   },
   {
     id: 'dark-pattern-audit',
+    skillId: 'kesher-dark-pattern-audit',
     title: 'Dark Pattern Audit',
     subtitle: 'EU Taxonomy & Comprehension Tests',
     icon: FileCheck,

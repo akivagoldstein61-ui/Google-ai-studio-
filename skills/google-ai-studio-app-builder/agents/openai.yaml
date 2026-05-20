@@ -1,0 +1,4 @@
+interface:
+  display_name: "Google AI Studio App Builder"
+  short_description: "AI Studio prototype hardening"
+  default_prompt: "Use $google-ai-studio-app-builder to turn a Google AI Studio prototype into repo-governed Kesher work."

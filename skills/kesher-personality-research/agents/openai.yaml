@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Personality Research"
+  short_description: "PDF-grounded product evidence"
+  default_prompt: "Use $kesher-personality-research to ground Kesher personality decisions in the extracted dossier evidence."
