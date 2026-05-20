@@ -1,43 +1,25 @@
-# Kesher Agent Operating Canon
+# AGENTS.md
 
-This repository is the implementation surface for Kesher, a serious Hebrew-first dating app. Personality and AI features must support self-understanding, values-first discovery, private taste learning, transparent explanations, permissioned sharing, mutual-consent reflection, and respectful messaging help.
+## Project Baseline
+- App source of truth: `akivagoldstein61-ui/Google-ai-studio-` on `main`.
+- This is a React 19 + Vite frontend served by an Express API in `server.ts`.
+- The product is a Kesher trust-forward dating prototype with Firebase auth/data and server-side Gemini AI routes.
 
-## Non-Negotiable Product Boundaries
+## Safe Operating Rules
+- Do not add product features unless they are already present, scaffolded, documented, or explicitly requested.
+- Keep `GEMINI_API_KEY` server-side. Do not expose it through Vite `define`, client env vars, browser logs, or docs.
+- Do not change Firebase production data, Firestore rules, auth mode, deployment config, billing, or external credentials without explicit approval.
+- Treat local PDFs and skill bundles as reference evidence, not implementation.
+- Avoid logging prompts, message contents, exact locations, tokens, secrets, or other PII.
 
-Allowed:
+## Verification
+- Install: `npm ci`
+- Typecheck: `npm run lint`
+- AI contract tests: `npm run test`
+- Production build: `npm run build`
+- Local smoke: `npm run dev`, then check `/api/health` and a no-key AI fallback path.
 
-- Self-reflection, communication tendencies, strengths, watch-outs, and micro-habits.
-- Owner-visible private taste learning that is editable, resettable, and explainable.
-- Values-first discovery using visible profile fields.
-- Transparent "Why This Match" explanations using only visible signals.
-- Share cards only after user preview, scope selection, recipient selection, expiry, and revoke path.
-- Compatibility reflection only after mutual consent and both users opt in.
-- Messaging assistance that is draft-only or rewrite-only.
-
-Forbidden:
-
-- Compatibility scores, match percentages, soulmate, destiny, perfect-match, doomed, or incompatible verdicts.
-- Attractiveness scores, desirability tiers, hidden ranking explanations, or public ranking.
-- Protected-trait inference or sensitive identity inference.
-- Raw BFAS/aspect score sharing, raw personality dossiers, hidden weights, private taste leakage, or private message leakage.
-- AI impersonation, auto-send, invented facts, or escalation beyond user intent.
-- Personality-based gating without explicit consent and validation.
-
-## Approval Boundaries
-
-Stop before changing auth, roles, Firebase rules, database schema, migrations, production config, secrets, billing, deploy settings, external tools, dependency versions, share/revoke persistence, or any personality-based ranking/gating.
-
-Do not push, create PRs, merge, deploy, publish, or run destructive git/filesystem commands without explicit approval.
-
-## Validation Expectations
-
-Run the narrowest useful check after meaningful changes:
-
-1. Targeted tests.
-2. Typecheck.
-3. Lint.
-4. Build.
-5. Route/API smoke check.
-6. Browser/app flow check.
-
-Report exactly what ran, what passed, and what could not run.
+## Review Notes
+- Canonical app types are in `src/types.ts`.
+- `src/types/index.ts` exists but is not currently imported by the app.
+- `AI_ROUTE_AUTH_MODE=prototype` allows unauthenticated AI route testing; strict mode requires Firebase Admin initialization and bearer tokens.

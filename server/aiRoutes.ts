@@ -27,6 +27,12 @@ import {
   sanitizeWhyMatchSignals,
 } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
+import {
+  type EvidencePacket,
+  deterministicFallback,
+  lintExplanationCopy,
+  EXPLANATION_SYSTEM_PROMPT,
+} from "../src/lib/explanationSchema.ts";
 import { sanitize } from "../src/ai/promptSanitizer.ts";
 import { filterWhyMatchSignals } from "../src/ai/dataClassification.ts";
 
@@ -213,8 +219,8 @@ const handleAiError = (error: any, res: express.Response, logMessage: string) =>
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
   if (isMissingKey) {
     res.locals.ai_metadata.fallback_used = true;
-    res.locals.ai_metadata.validator_result = "success";
-    res.locals.ai_metadata.error_class = "none";
+    res.locals.ai_metadata.validator_result = "missing_api_key";
+    res.locals.ai_metadata.error_class = "configuration_error";
   } else {
     res.locals.ai_metadata.fallback_used = true;
     res.locals.ai_metadata.validator_result = "schema_failure_or_catch";
@@ -250,7 +256,6 @@ aiRouter.post("/safety-advice", async (req, res) => {
     res.json({
       advice:
         "Your safety is our priority. Please contact support if you have immediate concerns.",
-      error: error instanceof Error ? error.message : String(error)
     }); // Safe fallback
   }
 });
@@ -433,45 +438,105 @@ aiRouter.post("/daily-picks-intro", async (req, res) => {
 
 aiRouter.post("/explain-match", async (req, res) => {
   res.locals.ai_metadata.feature_id = "why_match";
-  res.locals.ai_metadata.prompt_version = "v1.0";
+  res.locals.ai_metadata.prompt_version = "v2.0";
   try {
     const { params } = req.body;
     if (!params) {
       return res.status(400).json({ error: "Missing params" });
     }
-    const safeParams = {
-      user_profile: pickVisibleMatchProfile(params.user_profile),
-      candidate_profile: pickVisibleMatchProfile(params.candidate_profile),
-      signals: sanitizeWhyMatchSignals(params.signals),
+
+    const userP = pickVisibleMatchProfile(params.user_profile);
+    const candidateP = pickVisibleMatchProfile(params.candidate_profile);
+
+    // Build whitelisted EvidencePacket — only public, shared signals
+    const userTags = new Set((userP.tags as string[]).map((t: string) => t.toLowerCase()));
+    const sharedInterests = (candidateP.tags as string[]).filter((t: string) => userTags.has(t.toLowerCase()));
+    const packet: EvidencePacket = {
+      shared_interests: sharedInterests,
+      shared_intent: userP.intent === candidateP.intent ? (userP.intent as string) : null,
+      shared_observance_label: userP.observance === candidateP.observance ? (userP.observance as string) : null,
+      activity_status: params.activity_status ?? 'unspecified',
+      taste_driven: params.signals?.taste_driven === true,
     };
 
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: capabilityRouter.getRoute("why_match"),
-      contents: PROMPT_TEMPLATES.WHY_MATCH(safeParams),
+      contents: JSON.stringify(packet),
       config: {
-        systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
+        systemInstruction: EXPLANATION_SYSTEM_PROMPT,
         responseMimeType: "application/json",
         responseSchema: WhyMatchSchema,
       },
     });
 
-    const validated = outputValidators.validateWhyMatch(
-      parseAIResponse(response.text),
-    );
+    const parsed = parseAIResponse(response.text);
+    const lint = lintExplanationCopy(JSON.stringify(parsed));
+    if (lint.length > 0) {
+      console.warn("explain-match lint violations:", lint);
+    }
+    const validated = outputValidators.validateWhyMatch(parsed);
+    const selectedSignals = filterWhyMatchSignals(params.signals);
     res.locals.ai_metadata.validator_result = "success";
-    res.json(validated);
+    res.json({
+      ...validated,
+      schema_version: validated.schema_version ?? "why_match.v2",
+      signals_used: validated.signals_used?.length
+        ? validated.signals_used
+        : selectedSignals,
+      signals_not_used: validated.signals_not_used?.length
+        ? validated.signals_not_used
+        : [],
+      reasons_he: validated.reasons,
+      first_question_he: validated.first_question,
+      gentle_clarification_he: validated.possible_mismatch_to_clarify ?? "",
+    });
   } catch (error: any) {
     handleAiError(error, res, "Match explanation failed:");
-    res.json({
-      reasons: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
-      first_question: "מה המסלול האהוב עליך?",
-      possible_mismatch_to_clarify: "",
-      signals_used: [],
-      signals_not_used: [],
-      confidence: 0.5,
-      evidence_label: "HEURISTIC"
-    });
+    const { params } = req.body ?? {};
+    const selectedSignals = filterWhyMatchSignals(params?.signals);
+    try {
+      const userP = pickVisibleMatchProfile(params?.user_profile);
+      const candidateP = pickVisibleMatchProfile(params?.candidate_profile);
+      const userTags = new Set((userP.tags as string[]).map((t: string) => t.toLowerCase()));
+      const fallbackPacket: EvidencePacket = {
+        shared_interests: (candidateP.tags as string[]).filter((t: string) => userTags.has(t.toLowerCase())),
+        shared_intent: userP.intent === candidateP.intent ? (userP.intent as string) : null,
+        shared_observance_label: userP.observance === candidateP.observance ? (userP.observance as string) : null,
+        activity_status: "unspecified",
+        taste_driven: false,
+      };
+      const fb = deterministicFallback(fallbackPacket);
+      res.json({
+        schema_version: "why_match.v2",
+        reasons: fb.reasons_he,
+        first_question: fb.first_question_he,
+        possible_mismatch_to_clarify: "",
+        signals_used: selectedSignals,
+        signals_not_used: [],
+        confidence: 0.5,
+        evidence_label: "HEURISTIC",
+        reasons_he: fb.reasons_he,
+        first_question_he: fb.first_question_he,
+        gentle_clarification_he: "",
+      });
+    } catch {
+      const reasons = ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."];
+      const firstQuestion = "מה המסלול האהוב עליך?";
+      res.json({
+        schema_version: "why_match.v2",
+        reasons,
+        first_question: firstQuestion,
+        possible_mismatch_to_clarify: "",
+        signals_used: selectedSignals,
+        signals_not_used: [],
+        confidence: 0.5,
+        evidence_label: "HEURISTIC",
+        reasons_he: reasons,
+        first_question_he: firstQuestion,
+        gentle_clarification_he: "",
+      });
+    }
   }
 });
 

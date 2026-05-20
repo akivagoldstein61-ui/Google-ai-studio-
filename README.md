@@ -16,6 +16,7 @@ View your app in AI Studio: https://ai.studio/apps/bd65b2e7-1010-405f-8e3a-13786
 |---|---|
 | **Stable prototype URL** | **<https://google-ai-studio-sage-sigma.vercel.app>** |
 | **Prototype info page** | <https://google-ai-studio-sage-sigma.vercel.app/prototype> |
+| **Kesher skills hub** | <https://google-ai-studio-sage-sigma.vercel.app/skills-hub> |
 | **View-only demo mode** | <https://google-ai-studio-sage-sigma.vercel.app/demo?demo=1> |
 
 Every push to `main` automatically triggers a new Vercel production deployment.  
@@ -36,7 +37,7 @@ The stable URL above always serves the latest `main` build — use it for demos,
    - Injects build markers (`VITE_COMMIT_SHA`, `VITE_BUILD_TIME`, `VITE_GIT_BRANCH`, `VITE_DEPLOY_ENV`)
 3. **Preview verification** (`.github/workflows/preview-verification.yml`) — runs on PRs:
    - Discovers Vercel preview URL from deployment metadata when available
-   - Runs smoke checks against preview root, `/prototype`, and `/demo?demo=1`
+   - Runs smoke checks against preview root, `/prototype`, `/skills-hub`, `/demo?demo=1`, `/api/health`, `/api/version`, `/__version`, and an unmatched `/api/*` route
 
 ### Required GitHub repository secrets
 
@@ -106,7 +107,7 @@ To change the canonical (production) URL, update `src/lib/prototypeMode.ts`.
 
 ### Option 1 — Vercel (current setup, CI/CD enabled)
 
-The repository includes a `vercel.json` that configures the SPA rewrite rule and security headers. The CI/CD workflows (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) handle automated builds and deployments on every push to `main`. See the [Prototype section](#-prototype-always-up-to-date-main-build) above for setup instructions.
+The repository includes a `vercel.json` that configures Vercel Functions, an SPA rewrite rule that excludes `/api/*`, and security headers. The CI/CD workflows (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) handle automated builds and deployments on every push to `main`. See the [Prototype section](#-prototype-always-up-to-date-main-build) above for setup instructions.
 
 **Important:** only the **Production** deployment URL needs to be in Firebase's authorized domains list. All preview/branch URLs are automatically redirected to the production URL by the app.
 
@@ -138,6 +139,15 @@ firebase deploy --only hosting
 2. Add a `_routes.json` or configure "Functions" routing so all paths serve `index.html`.
 3. Add the `*.pages.dev` domain to Firebase's authorized domains list.
 
+### Option 5 — GitSpark
+
+Use GitSpark with either:
+
+- **Node/fullstack mode (recommended):** `npm ci` → `npm run build` → `npm run start`
+- **Static mode (fallback):** `npm ci` → `npm run build` with output directory `dist` (no Express `/api/*` routes)
+
+See `docs/deployment/gitspark.md` for repository connection steps, server-only env vars, required quality gates, and post-deploy verification.
+
 ---
 
 ## Environment variables
@@ -154,6 +164,7 @@ See full deployment docs in `docs/deployment/`:
 
 - `vercel.md`
 - `netlify.md`
+- `gitspark.md`
 - `neon.md`
 - `env-vars.md`
 - `preview-workflow.md`

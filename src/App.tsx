@@ -20,9 +20,11 @@ import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
+import { SkillsRouter } from './features/skills';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
+import { isPrototypeDemoMode } from './lib/prototypeMode';
 
 // ---------------------------------------------------------------------------
 // Auth guard — redirects unauthenticated / onboarding users
@@ -141,6 +143,7 @@ const SettingsRoute: React.FC = () => {
       onShowSafety={() => navigate('/settings/safety')}
       onShowAITrust={() => navigate('/settings/ai-trust')}
       onShowPersonalityProfile={() => navigate('/settings/personality')}
+      onShowPersonalityVisibility={() => navigate('/settings/personality-visibility')}
       onShowAIOps={() => navigate('/admin/ai-ops')}
       onShowExperiments={() => navigate('/admin/experiments')}
       onEditProfile={() => navigate('/profile/edit')}
@@ -213,6 +216,21 @@ const TasteProfileRoute: React.FC = () => {
   return <PrivateTasteProfile onBack={() => navigate(-1)} />;
 };
 
+const SkillsRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <SkillsRouter onBack={() => navigate(-1)} />;
+};
+
+const PersonalityProfileRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <PersonalityProfileScreen onBack={() => navigate(-1)} />;
+};
+
+const PersonalityVisibilityRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <PersonalityVisibilitySettings onBack={() => navigate(-1)} />;
+};
+
 const AIOpsRoute: React.FC = () => {
   const navigate = useNavigate();
   return <AIOpsScreen onBack={() => navigate(-1)} />;
@@ -228,8 +246,13 @@ const ExperimentsRoute: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const AppContent: React.FC = () => {
+  const demoMode = isPrototypeDemoMode();
+
   return (
-    <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
+    <div
+      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]"
+      data-demo-mode={demoMode ? 'true' : undefined}
+    >
       <AuthGuard>
         <Routes>
           {/* Tab screens — wrapped in shared layout with bottom nav */}
@@ -246,8 +269,11 @@ const AppContent: React.FC = () => {
           <Route path="/settings/safety" element={<SafetyCenterRoute />} />
           <Route path="/settings/ai-trust" element={<AITrustHubRoute />} />
           <Route path="/settings/taste-profile" element={<TasteProfileRoute />} />
+          <Route path="/settings/personality" element={<PersonalityProfileRoute />} />
+          <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
+          <Route path="/skills" element={<SkillsRoute />} />
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/daily" replace />} />
@@ -258,8 +284,14 @@ const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  if (typeof window !== 'undefined' && (window.location.pathname === '/prototype' || window.location.pathname === '/status')) {
-    return <PrototypeScreen />;
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (pathname === '/prototype' || pathname === '/status') {
+      return <PrototypeScreen />;
+    }
+    if (pathname === '/skills-hub') {
+      return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
+    }
   }
   return (
     <BrowserRouter>
