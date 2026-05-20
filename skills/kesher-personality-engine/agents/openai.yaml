@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Personality Engine"
+  short_description: "Private personality pipeline"
+  default_prompt: "Use $kesher-personality-engine to review Kesher assessment, scoring, or reflection behavior."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Maps Date Planner"
+  short_description: "Grounded date planning review"
+  default_prompt: "Use $kesher-maps-date-planner to review a Maps-grounded Kesher date-planning feature."

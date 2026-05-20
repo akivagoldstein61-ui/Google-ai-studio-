@@ -78,11 +78,12 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
         {/* Implementation note */}
         <section className="bg-[#2D2926] rounded-[24px] p-6 space-y-3 text-white">
           <p className="text-sm italic text-white/80">
-            This skill module is defined in the Kesher skills directory. The interactive prototype
-            implementation is coming soon.
+            {skill.skillId
+              ? 'This skill module is defined in the Kesher skills directory. The interactive prototype implementation is coming soon.'
+              : 'This module is a legacy export or planned reference card. A canonical skill directory will be added only when implementation needs it.'}
           </p>
           <p className="text-[9px] text-white/40 font-mono">
-            skills/{skill.skillId ?? skill.id}
+            {skill.skillId ? `skills/${skill.skillId}` : 'legacy/planned reference'}
           </p>
         </section>
       </main>

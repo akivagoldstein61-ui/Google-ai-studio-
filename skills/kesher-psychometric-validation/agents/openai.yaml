@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Psychometric Validation"
+  short_description: "Personality validation release gates"
+  default_prompt: "Use $kesher-psychometric-validation to check whether a Kesher personality feature is blocked, prototype-only, or ready for validation."

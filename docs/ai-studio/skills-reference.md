@@ -6,6 +6,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 
 ## Skill 1 — Personality Assessment (`kesher-personality-assessment`)
 
+**Canonical Codex skill:** `kesher-bfas-assessment`
+
 **Purpose:** Administer and score a public-domain Big Five personality instrument (BFAS or IPIP-NEO) in a trust-forward, consent-gated, progressive flow.
 
 **Key Decisions:**
@@ -24,6 +26,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 ---
 
 ## Skill 2 — Consent UX (`kesher-consent-ux`)
+
+**Canonical Codex skill:** `kesher-consent-ux`
 
 **Purpose:** Design all consent interactions to meet Israeli Section 11 requirements and EU dark-pattern-free standards.
 
@@ -44,6 +48,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 
 ## Skill 3 — Permissioned Sharing (`kesher-permissioned-sharing`)
 
+**Canonical Codex skill:** `kesher-permissioned-sharing`
+
 **Purpose:** Allow users to voluntarily share personality cards with specific matches under explicit, previewed, revocable consent.
 
 **Card Types:** Basic (domain-level) → Deeper (domain + aspect) → Mutual Reflection (bilateral).
@@ -55,6 +61,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 ---
 
 ## Skill 4 — AI Runtime Governance (`kesher-ai-runtime-governance`)
+
+**Canonical Codex skill:** `kesher-ai-governance`
 
 **Purpose:** Route AI calls to the correct provider and enforce zero-data-retention (ZDR) for sensitive personality data.
 
@@ -75,6 +83,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 
 ## Skill 5 — Privacy-Preserving Recommendation (`kesher-privacy-recommendation`)
 
+**Canonical Codex skill:** `kesher-private-recommendations`
+
 **Purpose:** Deliver personalized recommendations without leaking personality data to other users or using it without consent.
 
 **Three Layers:**
@@ -91,6 +101,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 
 ## Skill 6 — Why This Match (`kesher-why-this-match`)
 
+**Canonical Codex skill:** `kesher-personality-why-match`
+
 **Purpose:** Generate honest, provenance-labeled match explanations using only whitelisted, user-visible signals.
 
 **Allowed signals:** Shared values, relationship intent, observance/lifestyle (both displayed), location proximity (coarse), shared interests, age alignment, personality card (if shared).
@@ -102,6 +114,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 ---
 
 ## Skill 7 — Israeli Privacy Compliance (`kesher-israeli-privacy`)
+
+**Canonical Codex skill:** `kesher-israeli-privacy`
 
 **Purpose:** Ensure all personality and sensitive data handling complies with Israel's Privacy Protection Law (Amendment 13) and PPA guidance.
 
@@ -116,6 +130,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 ---
 
 ## Skill 8 — Psychometric Validation (`kesher-psychometric-validation`)
+
+**Canonical Codex skill:** `kesher-psychometric-validation`
 
 **Purpose:** Ensure the personality instrument is reliable, valid, and fair before using scores in any product feature.
 
@@ -137,6 +153,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 
 ## Skill 9 — Compatibility Reflection (`kesher-compatibility-reflection`)
 
+**Canonical Codex skill:** `kesher-compatibility-reflection`
+
 **Purpose:** Help two mutually consenting users reflect on their personality overlap through conversation-starting lenses — not predictions.
 
 **Prerequisites:** Both users have shared a basic card with each other AND both explicitly consented to mutual reflection.
@@ -150,6 +168,8 @@ This document is a concise reference for all 10 Kesher skills. It can be pasted 
 ---
 
 ## Skill 10 — Dark Pattern Audit (`kesher-dark-pattern-audit`)
+
+**Canonical Codex skill:** `kesher-dark-pattern-audit`
 
 **Purpose:** Audit all consent and personality UX against the EU six-category dark pattern taxonomy and comprehension standards.
 
