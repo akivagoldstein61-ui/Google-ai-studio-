@@ -1,3 +1,4 @@
+import { gateway } from '@ai-sdk/gateway'
 import { streamText } from 'ai'
 
 if (!process.env.VERCEL_OIDC_TOKEN) {
@@ -7,7 +8,7 @@ if (!process.env.VERCEL_OIDC_TOKEN) {
 
 try {
   const result = streamText({
-    model: 'openai/gpt-5.5',
+    model: gateway('openai/gpt-5.5'),
     prompt: 'Explain quantum computing in simple terms.',
   })
 
