@@ -48,3 +48,9 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: API smoke check (production)
+        # Confirms /api/* routes are actually mounted on Vercel rather than
+        # falling through to the SPA's index.html (which would return HTML
+        # with status 200 — a silent regression). See scripts/api-smoke.mjs.
+        run: node scripts/api-smoke.mjs https://google-ai-studio-sage-sigma.vercel.app

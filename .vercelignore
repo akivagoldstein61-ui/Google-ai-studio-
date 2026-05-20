@@ -1,0 +1,29 @@
+# Files Vercel does not need to upload.
+# Keep server/, api/, src/, scripts/, firebase-applet-config.json,
+# firestore.rules, package.json, vercel.json, tsconfig.json — those are
+# required at build or runtime.
+
+node_modules
+.git
+dist
+
+# Bulky governance source bundles — referenced for review but not needed by
+# the runtime. The runtime reads docs/ only via npm test, not at request time.
+kesher-personality-skills.zip
+skills
+skills 2
+skills 3
+skills 4
+public/downloads
+
+# Ad-hoc dev scratch files at repo root.
+test_genai.js
+test_ping.js
+test_duplicate_keys.js
+patch.ts
+patch_service.ts
+patch_service2.ts
+patch_services.js
+
+# Plan / local-only state.
+.claude/settings.local.json
