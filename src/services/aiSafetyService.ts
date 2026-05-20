@@ -1,17 +1,6 @@
 import { MessageSafetyScanSchema, ModerationSummarySchema } from "@/ai/schemas";
-import { auth } from '@/firebase';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
-
-const getHeaders = async () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
+import { buildJsonAuthHeaders } from './authHeaders';
 
 export const aiSafetyService = {
   async scanMessageSafety(text: string) {
@@ -22,7 +11,7 @@ export const aiSafetyService = {
 
       const response = await fetch('/api/ai/message-safety', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ text })
       });
       
@@ -52,7 +41,7 @@ export const aiSafetyService = {
 
       const response = await fetch('/api/ai/moderation-summary', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ reports })
       });
       
@@ -82,7 +71,7 @@ export const aiSafetyService = {
 
       const response = await fetch('/api/ai/safety-advice', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ question })
       });
       

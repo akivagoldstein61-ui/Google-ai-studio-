@@ -1,16 +1,5 @@
-import { auth } from '@/firebase';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
-
-const getHeaders = async () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
+import { buildJsonAuthHeaders } from './authHeaders';
 
 export const aiDatePlannerService = {
   async planDate(params: { 
@@ -29,7 +18,7 @@ export const aiDatePlannerService = {
 
       const response = await fetch('/api/ai/plan-date', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ params })
       });
       

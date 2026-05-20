@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { signOut as firebaseSignOut } from 'firebase/auth';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { Profile, DiscoveryPreferences, Match, Conversation, Message } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 import { auth, db } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
+import {
+  hasLocalMockAuthSession,
+  isLocalDevMockAuthEnabled,
+  setLocalMockAuthSession,
+} from '@/services/authHeaders';
 import {
   type TasteState, type TasteEvent, applyEvent, implicitAffinity, emptyTasteState,
 } from '@/lib/learnedTaste';
@@ -28,6 +32,7 @@ interface AppState {
   isOnboarding: boolean;
   loading: boolean;
   isDemoMode: boolean;
+  isLocalMockAuth: boolean;
 
   interactions: {
     likes: string[];
@@ -35,6 +40,7 @@ interface AppState {
     moreLikeThis: string[];
     lessLikeThis: string[];
   };
+  signIn: () => Promise<void>;
   setLanguage: (lang: 'en' | 'he') => void;
   setUser: (user: Profile | null) => void;
   setOnboarding: (isOnboarding: boolean) => void;
@@ -86,6 +92,17 @@ const DEMO_USER: Profile = {
   bio: 'View-only demo account seeded with local mock data. No Firebase sign-in required.',
 };
 
+const LOCAL_DEV_USER: Profile = {
+  ...MOCK_PROFILES[1],
+  id: 'local-dev-user',
+  uid: 'local-dev-user',
+  displayName: 'Local Dev',
+  city: 'Local Preview',
+  intent: 'serious_relationship',
+  tags: ['Local', 'Mock Auth'],
+  bio: 'Local development mock account used when Firebase sign-in is unavailable.',
+};
+
 const DEMO_MATCHES: Match[] = [
   {
     id: 'demo-match-1',
@@ -109,22 +126,25 @@ const AppContext = createContext<AppState | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isDemoMode = isPrototypeDemoMode();
-  const [user, setUser] = useState<Profile | null>(() => (isDemoMode ? DEMO_USER : null));
-  const [isOnboarding, setOnboarding] = useState(!isDemoMode);
+  const [isLocalMockAuth, setIsLocalMockAuth] = useState(() => hasLocalMockAuthSession());
+  const isLocalOnlyMode = isDemoMode || isLocalMockAuth;
+  const localUser = isDemoMode ? DEMO_USER : LOCAL_DEV_USER;
+  const [user, setUser] = useState<Profile | null>(() => (isLocalOnlyMode ? localUser : null));
+  const [isOnboarding, setOnboarding] = useState(!isLocalOnlyMode);
   const [language, setLanguage] = useState<'en' | 'he'>('en');
-  const [isAgeVerified, setIsAgeVerified] = useState(isDemoMode);
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isDemoMode);
-  const [loading, setLoading] = useState(!isDemoMode);
+  const [isAgeVerified, setIsAgeVerified] = useState(isLocalOnlyMode);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isLocalOnlyMode);
+  const [loading, setLoading] = useState(!isLocalOnlyMode);
   const [preferences, setPreferencesState] = useState<DiscoveryPreferences>(DEFAULT_PREFERENCES);
   const [tasteProfile, setTasteProfileState] = useState(EMPTY_TASTE_PROFILE);
   const [tasteState, setTasteStateRaw] = useState<TasteState>(() => emptyTasteState());
-  const [isPremium, setIsPremium] = useState(isDemoMode);
+  const [isPremium, setIsPremium] = useState(isLocalOnlyMode);
 
   const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
     setTasteStateRaw(prev => {
       const next = applyEvent(cloneTasteState(prev), ev);
       // Defer Firestore write out of the render cycle
-      if (!isDemoMode && uid) {
+      if (!isLocalOnlyMode && uid) {
         setTimeout(() => {
           setDoc(doc(db, `users/${uid}/private/taste_state`), serializeTasteState(next))
             .catch((e: unknown) => console.error('Error saving taste_state:', e));
@@ -133,10 +153,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return next;
     });
   };
-  const [matches, setMatches] = useState<Match[]>(isDemoMode ? DEMO_MATCHES : []);
-  const [conversations, setConversations] = useState<Conversation[]>(isDemoMode ? DEMO_CONVERSATIONS : []);
-  const [dailyPicks, setDailyPicks] = useState<Profile[]>(isDemoMode ? MOCK_PROFILES.slice(0, 2) : []);
-  const [exploreProfiles, setExploreProfiles] = useState<Profile[]>(isDemoMode ? MOCK_PROFILES : []);
+  const [matches, setMatches] = useState<Match[]>(isLocalOnlyMode ? DEMO_MATCHES : []);
+  const [conversations, setConversations] = useState<Conversation[]>(isLocalOnlyMode ? DEMO_CONVERSATIONS : []);
+  const [dailyPicks, setDailyPicks] = useState<Profile[]>(isLocalOnlyMode ? MOCK_PROFILES.slice(0, 2) : []);
+  const [exploreProfiles, setExploreProfiles] = useState<Profile[]>(isLocalOnlyMode ? MOCK_PROFILES : []);
 
   const [interactions, setInteractions] = useState<{
     likes: string[];
@@ -144,7 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     moreLikeThis: string[];
     lessLikeThis: string[];
   }>(() => {
-    if (isDemoMode) {
+    if (isLocalOnlyMode) {
       return {
         likes: ['Profile with tags: Traditional, History, Beach and observance: traditional', 'Profile with tags: Masorti, Dogs, Foodie and observance: masorti'],
         passes: ['Profile with tags: Secular, Art, Spontaneous and observance: secular'],
@@ -161,8 +181,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    if (isDemoMode) {
-      setUser(DEMO_USER);
+    if (isLocalOnlyMode) {
+      setUser(localUser);
       setOnboarding(false);
       setIsAgeVerified(true);
       setHasAcceptedTerms(true);
@@ -177,6 +197,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        setIsLocalMockAuth(false);
+        setLocalMockAuthSession(false);
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
@@ -297,6 +319,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error('Error fetching user data:', error);
         }
       } else {
+        if (hasLocalMockAuthSession()) {
+          setIsLocalMockAuth(true);
+          setLoading(false);
+          return;
+        }
         setUser(null);
         setOnboarding(true);
       }
@@ -304,11 +331,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => unsubscribe();
-  }, [isDemoMode]);
+  }, [isLocalOnlyMode, localUser]);
 
   const setPreferences = async (prefs: DiscoveryPreferences) => {
     setPreferencesState(prefs);
-    if (isDemoMode || !user) {
+    if (isLocalOnlyMode || !user) {
       return;
     }
 
@@ -322,7 +349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setTasteProfile = async (profile: any) => {
     setTasteProfileState(profile);
-    if (isDemoMode || !user) {
+    if (isLocalOnlyMode || !user) {
       return;
     }
 
@@ -351,7 +378,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       occurredAt: Date.now(),
     });
 
-    if (isDemoMode) {
+    if (isLocalOnlyMode) {
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
       const isMatch = matches.length === 0;
@@ -444,7 +471,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
     setDailyPicks(prev => prev.filter(p => p.id !== profileId));
 
-    if (isDemoMode || !profile) {
+    if (isLocalOnlyMode || !profile) {
       return;
     }
 
@@ -474,7 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       occurredAt: Date.now(),
     });
 
-    if (isDemoMode) {
+    if (isLocalOnlyMode) {
       setTasteProfileState(prev => ({
         ...prev,
         soft_preferences: Array.from(new Set([...(prev.soft_preferences ?? []), ...profile.tags.slice(0, 2)])),
@@ -514,7 +541,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       occurredAt: Date.now(),
     });
 
-    if (isDemoMode) {
+    if (isLocalOnlyMode) {
       setTasteProfileState(prev => ({
         ...prev,
         things_to_avoid: Array.from(new Set([...(prev.things_to_avoid ?? []), ...profile.tags.slice(0, 2)])),
@@ -553,7 +580,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const freshTasteState = emptyTasteState();
     setTasteStateRaw(freshTasteState);
 
-    if (isDemoMode || !user) {
+    if (isLocalOnlyMode || !user) {
       return;
     }
 
@@ -583,7 +610,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : c
     ));
 
-    if (isDemoMode) {
+    if (isLocalOnlyMode) {
       return;
     }
 
@@ -597,7 +624,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const activateLocalMockAuth = () => {
+    setLocalMockAuthSession(true);
+    setIsLocalMockAuth(true);
+    setUser(LOCAL_DEV_USER);
+    setOnboarding(false);
+    setIsAgeVerified(true);
+    setHasAcceptedTerms(true);
+    setIsPremium(true);
+    setMatches(DEMO_MATCHES);
+    setConversations(DEMO_CONVERSATIONS);
+    setDailyPicks(MOCK_PROFILES.slice(0, 2));
+    setExploreProfiles(MOCK_PROFILES);
+    setLoading(false);
+  };
+
+  const signIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (isLocalDevMockAuthEnabled()) {
+        activateLocalMockAuth();
+        return;
+      }
+      throw error;
+    }
+  };
+
   const signOut = async () => {
+    setLocalMockAuthSession(false);
+    setIsLocalMockAuth(false);
     await firebaseSignOut(auth);
     setUser(null);
     setOnboarding(false);
@@ -627,7 +684,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isOnboarding,
       loading,
       isDemoMode,
+      isLocalMockAuth,
       interactions,
+      signIn,
       setLanguage,
       setUser,
       setOnboarding,

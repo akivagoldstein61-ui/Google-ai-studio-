@@ -12,21 +12,9 @@ import {
   ModerationSummarySchema,
 } from "@/ai/schemas";
 
-import { auth } from "@/firebase";
 import { isPrototypeDemoMode } from "@/lib/prototypeMode";
+import { buildJsonAuthHeaders } from './authHeaders';
 import { assertNonEmptyDraft } from './messageCoachInput';
-
-const getHeaders = async () => {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-};
-
 
 const safeApiFetch = async (url: string, bodyObj: any) => {
   if (isPrototypeDemoMode()) {
@@ -34,7 +22,7 @@ const safeApiFetch = async (url: string, bodyObj: any) => {
   }
   const response = await fetch(url, {
     method: "POST",
-    headers: await getHeaders(),
+    headers: await buildJsonAuthHeaders(),
     body: JSON.stringify(bodyObj),
   });
   
