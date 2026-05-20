@@ -4,6 +4,7 @@ import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiService } from '@/services/aiService';
 import { Profile } from '@/types';
+import { isPrototypeDemoMode } from '@/lib/prototypeMode';
 
 interface Props {
   user: Profile;
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate, bothOptedIn }) => {
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(isPrototypeDemoMode());
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

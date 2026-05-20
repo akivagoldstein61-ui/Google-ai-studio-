@@ -122,11 +122,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     passes: string[];
     moreLikeThis: string[];
     lessLikeThis: string[];
-  }>({
-    likes: [],
-    passes: [],
-    moreLikeThis: [],
-    lessLikeThis: []
+  }>(() => {
+    if (isDemoMode) {
+      return {
+        likes: ['Profile with tags: Traditional, History, Beach and observance: traditional', 'Profile with tags: Masorti, Dogs, Foodie and observance: masorti'],
+        passes: ['Profile with tags: Secular, Art, Spontaneous and observance: secular'],
+        moreLikeThis: ['Profile with tags: Introverted, Thoughtful'],
+        lessLikeThis: ['Profile with tags: Extroverted']
+      };
+    }
+    return {
+      likes: [],
+      passes: [],
+      moreLikeThis: [],
+      lessLikeThis: []
+    };
   });
 
   useEffect(() => {

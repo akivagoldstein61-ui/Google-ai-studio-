@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kesher Personality Skills Prototype</title>
+    <title>Kesher VS Code Execution Prototype</title>
     <style>
       :root {
         color-scheme: light;
@@ -15,70 +15,157 @@
         --accent: #126e82;
         --accent-2: #8a5a18;
         --soft: #eef8f9;
+        --danger: #8f2d2d;
+        --danger-soft: #fff1f1;
+        --ok: #1d725a;
+        --ok-soft: #effaf5;
       }
 
       * { box-sizing: border-box; }
       body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--paper); color: var(--ink); }
       header { border-bottom: 1px solid var(--line); background: #ffffff; }
       .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-      .hero { min-height: 320px; display: grid; align-items: center; padding: 56px 0 40px; }
+      .hero { min-height: 360px; display: grid; align-items: center; padding: 56px 0 44px; }
       .eyebrow { margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
-      h1 { max-width: 820px; margin: 0; font-size: clamp(36px, 6vw, 72px); line-height: 0.95; letter-spacing: 0; }
-      .intro { max-width: 760px; margin: 20px 0 0; font-size: 18px; line-height: 1.6; color: var(--muted); }
+      h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 6vw, 72px); line-height: 0.95; letter-spacing: 0; }
+      .intro { max-width: 820px; margin: 20px 0 0; font-size: 18px; line-height: 1.6; color: var(--muted); }
       .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
       .button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--accent); border-radius: 8px; padding: 10px 16px; color: #ffffff; background: var(--accent); font-weight: 800; text-decoration: none; }
       .button.secondary { color: var(--accent); background: #ffffff; }
       main { padding: 28px 0 56px; }
+      section { margin-top: 32px; }
+      .section-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+      .section-head h2 { margin: 0; font-size: 26px; }
+      .section-head p { max-width: 680px; margin: 0; color: var(--muted); line-height: 1.55; }
       .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 28px; }
       .metric { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: var(--panel); }
       .metric strong { display: block; font-size: 28px; line-height: 1; }
       .metric span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
       .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-      .skill { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 18px; }
-      .skill h2 { margin: 0 0 8px; font-size: 20px; letter-spacing: 0; }
-      .skill p { margin: 0; color: var(--muted); line-height: 1.55; }
+      .skill, .card { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 18px; }
+      .skill h3, .card h3 { margin: 0 0 8px; font-size: 20px; letter-spacing: 0; }
+      .skill p, .card p { margin: 0; color: var(--muted); line-height: 1.55; }
       .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
       .tag { border-radius: 999px; padding: 5px 9px; color: var(--accent-2); background: #fff5e6; font-size: 12px; font-weight: 800; }
+      .tag.safe { color: var(--ok); background: var(--ok-soft); }
+      .tag.blocked { color: var(--danger); background: var(--danger-soft); }
       .skill a { display: inline-block; margin-top: 14px; color: var(--accent); font-weight: 800; text-decoration: none; }
       .note { margin-top: 28px; border: 1px solid #b6e1e6; border-radius: 8px; padding: 16px; background: var(--soft); color: #254b54; line-height: 1.5; }
-      @media (max-width: 780px) { .summary, .grid { grid-template-columns: 1fr; } }
+      .warning { border-color: #f0c7c7; background: var(--danger-soft); color: var(--danger); }
+      .timeline { display: grid; gap: 12px; counter-reset: step; }
+      .step { position: relative; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 18px 18px 18px 62px; }
+      .step::before { counter-increment: step; content: counter(step); position: absolute; left: 18px; top: 18px; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: #ffffff; background: var(--accent); font-weight: 900; }
+      .step h3 { margin: 0 0 6px; font-size: 18px; }
+      .step p { margin: 0; color: var(--muted); line-height: 1.55; }
+      .command { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; background: #0f1720; color: #f8fafc; padding: 12px; overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      @media (max-width: 780px) { .summary, .grid, .split { grid-template-columns: 1fr; } .section-head { display: block; } .section-head p { margin-top: 8px; } }
     </style>
   </head>
   <body>
     <header>
       <div class="wrap hero">
         <div>
-          <p class="eyebrow">Kesher prototype asset</p>
-          <h1>Personality feature skills bundle</h1>
-          <p class="intro">A browsable prototype index for the Kesher personality, compatibility, permissioned sharing, private taste, and delivery skills. The archive contains the installable skill folders with their metadata and references.</p>
+          <p class="eyebrow">Kesher execution cockpit</p>
+          <h1>VS Code autonomous implementation plan</h1>
+          <p class="intro">A working prototype index for implementing Kesher safely from VS Code with ChatGPT and Codex assistance. The plan uses the Visual Studio research dossier as a compass, but the implementation path stays repo-first, GitHub-reviewed, privacy-forward, and free of deterministic personality claims.</p>
           <div class="actions">
             <a class="button" href="/downloads/kesher-personality-skills.zip" download>Download skills zip</a>
-            <a class="button secondary" href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills">View on GitHub</a>
+            <a class="button secondary" href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills">View skills on GitHub</a>
+            <a class="button secondary" href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/pulls">Open pull requests</a>
           </div>
         </div>
       </div>
     </header>
     <main>
       <div class="wrap">
-        <section class="summary" aria-label="Bundle summary">
-          <div class="metric"><strong>10</strong><span>canonical personality skills</span></div>
-          <div class="metric"><strong>29K</strong><span>downloadable zip bundle</span></div>
-          <div class="metric"><strong>8</strong><span>focused reference docs</span></div>
-          <div class="metric"><strong>1</strong><span>plugin delivery map</span></div>
+        <section class="summary" aria-label="Implementation summary">
+          <div class="metric"><strong>6</strong><span>first PRs to stabilize the prototype</span></div>
+          <div class="metric"><strong>0</strong><span>public personality scores allowed</span></div>
+          <div class="metric"><strong>1</strong><span>GitHub-reviewed source of truth</span></div>
+          <div class="metric"><strong>∞</strong><span>agent energy, bounded by tests</span></div>
         </section>
-        <section class="grid" aria-label="Skills">
-          <article class="skill"><h2>kesher-personality-research</h2><p>Evidence-tagged grounding for personality, compatibility, sharing, trust copy, and research claims.</p><div class="tags"><span class="tag">research</span><span class="tag">claims</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-research">Open folder</a></article>
-          <article class="skill"><h2>kesher-bfas-assessment</h2><p>Deterministic BFAS assessment scoring, consent copy, reset/delete behavior, and non-clinical framing.</p><div class="tags"><span class="tag">assessment</span><span class="tag">scoring</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-bfas-assessment">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-profile</h2><p>Private personality profile interpretation, Hebrew-first insight cards, schema validation, and fallbacks.</p><div class="tags"><span class="tag">profile</span><span class="tag">Gemini</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-profile">Open folder</a></article>
-          <article class="skill"><h2>kesher-compatibility-reflection</h2><p>Mutual-consent pair reflection with whitelisted inputs and no score, destiny, or verdict language.</p><div class="tags"><span class="tag">consent</span><span class="tag">reflection</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-compatibility-reflection">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-visibility</h2><p>Public, private, mutual-consent, and system-only visibility rules for personality-derived data.</p><div class="tags"><span class="tag">privacy</span><span class="tag">visibility</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-visibility">Open folder</a></article>
-          <article class="skill"><h2>kesher-permissioned-sharing</h2><p>Previewable share cards with recipient, scope, expiry, revoke, audit copy, and access control guardrails.</p><div class="tags"><span class="tag">sharing</span><span class="tag">revoke</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-permissioned-sharing">Open folder</a></article>
-          <article class="skill"><h2>kesher-private-taste</h2><p>Owner-only taste learning for personality-aware recommendations, consent, reset semantics, and no-leak explanations.</p><div class="tags"><span class="tag">taste</span><span class="tag">recommendations</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-taste">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-why-match</h2><p>Safe "Why This Match" explanations using visible signals, uncertainty notes, and leakage prevention.</p><div class="tags"><span class="tag">explanations</span><span class="tag">safety</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-why-match">Open folder</a></article>
-          <article class="skill"><h2>kesher-pacing-coach</h2><p>Anti-burnout nudges using coarse session signals, dismissible UX, and non-manipulative copy.</p><div class="tags"><span class="tag">pacing</span><span class="tag">wellbeing</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-pacing-coach">Open folder</a></article>
-          <article class="skill"><h2>kesher-personality-delivery</h2><p>Verification, browser testing, GitHub, Vercel, CI, review, and platform delivery guidance.</p><div class="tags"><span class="tag">delivery</span><span class="tag">plugins</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-delivery">Open folder</a></article>
+
+        <section aria-labelledby="execution-lanes-title">
+          <div class="section-head">
+            <h2 id="execution-lanes-title">Execution lanes</h2>
+            <p>Build the useful, safe dating core now. Keep personality interpretation as a gated research track until licensing, privacy, validation, and provider-governance gates are closed.</p>
+          </div>
+          <div class="split">
+            <article class="card">
+              <h3>Build now</h3>
+              <p>Implement explicit preferences, finite Daily Picks, whitelisted Why This Match, Trust Hub truthfulness, export/reset/delete, consent ledger, provenance, and CI gates.</p>
+              <div class="tags"><span class="tag safe">ship path</span><span class="tag safe">reviewable</span><span class="tag safe">low creep</span></div>
+            </article>
+            <article class="card">
+              <h3>Keep blocked</h3>
+              <p>Freeze public personality visibility, compatibility verdicts, raw score bars, pseudo-percentiles, BFAS/BFI branding, hidden personality ranking, and autonomous AI messaging.</p>
+              <div class="tags"><span class="tag blocked">blocked</span><span class="tag blocked">privacy risk</span><span class="tag blocked">overclaim risk</span></div>
+            </article>
+          </div>
         </section>
-        <p class="note">Duplicate local folders named <code>skills 2</code> and <code>skills 3</code> are intentionally excluded from the prototype because they mirror the canonical skill folders listed above.</p>
+
+        <section aria-labelledby="pr-plan-title">
+          <div class="section-head">
+            <h2 id="pr-plan-title">First autonomous PR sequence</h2>
+            <p>Each PR is small enough for ChatGPT or Codex to implement inside VS Code, but guarded by human review and CI before merge.</p>
+          </div>
+          <div class="timeline">
+            <article class="step">
+              <h3>Freeze risky personality surfaces</h3>
+              <p>Make onboarding complete without personality, remove personality data from public user records, remove public personality visibility, and disable compatibility reflection by default.</p>
+              <div class="command">npm run typecheck && npm run scan:forbidden-fields && npm run scan:logs</div>
+            </article>
+            <article class="step">
+              <h3>Remove pseudo-scientific language</h3>
+              <p>Replace BFAS and percentile wording with instrument-neutral, lab-only reflection language. Remove exact percentage bars and “better matches” claims.</p>
+              <div class="command">grep -RIn "BFAS\|BFI-2\|percentile\|% compatible\|soulmate\|perfect match\|better matches" src server docs || true</div>
+            </article>
+            <article class="step">
+              <h3>Make consent server-authoritative</h3>
+              <p>Add real backend routes for export, reset, delete, visibility, grants, revoke, share-card creation, and share-card revocation. Never trust client booleans for mutual consent.</p>
+              <div class="command">npm run typecheck && npm test && npm run scan:logs</div>
+            </article>
+            <article class="step">
+              <h3>Build Why This Match provenance</h3>
+              <p>Render signals used, signals not used, uncertainty, and source chips. Explanations may use only visible or explicitly permissioned facts.</p>
+              <div class="command">npm run test:schemas && npm run redteam:personality && npm run test:e2e</div>
+            </article>
+            <article class="step">
+              <h3>Add provider policy routing</h3>
+              <p>Encode which providers and endpoints may process each data class. Block sensitive personality data from prototype auth, unsafe logs, grounding tools, and ambiguous retention paths.</p>
+              <div class="command">npm run test:provider-policy && npm run test:ai-routes</div>
+            </article>
+            <article class="step">
+              <h3>Replace scaffold tests with live gates</h3>
+              <p>Make red-team, schema, scoring, and forbidden-claim scripts import the real implementation. CI should fail on drift, leakage, or banned language.</p>
+              <div class="command">npm test && npm run test:schemas && npm run redteam:personality && npm run scan:forbidden-fields</div>
+            </article>
+          </div>
+        </section>
+
+        <section aria-labelledby="skills-title">
+          <div class="section-head">
+            <h2 id="skills-title">Canonical skill folders</h2>
+            <p>These folders remain useful as installable implementation memory, but the product copy below avoids presenting blocked personality work as launch-ready.</p>
+          </div>
+          <section class="grid" aria-label="Skills">
+            <article class="skill"><h3>kesher-personality-research</h3><p>Evidence-tagged grounding for personality, compatibility, sharing, trust copy, and research claims.</p><div class="tags"><span class="tag">research</span><span class="tag">claims</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-research">Open folder</a></article>
+            <article class="skill"><h3>kesher-bfas-assessment</h3><p>Lab-only assessment scaffolding for optional reflection. Not a production compatibility engine, public score, or launch-approved psychometric claim.</p><div class="tags"><span class="tag blocked">lab only</span><span class="tag">assessment</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-bfas-assessment">Open folder</a></article>
+            <article class="skill"><h3>kesher-personality-profile</h3><p>Private profile interpretation patterns for self-owned insight cards, schema validation, Hebrew-first copy, and safe fallbacks.</p><div class="tags"><span class="tag">profile</span><span class="tag">private</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-profile">Open folder</a></article>
+            <article class="skill"><h3>kesher-compatibility-reflection</h3><p>Blocked for production until server-stored mutual consent, preview, revocation, validation, and no-score language are enforced end to end.</p><div class="tags"><span class="tag blocked">blocked</span><span class="tag">reflection</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-compatibility-reflection">Open folder</a></article>
+            <article class="skill"><h3>kesher-personality-visibility</h3><p>Private-by-default visibility rules. Public generated personality visibility is not part of the launch-safe path.</p><div class="tags"><span class="tag">privacy</span><span class="tag blocked">no public scores</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-visibility">Open folder</a></article>
+            <article class="skill"><h3>kesher-permissioned-sharing</h3><p>Previewable, recipient-scoped share cards with scope, expiry, revoke, audit copy, and access-control guardrails.</p><div class="tags"><span class="tag safe">sharing</span><span class="tag safe">revoke</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-permissioned-sharing">Open folder</a></article>
+            <article class="skill"><h3>kesher-private-taste</h3><p>Owner-only taste learning for recommendations, consent, reset semantics, and no-leak explanations.</p><div class="tags"><span class="tag">taste</span><span class="tag">recommendations</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-taste">Open folder</a></article>
+            <article class="skill"><h3>kesher-personality-why-match</h3><p>Safe Why This Match explanations using visible signals, uncertainty notes, provenance, and leakage prevention.</p><div class="tags"><span class="tag safe">explanations</span><span class="tag safe">safety</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-why-match">Open folder</a></article>
+            <article class="skill"><h3>kesher-pacing-coach</h3><p>Anti-burnout nudges using coarse session signals, dismissible UX, and non-manipulative copy.</p><div class="tags"><span class="tag">pacing</span><span class="tag">wellbeing</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-pacing-coach">Open folder</a></article>
+            <article class="skill"><h3>kesher-personality-delivery</h3><p>VS Code, GitHub, Vercel, CI, review, browser testing, and platform delivery guidance.</p><div class="tags"><span class="tag safe">delivery</span><span class="tag safe">plugins</span></div><a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-delivery">Open folder</a></article>
+          </section>
+        </section>
+
+        <p class="note">VS Code is the cockpit, GitHub is the source of truth, and CI is the velvet-rope guard. ChatGPT and Codex may propose and edit, but protected branches, deployment approvals, and sensitive-data boundaries stay review-gated.</p>
+        <p class="note warning">Launch rule: do not present personality as production-ready until rights, Israeli privacy counsel, provider governance, validation, red-team leakage tests, and end-to-end data rights are complete.</p>
       </div>
     </main>
   </body>
