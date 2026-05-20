@@ -20,6 +20,7 @@ import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
+import { PersonalityPrototypeScreen } from './features/prototype/PersonalityPrototypeScreen';
 import { SkillsRouter } from './features/skills';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
@@ -288,6 +289,9 @@ export default function App() {
     const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
     if (pathname === '/prototype' || pathname === '/status') {
       return <PrototypeScreen />;
+    }
+    if (pathname === '/prototype/personality') {
+      return <PersonalityPrototypeScreen />;
     }
     if (pathname === '/skills-hub') {
       return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;

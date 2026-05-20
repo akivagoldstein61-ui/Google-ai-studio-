@@ -62,7 +62,7 @@ export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack
           </div>
           <p className="text-xs text-amber-800 leading-relaxed">
             OCEAN-domain views on BFAS scores, plus a three-layer observance model.
-            Compatibility output is <strong>qualitative reflection only</strong> — no numeric compatibility score
+            Pair output is <strong>qualitative reflection only</strong> — no numeric fit rating
             is ever shown to users.
           </p>
         </section>
@@ -93,7 +93,7 @@ export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack
 
         {/* Reflection output */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Compatibility Reflection (A ↔ B)</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Pair Reflection (A ↔ B)</h2>
           <p className="text-[9px] text-[#8C7E6E] italic">
             Bands: harmony |Δ| ≤ 12 · growth 12–35 · friction |Δ| ≥ 35. No single % ever exposed.
           </p>

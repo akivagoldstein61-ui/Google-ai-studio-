@@ -1,199 +1,220 @@
 # Kesher Skills Reference
 
-This document is a concise reference for all 10 Kesher skills. It can be pasted as a **context document** in Google AI Studio alongside the system prompt, or used as a quick-reference card during development.
+This document is a concise reference for all 35 Kesher skills. It can be pasted as a context document in Google AI Studio, used in the Vercel prototype review, or shared with implementation agents.
 
----
+## Skill 1 — google-ai-studio-app-builder
 
-## Skill 1 — Personality Assessment (`kesher-personality-assessment`)
+**Source:** `skills/google-ai-studio-app-builder/SKILL.md`
 
-**Canonical Codex skill:** `kesher-bfas-assessment`
+Build, deploy, and harden full-stack AI applications using Google AI Studio. Use when prototyping with Build mode, designing prompt-to-code apps, integrating Firebase AI Logic, deploying to Cloud Run, or following the 7-day hardening plan from prototype to MVP.
 
-**Purpose:** Administer and score a public-domain Big Five personality instrument (BFAS or IPIP-NEO) in a trust-forward, consent-gated, progressive flow.
+## Skill 2 — kesher-ai-feature-modules
 
-**Key Decisions:**
+**Source:** `skills/kesher-ai-feature-modules/SKILL.md`
 
-| Decision | Rule |
-|---|---|
-| Instrument | BFAS (100 items) or IPIP-NEO — public domain only |
-| Scoring | Deterministic (mean of aspect items; reverse: 6 - raw) |
-| LLM role | Language generation only — never scoring |
-| Placement | Settings/Insights — never first-run onboarding |
-| Quality gate | Run 5 checks before scoring; flag → "reflection unavailable" |
-| Language | Probabilistic ("tends to", "may") — never deterministic |
+All 11 AI feature modules for the Kesher dating app. Use when implementing, evaluating, or deploying a specific feature module such as bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, or personality coaching.
 
-**Go/No-Go:** Omega ≥ .80 per domain before reflection cards go live.
+## Skill 3 — kesher-ai-governance
 
----
+**Source:** `skills/kesher-ai-governance/SKILL.md`
 
-## Skill 2 — Consent UX (`kesher-consent-ux`)
+Implement Kesher AI feature allocation, system boundaries, registry governance, model routing, human-in-the-loop triggers, and safety policy enforcement. Use when changing AI feature registry entries, model route choices, trust hub copy, policy checks, or governance docs.
 
-**Canonical Codex skill:** `kesher-consent-ux`
+## Skill 4 — kesher-bfas-assessment
 
-**Purpose:** Design all consent interactions to meet Israeli Section 11 requirements and EU dark-pattern-free standards.
+**Source:** `skills/kesher-bfas-assessment/SKILL.md`
 
-**Section 11 Checklist (every consent screen):**
-- Voluntariness statement
-- Purpose statement
-- Controller identity
-- Recipients list
-- Refusal consequence
-- Rights disclosure
-- AI disclosure (if applicable)
+Implement and review Kesher's opt-in English IPIP-BFAS 100 / Big Five Aspects assessment prototype, deterministic scoring, answer handling, consent copy, reset/delete behavior, and non-clinical dating-style framing. Use when changing PersonalityAssessment, personality score types, onboarding assessment flows, prototype scoring, persistence for answers or bands, or tests for BFAS scoring and assessment privacy.
 
-**Trust Hub (required settings screen):** Assessment status + reset, active shares + revoke, AI usage toggle (default OFF), data export/delete, consent history log.
+## Skill 5 — kesher-calm-ux
 
-**Anti-dark-pattern rules:** All toggles default OFF. Revocation ≤ granting effort. No bundled consent. No confirm-shaming.
+**Source:** `skills/kesher-calm-ux/SKILL.md`
 
----
+Design premium calm UX for the Kesher dating app. Use when designing screens, user flows, onboarding, profile builders, matching interfaces, safety tools, Hebrew-first RTL layouts, accessibility standards, and anti-casino dating mechanics.
 
-## Skill 3 — Permissioned Sharing (`kesher-permissioned-sharing`)
+## Skill 6 — kesher-compatibility-reflection
 
-**Canonical Codex skill:** `kesher-permissioned-sharing`
+**Source:** `skills/kesher-compatibility-reflection/SKILL.md`
 
-**Purpose:** Allow users to voluntarily share personality cards with specific matches under explicit, previewed, revocable consent.
+Implement and review Kesher's mutual-consent compatibility reflection engine, pair insight schemas, consent gates, whitelisted shared inputs, and no-score safety validation. Use when changing compatibility-reflection API routes, PairInsightReportSchema, compatibility prompts, match-sheet reflection UI, consent checks, or tests for forbidden compatibility language.
 
-**Card Types:** Basic (domain-level) → Deeper (domain + aspect) → Mutual Reflection (bilateral).
+## Skill 7 — kesher-consent-ux
 
-**Flow:** Generate → Preview → Select recipient → Confirm → Recipient notified → Revocable anytime.
+**Source:** `skills/kesher-consent-ux/SKILL.md`
 
-**Never include in cards:** Raw item responses, numeric scores, percentiles, population comparisons, attachment labels, clinical terms, private taste data.
+Design and review Kesher consent UX for personality, AI, sharing, private taste, and Trust Hub flows. Use when changing consent gates, sensitive toggles, grants/revocation copy, consent history, onboarding or settings consent surfaces, or anti-dark-pattern behavior.
 
----
+## Skill 8 — kesher-dark-pattern-audit
 
-## Skill 4 — AI Runtime Governance (`kesher-ai-runtime-governance`)
+**Source:** `skills/kesher-dark-pattern-audit/SKILL.md`
 
-**Canonical Codex skill:** `kesher-ai-governance`
+Audit Kesher consent, privacy, personality, premium, onboarding, and sharing UI for dark patterns and coercive mechanics. Use when reviewing sensitive toggles, consent flows, revocation, account deletion, premium boundaries, or discovery pacing.
 
-**Purpose:** Route AI calls to the correct provider and enforce zero-data-retention (ZDR) for sensitive personality data.
+## Skill 9 — kesher-explainable-ai
 
-**Routing Matrix:**
+**Source:** `skills/kesher-explainable-ai/SKILL.md`
 
-| Feature | Provider | Reason |
-|---|---|---|
-| Personality reflection | Vertex AI | ZDR required |
-| Compatibility reflection | Vertex AI | ZDR required |
-| Share card generation | Vertex AI | ZDR required |
-| Date planning | Firebase AI Logic | Non-sensitive |
-| Why This Match (public) | Firebase AI Logic | Non-sensitive |
-| Conversation starters | Firebase AI Logic | Non-sensitive |
+Implement Kesher trust language, explanation provenance, and transparency for AI recommendations. Use when generating safe explanations, source chips, signal allowlists, fallback templates, or management controls for why-match and recommendation surfaces.
 
-**Critical:** Never use free-tier Gemini API for personality data. All personality feature flags default OFF.
+## Skill 10 — kesher-filtering-marketplace
 
----
+**Source:** `skills/kesher-filtering-marketplace/SKILL.md`
 
-## Skill 5 — Privacy-Preserving Recommendation (`kesher-privacy-recommendation`)
+Implement Kesher filtering grammar, discovery marketplace mechanics, reciprocal recommendation ordering, Daily Picks versus Explore distinctions, hard and soft filters, exposure fairness, and anti-starvation safeguards.
 
-**Canonical Codex skill:** `kesher-private-recommendations`
+## Skill 11 — kesher-gemini-integration
 
-**Purpose:** Deliver personalized recommendations without leaking personality data to other users or using it without consent.
+**Source:** `skills/kesher-gemini-integration/SKILL.md`
 
-**Three Layers:**
+Integrate Gemini AI into Kesher with structured outputs, function calling, grounding, system instructions, server-side proxy architecture, trust-preserving interaction patterns, and safe fallback behavior.
 
-| Layer | Signals | Personality |
-|---|---|---|
-| 1 — Silent | Explicit profile signals | Never |
-| 2 — Safe explanation | Whitelisted public signals | Never |
-| 3 — Permissioned | Consented personality | Only after validation |
+## Skill 12 — kesher-grounded-search
 
-**Layer 3 is blocked** until all 7 psychometric validation phases pass.
+**Source:** `skills/kesher-grounded-search/SKILL.md`
 
----
+Use Google Search grounding in Kesher for cited safety Q&A, event discovery, curated URL context, source rendering, and freshness-sensitive prototype flows without turning search into people-finding or background-check tooling.
 
-## Skill 6 — Why This Match (`kesher-why-this-match`)
+## Skill 13 — kesher-high-thinking-routing
 
-**Canonical Codex skill:** `kesher-personality-why-match`
+**Source:** `skills/kesher-high-thinking-routing/SKILL.md`
 
-**Purpose:** Generate honest, provenance-labeled match explanations using only whitelisted, user-visible signals.
+Route Kesher Gemini thinking-mode work. Use when deciding when to enable high-thinking controls, configuring thinking budgets, designing fast-plus-thinking patterns, or planning A/B tests for reasoning-heavy AI features.
 
-**Allowed signals:** Shared values, relationship intent, observance/lifestyle (both displayed), location proximity (coarse), shared interests, age alignment, personality card (if shared).
+## Skill 14 — kesher-image-analysis
 
-**Source chips (required):** "From your profile" / "From their profile" / "Shared with you" / "You both listed".
+**Source:** `skills/kesher-image-analysis/SKILL.md`
 
-**Max 3 items.** Generic fallback if no overlap. No compatibility scores, no "AI thinks", no destiny language.
+Implement trust-forward image analysis for Kesher photo readiness, accessibility alt text, moderation assistance, appeal support, tiered human review, and protected-trait/attractiveness safety boundaries.
 
----
+## Skill 15 — kesher-israeli-privacy
 
-## Skill 7 — Israeli Privacy Compliance (`kesher-israeli-privacy`)
+**Source:** `skills/kesher-israeli-privacy/SKILL.md`
 
-**Canonical Codex skill:** `kesher-israeli-privacy`
+Review Kesher implementation choices against Israeli privacy-sensitive data guardrails for personality, observance, relationship intent, compatibility reflection, AI inference, export, correction, deletion, and transfer-abroad risk. Use for implementation review only, not legal advice.
 
-**Purpose:** Ensure all personality and sensitive data handling complies with Israel's Privacy Protection Law (Amendment 13) and PPA guidance.
+## Skill 16 — kesher-learned-taste
 
-**Special-sensitivity data:** Personality scores, observance, orientation, relationship intent, compatibility reflections, precise location.
+**Source:** `skills/kesher-learned-taste/SKILL.md`
 
-**User rights:** Section 13 (access/export), Section 14 (correction/deletion). Provide Export and Delete buttons in Trust Hub.
+Implement Kesher implicit and explicit preference learning, taste profiles, event capture, taste weights, and hybrid on-device/server recommendation architecture while preserving privacy and user controls.
 
-**DPO:** Appoint before 100K opted-in personality users.
+## Skill 17 — kesher-low-latency-ai
 
-**Transfer abroad:** Execute DPA with Vertex AI / Google Cloud before any personality data leaves Israel.
+**Source:** `skills/kesher-low-latency-ai/SKILL.md`
 
----
+Design server-side AI proxy architecture for low-latency Kesher responses. Use when implementing model routing matrices, latency targets, streaming patterns, feature registry routing, and policy-aware AI request handling.
 
-## Skill 8 — Psychometric Validation (`kesher-psychometric-validation`)
+## Skill 18 — kesher-maps-date-planner
 
-**Canonical Codex skill:** `kesher-psychometric-validation`
+**Source:** `skills/kesher-maps-date-planner/SKILL.md`
 
-**Purpose:** Ensure the personality instrument is reliable, valid, and fair before using scores in any product feature.
+Build Google Maps-grounded Kesher date planning with venue suggestions, fairness previews, observance-aware scheduling, safe-venue defaults, accessibility-conscious planning, citation UI, and user-reviewed sending.
 
-**7-Phase Pipeline:**
+## Skill 19 — kesher-pacing-coach
 
-| Phase | Requirement | Gate |
-|---|---|---|
-| 1. Adaptation lab | Cognitive interviews, translation | All items pass |
-| 2. Alpha study | Omega ≥ .80 domains, ≥ .70 facets | ESEM structure confirmed |
-| 3. Test-retest | Domain retest ≥ .75, drift < .20 SD | Stable |
-| 4. Response quality | <10% flagged sessions | Acceptable |
-| 5. Invariance | ΔCFI < .01, ΔRMSEA < .015 | Cross-group valid |
-| 6. Incremental validity | Personality adds value over explicit baseline | Replicated |
-| 7. Harm testing | No harm measure > control by 0.3 SD | Safe |
+**Source:** `skills/kesher-pacing-coach/SKILL.md`
 
-**Personality in ranking is BLOCKED until all 7 phases pass.**
+Implement and review Kesher's anti-burnout pacing coach, including swipe/session signals, gentle dismissible interventions, PacingInterventionSchema, prompt safety, and non-manipulative UX. Use when changing pacing_coach registry entries, pacing-intervention routes, discovery session tracking, or break/reflection UI.
 
----
+## Skill 20 — kesher-permissioned-sharing
 
-## Skill 9 — Compatibility Reflection (`kesher-compatibility-reflection`)
+**Source:** `skills/kesher-permissioned-sharing/SKILL.md`
 
-**Canonical Codex skill:** `kesher-compatibility-reflection`
+Implement and review Kesher's permissioned personality sharing flows: previewable share cards, recipient/scope selection, expiry, revoke, audit copy, and mutual-consent disclosure. Use when building personality share-card UI, share/revoke APIs, privacy settings, trust hub controls, or data models for temporary personality access.
 
-**Purpose:** Help two mutually consenting users reflect on their personality overlap through conversation-starting lenses — not predictions.
+## Skill 21 — kesher-personality-delivery
 
-**Prerequisites:** Both users have shared a basic card with each other AND both explicitly consented to mutual reflection.
+**Source:** `skills/kesher-personality-delivery/SKILL.md`
 
-**Lenses (max 3):** Values Alignment, Communication, Friction Forecast, Growth Edge.
+Coordinate implementation, verification, review, CI, deployment, and platform parity for Kesher personality features using the appropriate repo, browser, CI, review, deploy, database, and native-app plugins. Use after or during personality feature work when planning tasks, running checks, opening browser flows, preparing GitHub/CircleCI/CodeRabbit review, or considering Netlify/Vercel/Cloudflare/Neon/Expo/iOS/macOS delivery.
 
-**Prohibited:** Compatibility scores, soulmate/destiny language, prediction of success/failure, one-sided advice.
+## Skill 22 — kesher-personality-engine
 
-**Revocation:** Either user revoking their card or consent → reflection disappears for both.
+**Source:** `skills/kesher-personality-engine/SKILL.md`
 
----
+Implement Kesher personality measurement, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five or BFAS-style structures without deterministic fit claims.
 
-## Skill 10 — Dark Pattern Audit (`kesher-dark-pattern-audit`)
+## Skill 23 — kesher-personality-ocean
 
-**Canonical Codex skill:** `kesher-dark-pattern-audit`
+**Source:** `skills/kesher-personality-ocean/SKILL.md`
 
-**Purpose:** Audit all consent and personality UX against the EU six-category dark pattern taxonomy and comprehension standards.
+Implement Kesher OCEAN/Big Five personality reflection with Jewish observance context and Hebrew-first localization. Use when generating culturally aware reflection cards, consent-scoped discovery experiments, or non-deterministic personality interpretation.
 
-**Six Prohibited Categories:** Overloading, Skipping, Stirring, Obstructing, Fickle, Left in the Dark.
+## Skill 24 — kesher-personality-profile
 
-**Comprehension standard:** ≥80% of users correctly answer all 5 standard questions about any consent action.
+**Source:** `skills/kesher-personality-profile/SKILL.md`
 
-**Regret standard (24-hour follow-up):** ≥90% recall, ≥85% would repeat, <15% surprised, mean pressure ≤2.0/5.0.
+Implement and review Kesher's private personality profile interpreter, including Gemini structured output, Hebrew-first insight cards, fallback rendering, provenance, and user controls. Use when changing personality-profile routes, PersonalityProfileScreen, PersonalitySummarySchema, personality prompts, output validators, or AI Trust Hub copy for personality insights.
 
-**Premium rules:** Core matching never degraded. Reflection available to all. No premium-gated compatibility scores (scores are prohibited entirely).
+## Skill 25 — kesher-personality-research
 
----
+**Source:** `skills/kesher-personality-research/SKILL.md`
 
-## Quick Reference: What Is Always Forbidden
+Convert Kesher personality PDF dossiers and research findings into implementable, evidence-labeled product and engineering guidance. Use when grounding Kesher BFAS/Big Five measurement, instrument licensing, Hebrew feasibility, Israeli privacy, consent, visibility, permissioned sharing, Gemini/Vertex runtime governance, validation gates, repository delivery, or trust-forward personality feature decisions from the PDF corpus.
 
-| Request | Reason | Skill |
-|---|---|---|
-| Compatibility score or % | Reflective, not predictive | 9 |
-| Personality in ranking without validation | 7 phases not complete | 8 |
-| Private taste shown to another user | Owner-only | 5 |
-| Pre-checked consent toggle | All toggles default OFF | 2 |
-| Free-tier Gemini for personality data | ZDR required | 4 |
-| Infer personality from photos or behavior | Explicit opt-in only | 1 |
-| Raw scores in AI prompts | Use enum bands instead | 4 |
-| Cross-user score comparison without invariance | Phase 5 not complete | 8 |
-| "Soulmate", "perfect match", "destiny" | Prohibited language | 6, 9 |
-| Personality-based push notification segmentation | Israeli privacy law | 7 |
+## Skill 26 — kesher-personality-visibility
+
+**Source:** `skills/kesher-personality-visibility/SKILL.md`
+
+Design and implement Kesher's personality visibility model across browse, profile, match, settings, and chat surfaces. Use when deciding what personality-derived data can appear publicly, privately, or after mutual consent; when changing profile cards, ProfileDetail, DailyPicks, AITrustHub, PrivateTasteProfile, Settings, or visibility copy.
+
+## Skill 27 — kesher-personality-why-match
+
+**Source:** `skills/kesher-personality-why-match/SKILL.md`
+
+Implement and review personality-safe "Why This Match" explanations for Kesher using whitelisted visible signals, structured Gemini output, uncertainty notes, and leakage prevention. Use when changing explain-match routes, WhyThisMatchPayloadSchema, output validators, DailyPicks/ProfileCard explanation UI, or reason-code generation for personality-aware recommendations.
+
+## Skill 28 — kesher-privacy-preserving-recommendation
+
+**Source:** `skills/kesher-privacy-preserving-recommendation/SKILL.md`
+
+Implement Kesher recommendation architecture with silent personalization, safe explanations, permissioned personality boundaries, anti-leakage controls, and release gates before any personality-informed ordering.
+
+## Skill 29 — kesher-private-recommendations
+
+**Source:** `skills/kesher-private-recommendations/SKILL.md`
+
+Implement Kesher permissioned sharing, private taste profiles, privacy-preserving recommendations, staged disclosure, consent flows, and sensitive-data exclusion schemas without leaking private recommender state.
+
+## Skill 30 — kesher-private-taste
+
+**Source:** `skills/kesher-private-taste/SKILL.md`
+
+Implement and review Kesher's owner-only private taste learning for personality-aware recommendations, including consent, event minimization, editable/resettable taste profile UI, recommender inputs, and no-leak explanations. Use when changing taste_profile routes, PrivateTasteProfile, recommendation feedback, more/less-like-this controls, taste schemas, or private recommendation copy.
+
+## Skill 31 — kesher-psychometric-validation
+
+**Source:** `skills/kesher-psychometric-validation/SKILL.md`
+
+Gate Kesher personality assessment, scoring, interpretation, ranking, and compatibility claims through psychometric validation requirements. Use when changing assessment items, scoring, Hebrew/English adaptation, reliability claims, invariance, ranking use, or release readiness.
+
+## Skill 32 — kesher-system-prompt
+
+**Source:** `skills/kesher-system-prompt/SKILL.md`
+
+Use the Kesher OS strategic framework for deep research, product evaluation, architecture design, execution planning, run modes, evaluation rubrics, product principles, platform role assignments, and connector design.
+
+## Skill 33 — kesher-voice-integration
+
+**Source:** `skills/kesher-voice-integration/SKILL.md`
+
+Implement Kesher voice features with push-to-talk Gemini Live sessions, ephemeral token authentication, transcript visibility, accessibility support, and no emotional companion or auto-send behavior.
+
+## Skill 34 — sparkmatch-dating-app-skill
+
+**Source:** `skills/sparkmatch-dating-app-skill/SKILL.md`
+
+Reference dating-app architecture skill for comparing Kesher prototype decisions against swipe-flow, real-time chat, matching, moderation, and subscription patterns without importing hot-or-not mechanics.
+
+## Skill 35 — video-generator
+
+**Source:** `skills/video-generator/SKILL.md`
+
+Create shareable Kesher prototype walkthrough videos, stakeholder demos, cinematic explainers, and review assets while preserving privacy, consent, and no-impersonation boundaries.
+
+
+## Global Safety Contract
+
+- Use reflection, tendencies, possible strengths/friction, and uncertainty-aware copy.
+- Do not use public rankings, public exact values, hidden fit meters, certainty claims, or production activation from the prototype.
+- Keep English IPIP-BFAS scoring prototype-only; Hebrew validation remains pending.

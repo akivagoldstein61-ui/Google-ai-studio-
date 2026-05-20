@@ -18,6 +18,7 @@ export type InstrumentType =
   | "none"
   | "bfas"
   | "bfi2"
+  | "ipip_bfas_100"
   | "ipip300"
   | "custom_research_only";
 

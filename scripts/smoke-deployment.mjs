@@ -11,7 +11,9 @@ if (!baseUrl) {
 
 const rootUrl = new URL('/', baseUrl).toString();
 const prototypeUrl = new URL('/prototype', baseUrl).toString();
+const personalityPrototypeUrl = new URL('/prototype/personality', baseUrl).toString();
 const skillsHubUrl = new URL('/skills-hub', baseUrl).toString();
+const staticSkillsUrl = new URL('/prototype/skills.html', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
 const dailyUrl = new URL('/daily', baseUrl).toString();
 const versionUrl = new URL('/__version', baseUrl).toString();
@@ -89,6 +91,7 @@ function getLocalSourceVisibilityText(pageText) {
   const paths = [
     'src/App.tsx',
     'src/features/prototype/PrototypeScreen.tsx',
+    'src/features/prototype/PersonalityPrototypeScreen.tsx',
     'src/features/skills/SkillsHub.tsx',
   ];
   return paths
@@ -176,37 +179,69 @@ async function runBrowserChecks(checks) {
         visibleCards: cards.length,
         plannedCards: cards.filter((card) => card.querySelector('[data-skill-status="planned"]')).length,
         prototypeCards: cards.filter((card) => card.querySelector('[data-skill-status="prototype"]')).length,
+        cardTitles: cards.map((card) => card.querySelector('h3')?.textContent?.trim() || '').filter(Boolean),
+        hasLegacyFallbackCopy: /coming soon|implementation is coming soon/i.test(document.body.innerText),
       };
     });
 
     if (!skillsState.headingVisible) {
       throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
     }
-    if (skillsState.declaredCount === 0 || skillsState.visibleCards !== skillsState.declaredCount) {
+    if (skillsState.declaredCount !== 35 || skillsState.visibleCards !== 35) {
       throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
     }
-    checks.push(`/skills-hub browser rendered ${skillsState.visibleCards} skill cards (${skillsState.prototypeCards} prototype, ${skillsState.plannedCards} planned)`);
+    if (skillsState.plannedCards !== 0 || skillsState.prototypeCards !== 35) {
+      throw new Error(`/skills-hub status mismatch: ${skillsState.prototypeCards} prototype, ${skillsState.plannedCards} planned`);
+    }
+    if (skillsState.hasLegacyFallbackCopy) {
+      throw new Error('/skills-hub exposed legacy coming-soon fallback copy');
+    }
+    checks.push('/skills-hub browser rendered 35 clickable prototype cards');
 
-    await page.evaluate(() => {
-      const card = Array.from(document.querySelectorAll('main section.grid > button'))
-        .find((button) => button.textContent?.includes('Personality Assessment'));
-      card?.click();
-    });
-    await page.waitForFunction(() => document.body.innerText.toLowerCase().includes('interactive demo'), { timeout: 15000 });
-    checks.push('implemented skill page opened');
-
-    await page.goto(skillsHubUrl, { waitUntil: 'load', timeout: 30000 });
-    await page.evaluate(() => {
-      const card = Array.from(document.querySelectorAll('main section.grid > button'))
-        .find((button) => button.textContent?.toLowerCase().includes('planned'));
-      card?.click();
-    });
-    await page.waitForFunction(() => document.body.innerText.includes('interactive prototype') || document.body.innerText.includes('implementation is coming soon'), { timeout: 15000 });
-    checks.push('planned skill page opened');
+    for (const [index, title] of skillsState.cardTitles.entries()) {
+      await page.evaluate((cardIndex) => {
+        const cards = Array.from(document.querySelectorAll('main section.grid > button'));
+        cards[cardIndex]?.click();
+      }, index);
+      await page.waitForFunction((expectedTitle) => {
+        const header = document.querySelector('header h1')?.textContent || '';
+        return header.includes(expectedTitle);
+      }, { timeout: 15000 }, title);
+      const pageState = await page.evaluate(() => ({
+        hasLegacyFallbackCopy: /coming soon|implementation is coming soon/i.test(document.body.innerText),
+      }));
+      if (pageState.hasLegacyFallbackCopy) {
+        throw new Error(`Skill page for "${title}" exposed legacy coming-soon fallback copy`);
+      }
+      await page.evaluate(() => {
+        const backButton = document.querySelector('header button');
+        if (backButton instanceof HTMLButtonElement) backButton.click();
+      });
+      await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
+    }
+    checks.push('all 35 skills opened as prototype experiences');
 
     await page.goto(prototypeUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="prototype-personality-link"]', { timeout: 15000 });
     checks.push('/prototype browser rendered skills hub link');
+
+    await page.goto(personalityPrototypeUrl, { waitUntil: 'load', timeout: 30000 });
+    await page.waitForSelector('[data-testid="personality-prototype-screen"]', { timeout: 15000 });
+    await page.click('[data-testid="load-sample-responses"]');
+    await page.waitForSelector('[data-testid="private-reflection-output"]', { timeout: 15000 });
+    await page.click('[data-testid="create-share-card"]');
+    await page.waitForSelector('[data-testid="share-card-created"]', { timeout: 15000 });
+    await page.click('[data-testid="open-mutual-reflection"]');
+    await page.waitForSelector('[data-testid="mutual-reflection-output"]', { timeout: 15000 });
+    const personalityCopySafe = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return !/compatibility score|soulmate|marriage probability|destiny|personality-based ranking/i.test(text);
+    });
+    if (!personalityCopySafe) {
+      throw new Error('/prototype/personality exposed banned score or destiny language');
+    }
+    checks.push('/prototype/personality browser flow verified');
   } finally {
     await browser.close();
   }
@@ -221,8 +256,18 @@ async function runBrowserChecks(checks) {
   const prototype = await fetchText(prototypeUrl);
   checks.push(`/prototype reachable (${prototype.response.status})`);
 
+  const personalityPrototype = await fetchText(personalityPrototypeUrl);
+  checks.push(`/prototype/personality reachable (${personalityPrototype.response.status})`);
+
   const skillsHub = await fetchText(skillsHubUrl);
   checks.push(`/skills-hub reachable without auth redirect (${skillsHub.response.status})`);
+
+  const staticSkills = await fetchText(staticSkillsUrl);
+  const staticSkillCards = (staticSkills.text.match(/class="skill"/g) || []).length;
+  if (staticSkillCards !== 35 || !staticSkills.text.includes('/prototype/personality')) {
+    throw new Error(`/prototype/skills.html rendered ${staticSkillCards} static skill cards`);
+  }
+  checks.push('/prototype/skills.html static bundle exposes 35 skills');
 
   const demo = await fetchText(demoUrl);
   checks.push(`/demo?demo=1 reachable (${demo.response.status})`);
@@ -266,6 +311,9 @@ async function runBrowserChecks(checks) {
   const { bundleText, visibilityText } = await getVisibilityText(prototype.text);
   if (!visibilityText.includes('/skills-hub') || !visibilityText.includes('Kesher Skills Hub')) {
     throw new Error('/prototype client bundle does not expose the visible Kesher Skills Hub link');
+  }
+  if (!visibilityText.includes('/prototype/personality') || !visibilityText.includes('IPIP-BFAS 100')) {
+    throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
   if (!visibilityText.includes('Integrated Skill Modules')) {
     throw new Error('/skills-hub client bundle does not expose the skills hub surface');

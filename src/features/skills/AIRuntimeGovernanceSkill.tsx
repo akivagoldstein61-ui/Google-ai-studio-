@@ -15,7 +15,7 @@ const PROHIBITED_PATTERNS = [
   { pattern: 'Free-tier AI Studio for personality', alternative: 'Vertex AI paid tier' },
   { pattern: 'Raw scores in AI prompts', alternative: 'Pass as structured enum bands' },
   { pattern: 'Personality in ranking without consent', alternative: 'Keep personality out of ranking' },
-  { pattern: 'Auto-generated compatibility scores', alternative: 'Interaction-pattern reflections only' },
+  { pattern: 'Auto-generated numeric fit ratings', alternative: 'Interaction-pattern reflections only' },
   { pattern: 'Hidden personality inference from behavior', alternative: 'Explicit opt-in assessment only' },
   { pattern: 'Cross-user score comparison', alternative: 'Individual reflection only' },
   { pattern: 'Personality data in analytics pipeline', alternative: 'Separate research-safe schema' },
