@@ -2,7 +2,7 @@ import { gateway } from '@ai-sdk/gateway'
 import { streamText } from 'ai'
 
 if (!process.env.VERCEL_OIDC_TOKEN) {
-  console.error('Missing VERCEL_OIDC_TOKEN. Run `vc env pull .env.local` before running this script.')
+  console.error('Missing VERCEL_OIDC_TOKEN. Run `vc env pull .env.local` or `npx vercel env pull .env.local` before running this script.')
   process.exit(1)
 }
 
