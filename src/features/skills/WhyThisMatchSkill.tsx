@@ -1,5 +1,126 @@
-import React from 'react';
-import { ChevronLeft, Eye, Check, X, Tag } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, Eye, Check, X, Tag, Sparkles, Loader2, ShieldCheck } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
+
+const SIGNAL_LABEL: Record<string, string> = {
+  visible_values: 'Shared values',
+  visible_intent: 'Visible intent',
+  visible_observance: 'Visible observance',
+  visible_lifestyle: 'Visible lifestyle',
+  visible_interests: 'Visible interests',
+  visible_prompts: 'Profile prompts',
+  self_declared_profile_fields: 'Public profile fields',
+  private_taste_profile: 'Private taste',
+  hidden_dealbreakers: 'Hidden dealbreakers',
+  hidden_ranking_signals: 'Hidden ranking',
+  raw_personality_scores: 'Raw scores',
+  private_messages: 'Private messages',
+  exact_location: 'Exact location',
+  protected_trait_inference: 'Sensitive inferences',
+};
+
+const visibleFields = (p: any) => ({
+  age: p?.age,
+  city: p?.city,
+  observance: p?.observance,
+  intent: p?.intent,
+  tags: Array.isArray(p?.tags) ? p.tags.slice(0, 12) : [],
+  prompts: Array.isArray(p?.prompts) ? p.prompts.slice(0, 4) : [],
+});
+
+/**
+ * LIVE: runs the real /api/ai/explain-match route against the signed-in user
+ * and one of their actual daily picks, using only whitelisted visible signals.
+ */
+const LiveWhyMatch: React.FC = () => {
+  const { user, dailyPicks, trackEvent } = useApp();
+  const candidate = dailyPicks?.[0];
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+
+  const run = async () => {
+    if (!user || !candidate) return;
+    setLoading(true);
+    setAttempted(true);
+    try {
+      const explanation = await aiService.explainMatch({
+        user_profile: visibleFields(user),
+        candidate_profile: visibleFields(candidate),
+        signals: ['visible_values', 'visible_intent', 'visible_observance', 'visible_interests', 'visible_prompts'],
+      });
+      setResult(explanation);
+      trackEvent?.('skill_completed', { skillId: 'why-this-match', hasResult: !!explanation });
+    } catch {
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]">
+          <Sparkles size={16} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Live explanation</span>
+        </div>
+
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to generate a real "why this match" explanation.</p>
+        ) : !candidate ? (
+          <p className="text-sm text-white/70 italic">Load your Daily Picks first — then we can explain a real candidate.</p>
+        ) : loading ? (
+          <div className="flex items-center gap-3 text-white/70"><Loader2 size={18} className="animate-spin text-[#D4AF37]" /><span className="text-sm italic">Generating from visible signals…</span></div>
+        ) : result ? (
+          <div className="space-y-4">
+            <p className="text-[11px] text-white/50 uppercase tracking-widest">You + {candidate.displayName}</p>
+            <ul className="space-y-2" dir="rtl">
+              {(result.reasons_he ?? []).map((r: string, i: number) => (
+                <li key={i} className="text-sm text-white/90 italic font-serif flex gap-2"><span className="text-[#D4AF37]">•</span><span>{r}</span></li>
+              ))}
+            </ul>
+            {result.first_question_he && (
+              <div className="pt-3 border-t border-white/10" dir="rtl">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Suggested opener</p>
+                <p className="text-sm text-[#D4AF37] italic font-serif">"{result.first_question_he}"</p>
+              </div>
+            )}
+            {(result.signals_used?.length || result.signals_not_used?.length) && (
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                {result.signals_used?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.signals_used.map((s: string) => (
+                      <span key={s} className="px-2 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/25 text-[9px] font-bold text-[#D4AF37]">{SIGNAL_LABEL[s] ?? s}</span>
+                    ))}
+                  </div>
+                )}
+                {result.signals_not_used?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.signals_not_used.map((s: string) => (
+                      <span key={s} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold text-white/50 line-through">{SIGNAL_LABEL[s] ?? s}</span>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[9px] text-white/40 italic">Built from visible signals only — never private taste, raw scores, messages, or location.</p>
+              </div>
+            )}
+            <button onClick={run} className="text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white">Regenerate</button>
+          </div>
+        ) : attempted ? (
+          <div className="space-y-2"><p className="text-sm text-amber-200/90 italic">Explanation unavailable right now — we don't invent reasons. Try again.</p><button onClick={run} className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">Try again</button></div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-white/70 italic leading-relaxed flex items-center gap-2"><ShieldCheck size={14} className="text-[#D4AF37]" /> Generate a real explanation for you and {candidate.displayName}.</p>
+            <button onClick={run} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px]">Explain this match</button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const SOURCE_CHIPS = [
   { label: 'From your profile', meaning: 'Signal from viewing user\'s public fields', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -47,6 +168,9 @@ export const WhyThisMatchSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real explanation for the signed-in user */}
+        <LiveWhyMatch />
+
         {/* Live Demo */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Interactive Demo</h2>
