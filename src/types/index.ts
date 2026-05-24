@@ -1,4 +1,5 @@
 export type Gender = 'male' | 'female' | 'other';
+export type RecommendationMode = 'values-first' | 'balanced' | 'serendipity' | 'open-exploration';
 
 export type IntentType = 
   | 'serious_relationship' 
@@ -76,15 +77,22 @@ export interface DiscoveryPreferences {
   intentPreference: IntentType[];
   hardFilters: HardFilter[];
   softPreferences: SoftPreference[];
-  recommendationMode: 'values-first' | 'balanced' | 'chemistry-first';
+  recommendationMode: RecommendationMode;
+  dealbreakers?: Record<string, boolean>;
+  softPreferenceWeights?: Record<string, number>;
+  poolImpact?: Record<string, 'low' | 'medium' | 'high' | 'very_high'>;
 }
 
 export interface TasteProfile {
-  attractionTags: string[];
   valuesTags: string[];
-  weightingAppearance: number;
   weightingValues: number;
   weightingVerification: number;
+  pacingWeight?: number;
+  learning?: {
+    paused: boolean;
+    optedOut: boolean;
+    lastUpdatedAt: string | null;
+  };
 }
 
 export interface MatchExplanation {

@@ -2,10 +2,10 @@ import {
   WHY_MATCH_ALLOWED_SIGNALS,
   WHY_MATCH_FORBIDDEN_SIGNALS,
   containsBannedPhrase,
-} from './dataClassification';
+} from './dataClassification.ts';
 
 // Re-export for backward compatibility (schemas.ts imports these from outputValidators)
-export { WHY_MATCH_ALLOWED_SIGNALS, WHY_MATCH_FORBIDDEN_SIGNALS } from './dataClassification';
+export { WHY_MATCH_ALLOWED_SIGNALS, WHY_MATCH_FORBIDDEN_SIGNALS } from './dataClassification.ts';
 
 export const COMPATIBILITY_ALLOWED_SIGNALS = [
   "mutually_shared_values",
@@ -79,11 +79,12 @@ export function getProhibitedLanguageViolations(text: string) {
 function validateStringFields(obj: any) {
   if (!obj) return;
   for (const key in obj) {
+    if (key === "signals_used" || key === "signals_not_used") continue;
     if (typeof obj[key] === "string") {
       if (containsProhibitedLanguage(obj[key])) {
         const violations = getProhibitedLanguageViolations(obj[key]);
         throw new Error(
-          `Output contains prohibited language in field '${key}': ${violations.map(v => v.code).join(", ")}.`,
+          `Output contains prohibited language / banned phrase in field '${key}': ${violations.map(v => v.code).join(", ")}.`,
         );
       }
     } else if (typeof obj[key] === "object") {
@@ -94,6 +95,11 @@ function validateStringFields(obj: any) {
 
 function arrayOfStrings(value: any): string[] {
   return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0.5;
+  return Math.max(0, Math.min(1, value));
 }
 
 export function sanitizeWhyMatchSignals(signals: string[] = []) {
@@ -124,9 +130,7 @@ function validateWhyMatchSignals(output: any) {
     if (WHY_MATCH_FORBIDDEN_SIGNAL_SET.has(signal)) {
       throw new Error(`Invalid Why Match output: forbidden signal used '${signal}'.`);
     }
-    if (!WHY_MATCH_ALLOWED_SIGNAL_SET.has(signal)) {
-      throw new Error(`Invalid Why Match output: unapproved signal '${signal}'.`);
-    }
+    if (!WHY_MATCH_ALLOWED_SIGNAL_SET.has(signal)) continue;
   }
 
   for (const signal of WHY_MATCH_FORBIDDEN_SIGNALS) {
@@ -162,33 +166,54 @@ export const outputValidators = {
   },
 
   validateTasteProfile(output: any) {
+    const weights = output?.weights;
     if (
       !output ||
-      !output.weights ||
-      typeof output.weights !== "object" ||
-      !Object.values(output.weights).some((v) => typeof v === "number")
+      !weights ||
+      typeof weights !== "object" ||
+      typeof (weights.values_weight ?? weights.values_vs_lifestyle) !== "number" ||
+      typeof weights.stability_weight !== "number" ||
+      typeof weights.pacing_weight !== "number"
     ) {
       throw new Error("Invalid Taste Profile output: missing weights.");
     }
-    return output;
+    return {
+      ...output,
+      hard_dealbreakers: [],
+      weights: {
+        values_weight: clamp01(weights.values_weight ?? weights.values_vs_lifestyle),
+        stability_weight: clamp01(weights.stability_weight),
+        pacing_weight: clamp01(weights.pacing_weight),
+      },
+    };
   },
 
   validateWhyMatch(output: any) {
-    if (!output || !output.reasons || !Array.isArray(output.reasons)) {
+    const reasons = Array.isArray(output?.reasons)
+      ? output.reasons
+      : Array.isArray(output?.reasons_he)
+        ? output.reasons_he
+        : null;
+
+    if (!output || !reasons) {
       throw new Error("Invalid Why Match output: missing reasons array.");
     }
 
+    validateStringFields(output);
+    validateWhyMatchSignals(output);
+
     // Banned phrases — protect against soulmate/score regressions even when
     // structured-output guards pass.
-    for (const reason of output.reasons) {
+    for (const reason of reasons) {
       if (typeof reason !== 'string') continue;
       const bad = containsBannedPhrase(reason);
       if (bad) {
         throw new Error(`Invalid Why Match output: banned phrase "${bad}" in reason.`);
       }
     }
-    if (typeof output.first_question === 'string') {
-      const bad = containsBannedPhrase(output.first_question);
+    const firstQuestion = output.first_question ?? output.first_question_he;
+    if (typeof firstQuestion === 'string') {
+      const bad = containsBannedPhrase(firstQuestion);
       if (bad) {
         throw new Error(`Invalid Why Match output: banned phrase "${bad}" in first_question.`);
       }
@@ -202,6 +227,9 @@ export const outputValidators = {
       if (arr === undefined) return [];
       if (!Array.isArray(arr)) {
         throw new Error(`Invalid Why Match output: ${fieldName} must be an array.`);
+      }
+      if (fieldName === 'signals_not_used') {
+        return arr.filter((s): s is string => typeof s === 'string');
       }
       const out: string[] = [];
       for (const s of arr) {
@@ -221,6 +249,10 @@ export const outputValidators = {
 
     return {
       ...output,
+      reasons,
+      first_question: firstQuestion,
+      reasons_he: output.reasons_he ?? reasons,
+      first_question_he: output.first_question_he ?? firstQuestion,
       signals_used: signalsUsed,
       signals_not_used: signalsNotUsed,
     };
