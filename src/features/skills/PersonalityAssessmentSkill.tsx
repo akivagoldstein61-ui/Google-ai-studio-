@@ -1,6 +1,74 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Brain, Check, AlertTriangle, Play, Pause } from 'lucide-react';
+import { ChevronLeft, Brain, Check, AlertTriangle, Play, Pause, Sparkles, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { PersonalityAssessment, SCORING_VERSION } from '@/components/onboarding/PersonalityAssessment';
+
+const DOMAIN_ORDER = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'];
+
+/**
+ * LIVE: runs the real, versioned 20-item BFAS/IPIP assessment used in
+ * onboarding (deterministic scoring, no LLM) and shows the computed 0–100
+ * domain approximations. This is the actual instrument, not a mock.
+ */
+const LiveAssessment: React.FC = () => {
+  const [scores, setScores] = useState<Record<string, number> | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
+
+  if (scores) {
+    return (
+      <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+        <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[#D4AF37]">
+              <Check size={16} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Your deterministic result</span>
+            </div>
+            <button onClick={() => { setScores(null); setVersion(null); }} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white">
+              <RotateCcw size={12} /> Retake
+            </button>
+          </div>
+          <div className="space-y-2.5">
+            {DOMAIN_ORDER.filter((d) => typeof scores[d] === 'number').map((d) => (
+              <div key={d} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-white/90">{d}</span>
+                  <span className="text-[10px] text-white/50 font-mono">{scores[d]}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${Math.max(0, Math.min(100, scores[d]))}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-white/40 italic">
+            Scored deterministically (no AI) · {version ?? SCORING_VERSION}. Approximate display values, not validated
+            percentiles. Raw answers stay private — only derived bands are ever sent to AI features.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-white border border-[#F3EFEA] rounded-[28px] p-6 space-y-4 shadow-sm">
+      <div className="flex items-center gap-2 text-[#C8956B]">
+        <Sparkles size={16} />
+        <span className="text-[10px] font-bold uppercase tracking-widest">Try the real assessment</span>
+      </div>
+      <p className="text-xs text-[#6B5E52] leading-relaxed italic">
+        This is the same opt-in, versioned 20-item instrument used in onboarding. Scoring is deterministic — no LLM
+        scores you. Reverse-keyed items are handled, and your raw answers never leave your private store.
+      </p>
+      <PersonalityAssessment
+        onComplete={(s, meta) => {
+          setScores(s);
+          setVersion(meta?.scoringVersion ?? SCORING_VERSION);
+        }}
+      />
+    </section>
+  );
+};
 
 const SAMPLE_ITEMS = [
   { id: 'E1', text: 'I am the life of the party', domain: 'Extraversion', aspect: 'Enthusiasm', reversed: false },
@@ -69,6 +137,9 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: run the real assessment */}
+        <LiveAssessment />
+
         {/* Instrument Selection */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Instrument Selection</h2>

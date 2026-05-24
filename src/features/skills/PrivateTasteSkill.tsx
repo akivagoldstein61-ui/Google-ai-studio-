@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Fingerprint, Check, X, ToggleLeft, ToggleRight, RotateCcw, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Fingerprint, Check, X, ToggleLeft, ToggleRight, RotateCcw, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
 
 const SAMPLE_TASTE_PROFILE = [
   { signal: 'Serious relationship intent', weight: 'strong', source: 'explicit', direction: 'toward' },
@@ -28,6 +30,160 @@ const EXPLANATION_RULES = [
   { rule: 'Never infer or display protected trait preferences', correct: 'Remove protected-trait fields from taste schema entirely' },
   { rule: 'Never show other users any taste data', correct: 'Taste is strictly owner-only, never surfaced to others' },
 ];
+
+const Chips: React.FC<{ label: string; items?: string[]; tone: 'toward' | 'away' }> = ({ label, items, tone }) => {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((it) => (
+          <span
+            key={it}
+            className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
+              tone === 'away'
+                ? 'bg-red-50 text-red-700 border-red-100'
+                : 'bg-green-50 text-green-700 border-green-100'
+            }`}
+          >
+            {it}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * LIVE taste model — only after explicit consent. Builds the owner-only taste
+ * profile from the user's REAL interaction signals via /api/ai/taste-profile.
+ * Honors this skill's own contract: category-level summaries only, no raw
+ * weight vectors exposed, never any protected-trait fields.
+ */
+const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
+  const { user, interactions, tasteProfile, resetTasteProfile, trackEvent } = useApp();
+  const [model, setModel] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+
+  const counts = {
+    likes: interactions?.likes?.length ?? 0,
+    passes: interactions?.passes?.length ?? 0,
+    more: interactions?.moreLikeThis?.length ?? 0,
+    less: interactions?.lessLikeThis?.length ?? 0,
+  };
+  const signalCount = counts.likes + counts.passes + counts.more + counts.less;
+
+  const build = async () => {
+    setLoading(true);
+    setAttempted(true);
+    try {
+      const result = await aiService.analyzeTasteProfile(interactions, tasteProfile);
+      setModel(result);
+      trackEvent?.('skill_taste_model_built', { hasResult: !!result, signalCount });
+    } catch {
+      setModel(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    resetTasteProfile?.();
+    setModel(null);
+    setAttempted(false);
+  };
+
+  if (!enabled) {
+    return (
+      <section className="bg-white border border-dashed border-[#E5E0DB] rounded-[24px] p-6">
+        <div className="flex items-center gap-2 text-[#8C7E6E]">
+          <Sparkles size={16} />
+          <p className="text-xs italic">Enable personalization above to build and view your live taste model.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]">
+          <Sparkles size={16} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Your live taste model</span>
+        </div>
+
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to build your private taste model.</p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { k: 'Likes', v: counts.likes },
+                { k: 'Passes', v: counts.passes },
+                { k: 'More-like-this', v: counts.more },
+                { k: 'Less-like-this', v: counts.less },
+              ].map((s) => (
+                <span key={s.k} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/70">
+                  {s.k}: <span className="text-[#D4AF37]">{s.v}</span>
+                </span>
+              ))}
+            </div>
+
+            {signalCount === 0 ? (
+              <p className="text-sm text-white/70 italic leading-relaxed">
+                Like or pass on a few profiles in Daily Picks first — then build your model from those signals.
+                Message content, location, and protected traits are never used.
+              </p>
+            ) : loading ? (
+              <div className="flex items-center gap-3 text-white/70">
+                <Loader2 size={18} className="animate-spin text-[#D4AF37]" />
+                <span className="text-sm italic">Learning from your signals…</span>
+              </div>
+            ) : model ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <Chips label="Dealbreakers" items={model.hard_dealbreakers} tone="away" />
+                  <Chips label="Leans toward" items={model.soft_preferences} tone="toward" />
+                  <Chips label="Leans away" items={model.things_to_avoid} tone="away" />
+                </div>
+                {model.explanation && (
+                  <p className="text-sm text-white/85 leading-relaxed italic font-serif">{model.explanation}</p>
+                )}
+                <p className="text-[9px] text-white/40 italic">
+                  Category-level summary only — exact weights are never shown, and this is visible to you alone.
+                </p>
+                <div className="flex gap-2">
+                  <Button onClick={build} variant="outline" className="h-9 rounded-full border-white/20 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4">
+                    Rebuild
+                  </Button>
+                  <Button onClick={handleReset} variant="ghost" className="h-9 rounded-full text-white/70 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4 gap-1.5">
+                    <RotateCcw size={12} /> Reset
+                  </Button>
+                </div>
+              </div>
+            ) : attempted ? (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-200/90 italic">Model unavailable right now — we never invent preferences. Try again.</p>
+                <Button onClick={build} variant="outline" className="h-9 rounded-full border-white/20 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4">Try again</Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-white/70 italic leading-relaxed">
+                  Build your owner-only taste model from your {signalCount} captured signal{signalCount === 1 ? '' : 's'}.
+                </p>
+                <Button onClick={build} className="h-11 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] px-5">
+                  Build my taste model
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+};
 
 export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [tasteEnabled, setTasteEnabled] = useState(false);
@@ -127,6 +283,9 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
             </div>
           )}
         </section>
+
+        {/* LIVE: your real taste model */}
+        <LiveTasteModel enabled={tasteEnabled} />
 
         {/* Sample Profile (owner view) */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
