@@ -19,11 +19,14 @@ import { LearnedTasteSkill } from './LearnedTasteSkill';
 import { FilteringMarketplaceSkill } from './FilteringMarketplaceSkill';
 import { PlannedSkillPage } from './PlannedSkillPage';
 
-export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const SkillsRouter: React.FC<{
+  onBack: () => void;
+  onOpenFeature?: (path: string) => void;
+}> = ({ onBack, onOpenFeature }) => {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
 
   if (!activeSkill) {
-    return <SkillsHub onBack={onBack} onSelect={setActiveSkill} />;
+    return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
   }
 
   const skillProps = { onBack: () => setActiveSkill(null) };
@@ -68,7 +71,7 @@ export const SkillsRouter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (meta) {
         return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
       }
-      return <SkillsHub onBack={onBack} onSelect={setActiveSkill} />;
+      return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
     }
   }
 };
