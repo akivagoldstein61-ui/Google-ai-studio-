@@ -98,3 +98,7 @@ Changes requiring explicit human approval before implementation:
 - CI/CD provider/config
 - Premium/monetization features
 - Any edit to `src/ai/policies.ts` safety thresholds
+
+## PR Summary Format
+
+Every PR summary should include: what changed, why it changed, safety/privacy impact, tests run, feature flags or rollout notes, approval required, follow-up work, and rollback notes.
