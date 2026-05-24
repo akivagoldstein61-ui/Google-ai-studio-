@@ -303,7 +303,12 @@ export default function App() {
       return <PersonalityPrototypeScreen />;
     }
     if (pathname === '/skills-hub') {
-      return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
+      // Wrap in AppProvider so deepened skill pages can use useApp() here too.
+      return (
+        <AppProvider>
+          <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />
+        </AppProvider>
+      );
     }
   }
   return (
