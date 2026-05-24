@@ -1,101 +1,47 @@
-import express from 'express';
-import type { Request, Response } from 'express';
+/**
+ * Vercel serverless catch-all that exposes the full Express app at /api/*.
+ *
+ * Why a catch-all instead of one file per route? The existing Express routers
+ * (server/aiRoutes, server/trustRoutes, server/shareRoutes) already share
+ * middleware (auth, rate limit, Firebase Admin init, request shape). Splitting
+ * each route into its own Vercel function file would duplicate that middleware
+ * three ways. A single catch-all is simpler and keeps `npm run dev` (which
+ * boots the same Express app via `tsx server.ts`) behaviour identical to
+ * production.
+ *
+ * The app instance is cached across warm invocations to avoid re-initializing
+ * Firebase Admin and the Gemini client on every request.
+ */
 
-const supportedApiNamespaces = new Set(['ai', 'safety', 'profile', 'account', 'support', 'share']);
-let appPromise: Promise<express.Express> | null = null;
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { createApp } from "../server.ts";
 
-function createApiNotFound(path: string) {
-  return {
-    status: 'not_found',
-    source: 'vercel-api-function',
-    service: 'kesher',
-    path,
-    message: 'This API route is not implemented as a Vercel Function in this prototype deployment.',
-    timestamp: new Date().toISOString(),
-  };
+type ExpressHandler = (req: IncomingMessage, res: ServerResponse) => void;
+
+let cached: Promise<ExpressHandler> | null = null;
+
+function getApp(): Promise<ExpressHandler> {
+  if (cached) return cached;
+  cached = createApp().then((app) => app as unknown as ExpressHandler);
+  return cached;
 }
 
-async function getApp() {
-  if (!appPromise) {
-    appPromise = (async () => {
-      const [{ aiRouter }, { authMiddleware }, { default: trustRoutes }, { default: shareRoutes }] = await Promise.all([
-        import('../server/aiRoutes.ts'),
-        import('../server/authMiddleware.ts'),
-        import('../server/trustRoutes.ts'),
-        import('../server/shareRoutes.ts'),
-      ]);
+// Eagerly warm the cache at cold start so the first request doesn't pay the
+// Firebase Admin init cost on top of network latency.
+void getApp();
 
-      const app = express();
+// Vercel function config — see vercel.json for the matching `functions` block.
+// `runtime: "nodejs"` is required because firebase-admin and @google/genai are
+// Node-only (no edge runtime support).
+export const config = {
+  runtime: "nodejs",
+  maxDuration: 60,
+};
 
-      app.disable('x-powered-by');
-      app.set('trust proxy', 1);
-      app.use(express.json({ limit: '1mb' }));
-
-      app.get('/api/health', (_req, res) => {
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.json({
-          status: 'ok',
-          source: 'vercel-api-function',
-          service: 'kesher',
-          timestamp: new Date().toISOString(),
-        });
-      });
-
-      // Existing server routers, mounted without starting a long-running listener.
-      app.use('/api/ai', authMiddleware, aiRouter);
-      // Mirror server.ts: trustRoutes intentionally exposes the same trust/account/
-      // profile/support action handlers under each public API namespace.
-      app.use('/api/safety', trustRoutes);
-      app.use('/api/profile', trustRoutes);
-      app.use('/api/account', trustRoutes);
-      app.use('/api/support', trustRoutes);
-      app.use('/api/share', shareRoutes);
-
-      app.use('/api', (req, res) => {
-        res.status(404).json(createApiNotFound(req.originalUrl));
-      });
-
-      return app;
-    })();
-  }
-  return appPromise;
-}
-
-function normalizeApiUrlInPlace(request: Request) {
-  const url = typeof request.url === 'string' ? request.url : '';
-  // Direct Vercel Function requests already arrive under /api and can be
-  // handed to the Express routers without reconstructing the path.
-  if (url.startsWith('/api')) return;
-
-  const pathParam = request.query?.path;
-  const path = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
-  const queryStart = url.indexOf('?');
-  const search = queryStart >= 0 ? url.slice(queryStart) : '';
-  const cleanPath = typeof path === 'string' ? path.replace(/^\/+/, '') : '';
-  const normalizedUrl = `/api/${cleanPath}${search}`;
-  try {
-    new URL(normalizedUrl, 'http://localhost');
-  } catch {
-    request.url = '/api';
-    return;
-  }
-  request.url = normalizedUrl;
-}
-
-function getApiNamespace(url: string) {
-  const pathname = url.split('?')[0] ?? '';
-  const [, namespace] = pathname.replace(/^\/+/, '').split('/');
-  return namespace;
-}
-
-export default async function handler(request: Request, response: Response) {
-  normalizeApiUrlInPlace(request);
-  const namespace = getApiNamespace(request.url);
-  if (!namespace || !supportedApiNamespaces.has(namespace)) {
-    response.status(404).json(createApiNotFound(request.url));
-    return;
-  }
-
+export default async function handler(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
   const app = await getApp();
-  return app(request, response);
+  return app(req, res);
 }

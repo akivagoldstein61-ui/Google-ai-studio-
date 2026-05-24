@@ -56,3 +56,9 @@ jobs:
           VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: production
+
+      - name: API smoke check (production)
+        # Confirms /api/* routes are actually mounted on Vercel rather than
+        # falling through to the SPA's index.html (which would return HTML
+        # with status 200 — a silent regression). See scripts/api-smoke.mjs.
+        run: node scripts/api-smoke.mjs https://google-ai-studio-sage-sigma.vercel.app
