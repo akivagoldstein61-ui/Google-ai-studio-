@@ -1,8 +1,6 @@
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import rateLimit from "express-rate-limit";
-import admin from "firebase-admin";
-import fs from "fs";
 import { SYSTEM_INSTRUCTIONS } from "../src/ai/policies.ts";
 import {
   BioCoachSchema,
@@ -102,17 +100,6 @@ const parseAIResponse = (text: string | null | undefined) => {
   }
 };
 
-// Initialize Firebase Admin for auth verification
-const configPath = "./firebase-applet-config.json";
-if (fs.existsSync(configPath)) {
-  const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      projectId: config.projectId,
-    });
-  }
-}
-
 // Safe metadata logging middleware
 const routeMetadataLogger = (
   req: express.Request,
@@ -168,52 +155,9 @@ const routeMetadataLogger = (
   next();
 };
 
-// Auth enforcement middleware
-const requireAuth = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) => {
-  const authMode = process.env.AI_ROUTE_AUTH_MODE || "prototype";
-  
-  if (authMode === "prototype") {
-    // In prototype mode, allow if no token is provided, but verify if parsing is needed
-    // Skip strict rejection to allow rapid testing and build-mode
-    next();
-    return;
-  }
-  
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.warn("AI Route rejected: Missing Authorization header in strict mode.");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const token = authHeader.split("Bearer ")[1];
-
-  try {
-    if (!admin.apps.length) {
-      console.warn("AI Route rejected: Firebase Admin not initialized in strict mode.");
-      return res.status(401).json({ error: "Unauthorized - Server Misc" });
-    }
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    (req as any).user = decodedToken;
-    
-    // TODO: Add App Check token verification here when client fully supports it
-    // const appCheckToken = req.header('X-Firebase-AppCheck');
-    // await admin.appCheck().verifyToken(appCheckToken);
-    
-    next();
-  } catch (error) {
-    console.error("Error verifying auth token:", error);
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
 // Apply middlewares to all AI routes
 aiRouter.use(apiLimiter);
 aiRouter.use(routeMetadataLogger);
-aiRouter.use(requireAuth);
 
 const handleAiError = (error: any, res: express.Response, logMessage: string) => {
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
