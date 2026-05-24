@@ -74,7 +74,11 @@ const TabLayout: React.FC = () => {
   const currentPath = location.pathname as TabPath;
   const activeTab = TAB_MAP[currentPath] || 'daily';
 
-  const setActiveTab = (tab: 'daily' | 'explore' | 'matches' | 'profile') => {
+  const setActiveTab = (tab: 'daily' | 'explore' | 'matches' | 'profile' | 'skills') => {
+    if (tab === 'skills') {
+      navigate('/skills');
+      return;
+    }
     const path = Object.entries(TAB_MAP).find(([, v]) => v === tab)?.[0];
     if (path) navigate(path);
   };
@@ -219,7 +223,12 @@ const TasteProfileRoute: React.FC = () => {
 
 const SkillsRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <SkillsRouter onBack={() => navigate(-1)} />;
+  return (
+    <SkillsRouter
+      onBack={() => navigate('/daily')}
+      onOpenFeature={(path) => navigate(path)}
+    />
+  );
 };
 
 const PersonalityProfileRoute: React.FC = () => {
