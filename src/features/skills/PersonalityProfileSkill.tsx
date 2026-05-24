@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronLeft, FileText, Check, X, AlertTriangle, Download, RotateCcw, Trash2 } from 'lucide-react';
+import { ChevronLeft, FileText, Check, X, AlertTriangle, Download, RotateCcw, Trash2, Sparkles, Loader2, Heart, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
 
 const DOMAIN_CARDS = [
   {
@@ -74,6 +76,129 @@ const FORBIDDEN_AI_INPUTS = [
   'Photos or location data',
 ];
 
+/**
+ * LIVE interactive reflection — runs the real /api/ai/personality-profile route
+ * against the signed-in user's deterministic BFAS scores and renders the warm,
+ * Hebrew-first reflection. Falls back gracefully; never invents content.
+ */
+const LiveReflection: React.FC = () => {
+  const { user, trackEvent } = useApp();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+
+  const scores = user?.personalityScores ?? {};
+  const hasScores = Object.keys(scores).length > 0;
+
+  const generate = async () => {
+    if (!user) return;
+    setLoading(true);
+    setAttempted(true);
+    try {
+      const result = await aiService.getPersonalityProfile(user);
+      setProfile(result);
+      trackEvent?.('skill_personality_profile_generated', { hasResult: !!result });
+    } catch {
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]">
+          <Sparkles size={16} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Your live reflection</span>
+        </div>
+
+        {!user ? (
+          <p className="text-sm text-white/70 italic leading-relaxed">
+            Sign in to generate your private reflection. It is owner-only and never shown to other users.
+          </p>
+        ) : !hasScores ? (
+          <p className="text-sm text-white/70 italic leading-relaxed">
+            Take the optional personality assessment first — then this card turns your scores into a warm,
+            private reflection. Your raw answers never leave your device's private store.
+          </p>
+        ) : !attempted ? (
+          <div className="space-y-3">
+            <p className="text-sm text-white/70 italic leading-relaxed">
+              Generate a private reflection from your assessment. The AI receives only derived percentile bands —
+              never raw answers or exact scores.
+            </p>
+            <Button
+              onClick={generate}
+              className="h-11 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] px-5"
+            >
+              Generate my reflection
+            </Button>
+          </div>
+        ) : loading ? (
+          <div className="flex items-center gap-3 text-white/70">
+            <Loader2 size={18} className="animate-spin text-[#D4AF37]" />
+            <span className="text-sm italic">Generating your private reflection…</span>
+          </div>
+        ) : profile ? (
+          <div className="space-y-5" dir="rtl">
+            {profile.summary_he && (
+              <p className="text-sm text-white/90 leading-relaxed italic font-serif">{profile.summary_he}</p>
+            )}
+            {profile.implication_card && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="rtl">
+                {profile.implication_card.dating_superpower_he && (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[#D4AF37]"><Heart size={13} /><span className="text-[9px] font-bold uppercase tracking-widest">כוח על</span></div>
+                    <p className="text-xs text-white/85 leading-relaxed">{profile.implication_card.dating_superpower_he}</p>
+                  </div>
+                )}
+                {profile.implication_card.growth_area_he && (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-amber-300"><ShieldAlert size={13} /><span className="text-[9px] font-bold uppercase tracking-widest">נקודת צמיחה</span></div>
+                    <p className="text-xs text-white/85 leading-relaxed">{profile.implication_card.growth_area_he}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {Array.isArray(profile.domains) && profile.domains.length > 0 && (
+              <div className="space-y-2.5" dir="rtl">
+                {profile.domains.map((d: any, i: number) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-white/90">{d.domain_name}</span>
+                      <span className="text-[10px] text-white/50 font-mono">{d.percentile}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden" dir="ltr">
+                      <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${Math.max(0, Math.min(100, d.percentile))}%` }} />
+                    </div>
+                    {d.description_he && <p className="text-[11px] text-white/60 leading-relaxed pt-0.5">{d.description_he}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[9px] text-white/40 italic" dir="ltr">Private and editable. Reflects tendencies, not fixed traits.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-amber-200/90 italic leading-relaxed">
+              Reflection unavailable right now (the AI service may be offline). We never invent a profile — please try again.
+            </p>
+            <Button
+              onClick={generate}
+              variant="outline"
+              className="h-10 rounded-full border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] px-5"
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 export const PersonalityProfileSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [expandedCard, setExpandedCard] = useState<string | null>('Extraversion');
 
@@ -95,6 +220,9 @@ export const PersonalityProfileSkill: React.FC<{ onBack: () => void }> = ({ onBa
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: your real reflection */}
+        <LiveReflection />
+
         {/* Purpose */}
         <section className="p-6 bg-teal-50 rounded-[24px] border border-teal-100 space-y-3">
           <div className="flex items-center gap-2 text-teal-700">
