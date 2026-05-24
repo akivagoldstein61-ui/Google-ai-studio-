@@ -68,7 +68,11 @@ export const DailyPicksScreen: React.FC<{
       const fetchExplanation = async () => {
         setLoadingExplanation(true);
         try {
-          const result = await aiService.explainMatch({ user_profile: user, candidate_profile: currentProfile, signals: [] });
+          const result = await aiService.explainMatch({
+            user_profile: user,
+            candidate_profile: currentProfile,
+            signals: ['visible_interests', 'visible_intent', 'visible_observance', 'visible_city'],
+          });
           if (result) {
             setExplanation(result);
           } else {
@@ -216,7 +220,7 @@ export const DailyPicksScreen: React.FC<{
           <h2 className="text-2xl font-serif italic text-[#2D2926]">Daily Picks</h2>
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">
             <Sparkles size={12} />
-            <span>Curated for you</span>
+            <span>Tuned from your goals</span>
           </div>
         </div>
         <div className="px-4 py-1.5 bg-[#F7F2EE] rounded-full text-[10px] font-bold text-[#8C7E6E] uppercase tracking-widest">
@@ -320,7 +324,7 @@ export const DailyPicksScreen: React.FC<{
                     </>
                   ) : (
                     <p className="text-sm text-white/90 leading-relaxed italic font-serif">
-                      Analyzing values alignment...
+                      Preparing explanation...
                     </p>
                   )}
                 </div>

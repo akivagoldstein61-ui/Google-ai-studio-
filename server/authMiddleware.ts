@@ -1,13 +1,12 @@
-import admin from "firebase-admin";
 import type { Request, Response, NextFunction } from "express";
-import firebaseConfig from "../firebase-applet-config.json" with { type: "json" };
+import { admin, ensureFirebaseAdminInitialized } from "./firebaseAdmin.ts";
 
 type DecodedFirebaseToken = {
   uid: string;
   [claim: string]: unknown;
 };
 
-type AuthenticatedRequest = Request & {
+export type AuthenticatedRequest = Request & {
   uid?: string;
   user?: DecodedFirebaseToken;
   authContext?: {
@@ -17,11 +16,7 @@ type AuthenticatedRequest = Request & {
 };
 
 function ensureInitialized() {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId,
-    });
-  }
+  ensureFirebaseAdminInitialized();
 }
 
 function isLocalMockAuthEnabled() {

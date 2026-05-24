@@ -5,6 +5,8 @@
 export type ReligiousObservance = 'secular' | 'traditional' | 'masorti' | 'dati' | 'modern_orthodox' | 'ultra_orthodox';
 export type Intent = 'marriage_minded' | 'serious_relationship' | 'open_to_possibilities';
 export type Gender = 'male' | 'female' | 'non_binary';
+export type RecommendationMode = 'values_first' | 'balanced' | 'serendipity' | 'open_exploration';
+export type TasteProvenance = 'manual' | 'explicit_event' | 'weak_first_party_event' | 'model_suggestion';
 
 export interface Profile {
   id: string;
@@ -33,8 +35,24 @@ export interface DiscoveryPreferences {
   observancePreference: ReligiousObservance[];
   intentPreference: Intent[];
   hardFilters: string[]; // IDs of filters that are strict
-  softPreferences: string[]; // IDs of filters that are biases
-  recommendationMode: 'values_first' | 'balanced' | 'chemistry_first';
+  softPreferences: string[]; // IDs of priorities used for ranking only
+  recommendationMode: RecommendationMode;
+  dealbreakers?: {
+    age?: boolean;
+    distance?: boolean;
+    gender?: boolean;
+    intent?: boolean;
+    observance?: boolean;
+    verified?: boolean;
+  };
+  softPreferenceWeights?: {
+    shared_interests?: number;
+    same_city?: number;
+    similar_observance?: number;
+    values_alignment?: number;
+    pacing_alignment?: number;
+  };
+  poolImpact?: Record<string, 'low' | 'medium' | 'high' | 'very_high'>;
 }
 
 export interface Match {
@@ -71,7 +89,39 @@ export interface TasteProfile {
   weights: {
     values_vs_lifestyle: number; // 0 to 1
     distance_tolerance: number; // 0 to 1
+    values_weight?: number;
+    stability_weight?: number;
+    pacing_weight?: number;
   };
+  learning?: {
+    paused: boolean;
+    optedOut: boolean;
+    lastUpdatedAt: string | null;
+  };
+  provenance?: Record<string, TasteProvenance>;
+  lockedItems?: string[];
+  removedItems?: string[];
+  explanation?: string;
+}
+
+export interface TasteProfileDraft {
+  hard_dealbreakers: string[];
+  soft_preferences: string[];
+  things_to_avoid: string[];
+  weights: {
+    values_weight: number;
+    stability_weight: number;
+    pacing_weight: number;
+  };
+  learning: {
+    paused: boolean;
+    optedOut: boolean;
+    lastUpdatedAt: string | null;
+  };
+  provenance: Record<string, TasteProvenance>;
+  lockedItems: string[];
+  removedItems: string[];
+  explanation: string;
 }
 
 export interface AnalyticsEvent {

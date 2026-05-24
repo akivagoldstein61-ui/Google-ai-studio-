@@ -107,7 +107,7 @@ describe('WhyThisMatch — banned phrase guard', () => {
       reasons: ['You share values', 'This looks like a perfect match'],
       first_question: 'q',
       signals_used: ['interests'],
-      signals_not_used: [],
+      signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
       confidence: 0.5,
       evidence_label: 'HEURISTIC',
     };
@@ -119,7 +119,7 @@ describe('WhyThisMatch — banned phrase guard', () => {
       reasons: ['ok 1', 'ok 2'],
       first_question: 'Want to find your soulmate today?',
       signals_used: [],
-      signals_not_used: [],
+      signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
       confidence: 0.5,
       evidence_label: 'HEURISTIC',
     };
@@ -133,13 +133,13 @@ describe('WhyThisMatch — signals_used / signals_not_used', () => {
       reasons: ['ok', 'ok'],
       first_question: 'q',
       signals_used: ['interests', 'observance'],
-      signals_not_used: ['intent'],
+      signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
       confidence: 0.6,
       evidence_label: 'HEURISTIC',
     };
     const out = outputValidators.validateWhyMatch(valid);
     expect(out.signals_used).toEqual(['interests', 'observance']);
-    expect(out.signals_not_used).toEqual(['intent']);
+    expect(out.signals_not_used).toEqual([...WHY_MATCH_FORBIDDEN_SIGNALS]);
   });
 
   it('rejects output where signals_used contains a forbidden signal', () => {
@@ -159,7 +159,7 @@ describe('WhyThisMatch — signals_used / signals_not_used', () => {
       reasons: ['a', 'b'],
       first_question: 'q',
       signals_used: ['interests', 'something_unknown'],
-      signals_not_used: [],
+      signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
       confidence: 0.5,
       evidence_label: 'HEURISTIC',
     });

@@ -14,6 +14,7 @@
  */
 
 import type {
+  DiscoveryPreferences,
   Profile,
   ReligiousObservance,
   Intent,
@@ -29,13 +30,18 @@ type IntentType = Intent;
 
 export type HardFilterId =
   | 'age_range'
+  | 'age'
   | 'max_distance'
+  | 'distance'
   | 'observance_floor'      // must be at least this observant
   | 'shomer_shabbat'        // must keep Shabbat
   | 'kashrut'               // must keep kosher
   | 'gender'
   | 'intent_alignment'
-  | 'verified_only';
+  | 'intent'
+  | 'observance'
+  | 'verified_only'
+  | 'verified';
 
 export type SoftPreferenceId =
   | 'shared_interests'
@@ -88,8 +94,33 @@ export interface HardFilterContext {
 
 export function violatesHardFilters(
   candidate: Profile,
-  ctx: HardFilterContext
+  ctx: HardFilterContext | DiscoveryPreferences
 ): { violates: true; reason: HardFilterId } | { violates: false } {
+  if (isDiscoveryPreferences(ctx)) {
+    const dealbreakers = ctx.dealbreakers ?? {};
+    if ((dealbreakers.age ?? true) &&
+        (candidate.age < ctx.ageRange[0] || candidate.age > ctx.ageRange[1])) {
+      return { violates: true, reason: 'age' };
+    }
+    if (ctx.genderPreference.length > 0 && !ctx.genderPreference.includes(candidate.gender)) {
+      return { violates: true, reason: 'gender' };
+    }
+    if ((dealbreakers.intent ?? true) &&
+        ctx.intentPreference.length > 0 &&
+        !ctx.intentPreference.includes(candidate.intent)) {
+      return { violates: true, reason: 'intent' };
+    }
+    if ((dealbreakers.observance ?? true) &&
+        ctx.observancePreference.length > 0 &&
+        !ctx.observancePreference.includes(candidate.observance)) {
+      return { violates: true, reason: 'observance' };
+    }
+    if ((dealbreakers.verified ?? ctx.hardFilters.includes('verified')) && !candidate.isVerified) {
+      return { violates: true, reason: 'verified' };
+    }
+    return { violates: false };
+  }
+
   if (ctx.ageRange && (candidate.age < ctx.ageRange[0] || candidate.age > ctx.ageRange[1])) {
     return { violates: true, reason: 'age_range' };
   }
@@ -130,8 +161,9 @@ export function violatesHardFilters(
 export interface DirectionalScoreInput {
   viewer: Profile;
   candidate: Profile;
-  hardCtx: HardFilterContext;
-  softWeights: Partial<Record<SoftPreferenceId, number>>;
+  hardCtx?: HardFilterContext;
+  softWeights?: Partial<Record<SoftPreferenceId, number>>;
+  preferences?: DiscoveryPreferences;
   /** dot product of viewer.tasteVector · candidate.featureVector, range [-1,1] */
   implicitAffinity?: number;
   /** 0..0.2 contextual nudge (both online, same city tonight, etc) */
@@ -150,7 +182,9 @@ export interface DirectionalScore {
 }
 
 export function directionalScore(input: DirectionalScoreInput): DirectionalScore {
-  const hv = violatesHardFilters(input.candidate, input.hardCtx);
+  const hardCtx = input.hardCtx ?? (input.preferences ? discoveryPreferencesToHardCtx(input.preferences) : {});
+  const softWeights = input.softWeights ?? discoveryPreferencesToSoftWeights(input.preferences);
+  const hv = violatesHardFilters(input.candidate, input.preferences ?? hardCtx);
   if (hv.violates) {
     return {
       score: 0,
@@ -166,29 +200,29 @@ export function directionalScore(input: DirectionalScoreInput): DirectionalScore
   let explicitMatchSum = 0;
 
   const sharedInterests = sharedTagsCount(input.viewer.tags, input.candidate.tags);
-  if (input.softWeights.shared_interests && sharedInterests > 0) {
-    const w = input.softWeights.shared_interests;
+  if (softWeights.shared_interests && sharedInterests > 0) {
+    const w = softWeights.shared_interests;
     const v = Math.min(1, sharedInterests / 4);
     explicitMatchSum += w * v;
     explicitWeightSum += w;
     if (sharedInterests >= 2) reasonCodes.push('shared_interests');
   }
-  if (input.softWeights.shared_observance_label &&
+  if (softWeights.shared_observance_label &&
       input.viewer.observance === input.candidate.observance) {
-    const w = input.softWeights.shared_observance_label;
+    const w = softWeights.shared_observance_label;
     explicitMatchSum += w;
     explicitWeightSum += w;
     reasonCodes.push('shared_observance_label');
   }
-  if (input.softWeights.similar_age) {
-    const w = input.softWeights.similar_age;
+  if (softWeights.similar_age) {
+    const w = softWeights.similar_age;
     const ageDelta = Math.abs(input.viewer.age - input.candidate.age);
     const v = Math.max(0, 1 - ageDelta / 12);
     explicitMatchSum += w * v;
     explicitWeightSum += w;
   }
-  if (input.softWeights.same_city && input.viewer.city === input.candidate.city) {
-    const w = input.softWeights.same_city;
+  if (softWeights.same_city && input.viewer.city === input.candidate.city) {
+    const w = softWeights.same_city;
     explicitMatchSum += w;
     explicitWeightSum += w;
   }
@@ -197,7 +231,7 @@ export function directionalScore(input: DirectionalScoreInput): DirectionalScore
   }
 
   const explicitMatch = explicitWeightSum > 0 ? explicitMatchSum / explicitWeightSum : 0;
-  const implicitAffinity = clamp01((input.implicitAffinity ?? 0 + 1) / 2);
+  const implicitAffinity = clamp01(((input.implicitAffinity ?? 0) + 1) / 2);
   const contextBoost = Math.max(0, Math.min(0.2, input.contextBoost ?? 0));
 
   // Per spec: w1 + w2 + w3 weights — keep w3 small per skill doc
@@ -254,6 +288,35 @@ export function adjustedFinalScore(reciprocal: number, fairness: number): number
 function sharedTagsCount(a: string[], b: string[]): number {
   const set = new Set(a.map(t => t.toLowerCase()));
   return b.filter(t => set.has(t.toLowerCase())).length;
+}
+
+function isDiscoveryPreferences(ctx: HardFilterContext | DiscoveryPreferences): ctx is DiscoveryPreferences {
+  return Array.isArray((ctx as DiscoveryPreferences).observancePreference) &&
+    Array.isArray((ctx as DiscoveryPreferences).intentPreference) &&
+    Array.isArray((ctx as DiscoveryPreferences).genderPreference) &&
+    Array.isArray((ctx as DiscoveryPreferences).hardFilters);
+}
+
+function discoveryPreferencesToHardCtx(preferences: DiscoveryPreferences): HardFilterContext {
+  return {
+    ageRange: preferences.ageRange,
+    maxDistanceKm: preferences.maxDistance,
+    genderPreference: preferences.genderPreference,
+    intentPreference: preferences.intentPreference,
+    verifiedOnly: (preferences.dealbreakers?.verified ?? preferences.hardFilters.includes('verified')) || undefined,
+  };
+}
+
+function discoveryPreferencesToSoftWeights(
+  preferences?: DiscoveryPreferences,
+): Partial<Record<SoftPreferenceId, number>> {
+  if (!preferences) return {};
+  return {
+    shared_interests: preferences.softPreferenceWeights?.shared_interests ??
+      (preferences.softPreferences.includes('shared_interests') ? 0.5 : undefined),
+    same_city: preferences.softPreferenceWeights?.same_city,
+    shared_observance_label: preferences.softPreferenceWeights?.similar_observance,
+  };
 }
 
 function clamp01(n: number): number {

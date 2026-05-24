@@ -23,8 +23,8 @@ describe('outputValidators', () => {
 
   describe('validateTasteProfile', () => {
     it('accepts valid output with weights', () => {
-      const input = { weights: { values_vs_lifestyle: 0.7 } };
-      expect(outputValidators.validateTasteProfile(input)).toBe(input);
+      const input = { weights: { values_weight: 0.7, stability_weight: 0.5, pacing_weight: 0.4 } };
+      expect(outputValidators.validateTasteProfile(input).weights.values_weight).toBe(0.7);
     });
 
     it('rejects null output', () => {
@@ -35,14 +35,36 @@ describe('outputValidators', () => {
       expect(() => outputValidators.validateTasteProfile({ score: 5 })).toThrow('missing weights');
     });
 
-    it('rejects output where values_vs_lifestyle is not a number', () => {
-      expect(() => outputValidators.validateTasteProfile({ weights: { values_vs_lifestyle: 'high' } })).toThrow('missing weights');
+    it('rejects output where values_weight is not a number', () => {
+      expect(() => outputValidators.validateTasteProfile({ weights: { values_weight: 'high' } })).toThrow('missing weights');
+    });
+
+    it('drops AI-generated hard dealbreakers', () => {
+      const output = outputValidators.validateTasteProfile({
+        hard_dealbreakers: ['must_like_me'],
+        weights: { values_weight: 0.7, stability_weight: 0.5, pacing_weight: 0.4 },
+      });
+      expect(output.hard_dealbreakers).toEqual([]);
     });
   });
 
   describe('validateWhyMatch', () => {
     it('accepts valid output with reasons array', () => {
-      const input = { reasons: ['Shared values', 'Same city'] };
+      const input = {
+        reasons: ['Shared values', 'Same city'],
+        signals_used: ['visible_values'],
+        signals_not_used: [
+          'private_preferences',
+          'private_taste_profile',
+          'hidden_ranking_weights',
+          'safety_flags',
+          'raw_personality_scores',
+          'behavioral_history',
+          'inferred_protected_traits',
+          'photo_inference',
+          'attractiveness_score',
+        ],
+      };
       const out = outputValidators.validateWhyMatch(input);
       expect(out.reasons).toEqual(input.reasons);
     });

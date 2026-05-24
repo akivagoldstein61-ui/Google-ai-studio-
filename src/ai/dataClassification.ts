@@ -44,6 +44,14 @@ export const WHY_MATCH_ALLOWED_SIGNALS = [
   'age_range',
   'lifestyle_visible',
   'displayed_prompts',
+  'visible_values',
+  'visible_intent',
+  'visible_observance',
+  'visible_interests',
+  'visible_city',
+  'visible_age_range',
+  'visible_lifestyle',
+  'visible_prompts',
 ] as const;
 
 export type WhyMatchSignal = typeof WHY_MATCH_ALLOWED_SIGNALS[number];

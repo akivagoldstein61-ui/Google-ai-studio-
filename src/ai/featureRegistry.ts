@@ -62,7 +62,7 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     requires_citation_ui: false,
     requires_human_confirmation: true,
     risk_level: 'medium',
-    data_inputs: ['likes', 'passes', 'dwell_time'],
+    data_inputs: ['likes', 'passes', 'more_like_this', 'less_like_this'],
     excluded_data: ['messages', 'real_name'],
     data_classes_allowed: [DATA_CLASS.PRIVATE_INFERRED],
     data_classes_forbidden: [DATA_CLASS.SYSTEM_ONLY_SAFETY],

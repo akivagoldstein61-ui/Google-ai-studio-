@@ -14,13 +14,18 @@ import { MOCK_PROFILES } from '@/data/mockProfiles';
 
 const HARD_FILTER_LABELS: Record<HardFilterId, string> = {
   age_range: 'Age range',
+  age: 'Age range',
   max_distance: 'Max distance (km)',
+  distance: 'Distance',
   observance_floor: 'Observance floor',
   shomer_shabbat: 'Shomer Shabbat',
   kashrut: 'Keeps kashrut',
   gender: 'Gender preference',
   intent_alignment: 'Intent alignment',
+  intent: 'Intent alignment',
+  observance: 'Observance',
   verified_only: 'Verified only',
+  verified: 'Verified only',
 };
 
 const SOFT_PREFERENCE_LABELS: Record<SoftPreferenceId, string> = {
