@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Learned Taste"
+  short_description: "Private preference learning controls"
+  default_prompt: "Use $kesher-learned-taste to review Kesher taste events, weights, or recommendation inputs."

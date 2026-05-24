@@ -24,11 +24,19 @@ export function isPrototypeDemoMode(): boolean {
   if (!isBrowserRuntime()) return false;
 
   const url = new URL(window.location.href);
-  return (
+  if (
     url.searchParams.has('demo') ||
     url.pathname === '/demo' ||
     url.pathname.startsWith('/demo/')
-  );
+  ) {
+    return true;
+  }
+
+  // Automatically enable demo mode on any domain that is not authorized for
+  // Firebase Authentication (e.g. GitHub Spark, Codespaces, Netlify branch
+  // previews). This surfaces the full UI prototype without requiring sign-in
+  // or a running backend on any preview URL.
+  return !isCurrentDomainFirebaseAuthorized();
 }
 
 export function getPrototypeDemoUrl(): string {

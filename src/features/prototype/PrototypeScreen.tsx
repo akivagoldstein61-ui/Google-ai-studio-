@@ -1,318 +1,326 @@
-import React from 'react';
-import {
-  AlertTriangle,
-  Brain,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  FlaskConical,
-  GitBranch,
-  LockKeyhole,
-  Settings,
-  Shield,
-  Users,
-  Zap,
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ExternalLink, GitBranch, Globe, Info, Link2, Server, Sparkles } from 'lucide-react';
+import { STABLE_PROTOTYPE_URL } from '@/lib/prototypeMode';
+import { SKILLS } from '@/features/skills';
 
-const COMMIT_SHA: string = import.meta.env.VITE_COMMIT_SHA ?? '';
-const BUILD_TIME: string = import.meta.env.VITE_BUILD_TIME ?? '';
-const PROTOTYPE_URL = 'https://google-ai-studio-kesher.vercel.app';
 const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
+const CI_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/ci.yml/badge.svg`;
+const DEPLOY_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/deploy.yml/badge.svg`;
 
-interface QuickLink {
-  label: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
+const env = import.meta.env;
 
-interface ExecutionItem {
-  label: string;
-  status: 'done' | 'in_progress' | 'blocked';
-  detail: string;
-}
+type ServerBuildFingerprint = {
+  status: string;
+  source: string;
+  generatedAt: string;
+  repository: string;
+  repositoryUrl: string;
+  commitSha: string | null;
+  shortCommitSha: string | null;
+  commitUrl: string | null;
+  branch: string | null;
+  environment: string | null;
+  targetEnvironment: string | null;
+  pullRequestId: string | null;
+  deploymentUrl: string | null;
+  productionUrl: string | null;
+  buildTime: string | null;
+};
 
-const QUICK_LINKS: QuickLink[] = [
-  {
-    label: 'Onboarding',
-    description: 'Profile creation, opt-in assessment language, and preference setup',
-    icon: Users,
-  },
-  {
-    label: 'Daily Picks',
-    description: 'Finite discovery feed with provenance-first match explanations',
-    icon: Zap,
-  },
-  {
-    label: 'AI & Trust Hub',
-    description: 'Feature toggles, red lines, privacy controls, and personality disclosure',
-    icon: Shield,
-  },
-  {
-    label: 'Personality Reflection',
-    description: 'Private-by-default reflection cards, not a compatibility oracle',
-    icon: Brain,
-  },
-  {
-    label: 'Safety Center',
-    description: 'Safety, report/block/unmatch, and user-control flows',
-    icon: LockKeyhole,
-  },
-  {
-    label: 'Experiments',
-    description: 'Validation, red-team, and release-gate tracking',
-    icon: FlaskConical,
-  },
-];
+const COMMIT_SHA = env.VITE_VERCEL_GIT_COMMIT_SHA || env.VITE_COMMIT_SHA || '';
+const BRANCH = env.VITE_VERCEL_GIT_COMMIT_REF || env.VITE_GIT_BRANCH || 'unknown';
+const BUILD_TIME = env.VITE_BUILD_TIME || '';
+const DEPLOYMENT_URL = env.VITE_VERCEL_URL ? `https://${env.VITE_VERCEL_URL}` : 'unknown';
+const VERCEL_PRODUCTION_URL = env.VITE_VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${env.VITE_VERCEL_PROJECT_PRODUCTION_URL}`
+  : STABLE_PROTOTYPE_URL;
+const NETLIFY_MIRROR_URL = env.VITE_NETLIFY_MIRROR_URL || '';
+const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
+const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
+const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
+const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
+const PERSONALITY_PROTOTYPE_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
+const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
+// SKILLS is the visible registry for this prototype surface. Count every
+// visible module, not only entries with a skillId, so /prototype mirrors
+// everything reviewers can open in /skills-hub.
+const SKILL_MODULE_COUNT = SKILLS.length;
+const PROTOTYPE_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'prototype').length;
 
-const EXECUTION_ITEMS: ExecutionItem[] = [
+const CURRENT_ENV =
+  env.VITE_VERCEL_ENV ||
+  env.VITE_DEPLOY_ENV ||
+  (import.meta.env.DEV ? 'development' : 'unknown');
+
+const rows: Array<{ label: string; value: React.ReactNode }> = [
   {
-    label: 'Continuous Vercel prototype',
-    status: 'done',
-    detail: 'The Vercel project is connected to the GitHub repository. Pushes to main create production deployments; branch/PR pushes create preview deployments.',
+    label: 'Stable Vercel prototype URL',
+    value: (
+      <a href={STABLE_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {STABLE_PROTOTYPE_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  { label: 'Current environment', value: CURRENT_ENV },
+  {
+    label: 'GitHub repo',
+    value: (
+      <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {GITHUB_REPO_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
   },
   {
-    label: 'Personality launch posture',
-    status: 'in_progress',
-    detail: 'Prototype-only until instrument licensing, Israeli privacy counsel, provider-governance, and validation gates close.',
+    label: 'Kesher Skills Hub',
+    value: (
+      <a href={SKILLS_HUB_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_HUB_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
   },
   {
-    label: 'No destiny scores',
-    status: 'done',
-    detail: 'Compatibility must be framed as reflection: shared foundations, communication tempo, repair readiness, and topics to clarify.',
+    label: 'Personality prototype journey',
+    value: (
+      <a href={PERSONALITY_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {PERSONALITY_PROTOTYPE_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
   },
   {
-    label: 'Permissioned sharing',
-    status: 'in_progress',
-    detail: 'Next implementation slice: consent receipts, grants ledger, share-card preview, expiry, revocation, and export/delete/reset cascade.',
+    label: 'Prototype skills zip',
+    value: (
+      <a href={SKILLS_ZIP_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_ZIP_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  { label: 'Branch', value: BRANCH },
+  {
+    label: 'Commit SHA',
+    value: COMMIT_SHA ? (
+      <a
+        href={`${GITHUB_REPO_URL}/commit/${COMMIT_SHA}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[#C8956B] hover:underline"
+      >
+        {COMMIT_SHA}
+      </a>
+    ) : 'unknown',
+  },
+  { label: 'Build time', value: BUILD_TIME || 'unknown' },
+  {
+    label: 'Vercel deployment URL',
+    value: DEPLOYMENT_URL !== 'unknown' ? (
+      <a href={DEPLOYMENT_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+        {DEPLOYMENT_URL}
+      </a>
+    ) : 'unknown',
   },
   {
-    label: 'Sensitive AI runtime',
-    status: 'blocked',
-    detail: 'Production personality flows remain blocked until the final Vertex/enterprise-governed route and retention posture are approved.',
+    label: 'Vercel production URL',
+    value: (
+      <a href={VERCEL_PRODUCTION_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+        {VERCEL_PRODUCTION_URL}
+      </a>
+    ),
   },
+  { label: 'Netlify mirror URL', value: NETLIFY_MIRROR_URL || 'not configured yet' },
+  { label: 'Neon mode', value: NEON_MODE },
+  {
+    label: 'Firebase auth-domain note',
+    value: 'Only authorized domains can use Firebase sign-in. Preview/Netlify reviewers should use demo mode when needed.',
+  },
+  { label: 'Server/API mode', value: SERVER_API_MODE },
+  { label: 'Last verified smoke-test timestamp', value: LAST_SMOKE_AT },
 ];
 
 export const PrototypeScreen: React.FC = () => {
-  const shortSha = COMMIT_SHA ? COMMIT_SHA.slice(0, 7) : null;
-  const buildDate = BUILD_TIME
-    ? new Date(BUILD_TIME).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+  const [serverFingerprint, setServerFingerprint] = useState<ServerBuildFingerprint | null>(null);
+  const [versionError, setVersionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    fetch('/__version', { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Version endpoint returned ${response.status}`);
+        }
+        return response.json() as Promise<ServerBuildFingerprint>;
       })
-    : null;
+      .then((data) => {
+        if (!ignore) {
+          setServerFingerprint(data);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!ignore) {
+          setVersionError(error instanceof Error ? error.message : 'Unable to load server fingerprint');
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const visibleCommitSha = serverFingerprint?.commitSha || COMMIT_SHA || 'unknown';
+  const visibleBranch = serverFingerprint?.branch || BRANCH;
+  const visibleEnvironment = serverFingerprint?.environment || CURRENT_ENV;
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] font-sans text-[#2D2926] flex flex-col">
-      <header className="bg-white border-b border-[#F3EFEA] px-6 py-4 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
-        <span className="inline-flex items-center gap-1.5 bg-[#E8F5E9] text-[#2E7D32] text-xs font-semibold px-2.5 py-1 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-[#43A047] animate-pulse" />
-          LIVE — Prototype
-        </span>
-        <h1 className="text-xl font-serif italic text-[#2D2926] flex-1">Kesher</h1>
-        <a
-          href={PROTOTYPE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-sm text-[#C8956B] hover:text-[#A67250] transition-colors"
-        >
-          Open app
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </header>
-
-      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-8 space-y-8">
-        <section className="bg-[#2D2926] text-white rounded-[32px] p-7 space-y-5 overflow-hidden relative">
-          <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
-          <div className="relative z-10 flex items-start gap-4">
-            <span className="p-3 rounded-2xl bg-[#D4AF37]/15 text-[#D4AF37]">
-              <Brain className="w-6 h-6" />
-            </span>
-            <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
-                Personality execution dashboard
-              </p>
-              <h2 className="text-3xl font-serif italic leading-tight">
-                Prototype-only until the trust gates close.
-              </h2>
-              <p className="text-sm text-white/70 leading-relaxed max-w-2xl">
-                Kesher’s personality layer is being implemented as optional, private by default, reflective rather than predictive, and never as a soulmate score, marriage probability, hidden desirability ranking, or public raw-trait badge.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#9E8E7E]">
-            Build info
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <MetaItem
-              icon={<GitBranch className="w-4 h-4 text-[#C8956B]" />}
-              label="Production branch"
-              value="main"
-            />
-            <MetaItem
-              icon={<span className="text-[#C8956B] font-mono text-sm">#</span>}
-              label="Commit"
-              value={
-                shortSha ? (
-                  <a
-                    href={`${GITHUB_REPO_URL}/commit/${COMMIT_SHA}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono hover:underline text-[#C8956B]"
-                  >
-                    {shortSha}
-                  </a>
-                ) : (
-                  <span className="text-[#9E8E7E] italic">dev build</span>
-                )
-              }
-            />
-            <MetaItem
-              icon={<Clock className="w-4 h-4 text-[#C8956B]" />}
-              label="Built at"
-              value={buildDate ?? <span className="text-[#9E8E7E] italic">–</span>}
-            />
-            <MetaItem
-              icon={<ExternalLink className="w-4 h-4 text-[#C8956B]" />}
-              label="Stable URL"
-              value={
-                <a
-                  href={PROTOTYPE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="truncate hover:underline text-[#C8956B]"
-                >
-                  {PROTOTYPE_URL.replace('https://', '')}
-                </a>
-              }
-            />
-          </div>
-        </section>
-
+    <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926] px-4 py-8">
+      <main className="max-w-4xl mx-auto space-y-6">
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#9E8E7E]">
-            Deployment contract
-          </h2>
-          <p className="text-sm text-[#6B5E52] leading-relaxed">
-            This project is connected to Vercel as <strong>google-ai-studio-kesher</strong>. The production domain below serves the latest successful <code className="bg-[#F7F2EE] px-1.5 py-0.5 rounded text-xs font-mono">main</code> deployment. Pull requests receive their own Vercel preview URL, then the stable prototype updates after merge.
-          </p>
-          <a
-            href={`${PROTOTYPE_URL}/prototype`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#C8956B] hover:text-[#A67250]"
-          >
-            Open this prototype dashboard
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#9E8E7E]">
-            Key flows to inspect
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {QUICK_LINKS.map((link) => (
-              <a
-                key={link.label}
-                href={PROTOTYPE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-white rounded-2xl border border-[#F3EFEA] p-4 flex items-start gap-3 hover:border-[#C8956B] hover:shadow-sm transition-all group"
-              >
-                <span className="mt-0.5 p-2 rounded-xl bg-[#FDF5EE] group-hover:bg-[#FCEEE0] transition-colors">
-                  <link.icon className="w-4 h-4 text-[#C8956B]" />
-                </span>
-                <div className="min-w-0">
-                  <div className="font-medium text-[#2D2926] text-sm">{link.label}</div>
-                  <div className="text-xs text-[#9E8E7E] mt-0.5 leading-relaxed">{link.description}</div>
-                </div>
-              </a>
-            ))}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Info className="w-4 h-4" />
+            Prototype deployment status
           </div>
+          <h1 className="text-3xl font-serif italic">Kesher /prototype status</h1>
+          <p className="text-sm text-[#6B5E52]">
+            This page confirms what commit and environment are currently running on the stable prototype URL.
+          </p>
+          <p className="text-xs font-mono text-[#2D2926]" data-testid="prototype-commit-marker">
+            Commit marker: {visibleCommitSha}
+          </p>
         </section>
 
-        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#9E8E7E]">
-            Execution status
-          </h2>
-          <div className="space-y-3">
-            {EXECUTION_ITEMS.map((item) => (
-              <div key={item.label} className="flex gap-3 p-4 rounded-2xl bg-[#FDFCFB] border border-[#F3EFEA]">
-                <StatusIcon status={item.status} />
-                <div className="space-y-1">
-                  <div className="text-sm font-bold text-[#2D2926]">{item.label}</div>
-                  <p className="text-xs text-[#6B5E52] leading-relaxed">{item.detail}</p>
-                </div>
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            {rows.map((row) => (
+              <div key={row.label} className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">{row.label}</p>
+                <div className="break-all">{row.value}</div>
               </div>
             ))}
           </div>
         </section>
 
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Server className="w-4 h-4" />
+            Server fingerprint
+          </div>
+          <p className="text-sm text-[#6B5E52]">
+            This is loaded live from <code className="font-mono text-[#2D2926]">/__version</code>, so it verifies the running deployment, not only the client bundle.
+          </p>
+          {versionError ? (
+            <p className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              Could not load server fingerprint: {versionError}
+            </p>
+          ) : serverFingerprint ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server commit</p>
+                <div className="break-all font-mono">
+                  {serverFingerprint.commitUrl ? (
+                    <a href={serverFingerprint.commitUrl} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+                      {serverFingerprint.commitSha}
+                    </a>
+                  ) : 'unknown'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server branch</p>
+                <div>{visibleBranch}</div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server environment</p>
+                <div>{visibleEnvironment}</div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-widest text-[#8C7E6E]">Server deployment URL</p>
+                <div className="break-all">
+                  {serverFingerprint.deploymentUrl ? (
+                    <a href={serverFingerprint.deploymentUrl} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline">
+                      {serverFingerprint.deploymentUrl}
+                    </a>
+                  ) : 'unknown'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[#6B5E52]">Loading server fingerprint…</p>
+          )}
+        </section>
+
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#9E8E7E]">
-            CI / CD
-          </h2>
-          <div className="flex flex-wrap gap-3 items-center">
-            <a
-              href={`${GITHUB_REPO_URL}/actions/workflows/ci.yml`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src={`${GITHUB_REPO_URL}/actions/workflows/ci.yml/badge.svg`}
-                alt="CI status"
-                className="h-5"
-              />
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Globe className="w-4 h-4" />
+            CI / deploy badges
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <a href={`${GITHUB_REPO_URL}/actions/workflows/ci.yml`} target="_blank" rel="noopener noreferrer">
+              <img src={CI_BADGE_URL} alt="CI status" className="h-5" />
             </a>
-            <a
-              href={`${GITHUB_REPO_URL}/actions/workflows/deploy.yml`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src={`${GITHUB_REPO_URL}/actions/workflows/deploy.yml/badge.svg`}
-                alt="Deploy status"
-                className="h-5"
-              />
+            <a href={`${GITHUB_REPO_URL}/actions/workflows/deploy.yml`} target="_blank" rel="noopener noreferrer">
+              <img src={DEPLOY_BADGE_URL} alt="Deploy status" className="h-5" />
             </a>
           </div>
         </section>
-      </main>
 
-      <footer className="text-center text-xs text-[#C4B5A8] py-6">
-        Prototype build · Kesher by Akiva Goldstein · GitHub → Vercel continuous deployment
-      </footer>
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3 text-sm text-[#6B5E52]">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Server className="w-4 h-4" />
+            Known limitations
+          </div>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Demo mode is for viewability and uses mock/local-only state (no Firestore writes).</li>
+            <li>Netlify is configured as a static mirror and does not run Express API routes unless Functions are added.</li>
+            <li>Preview deployments may not be Firebase-auth authorized; reviewers should use demo mode when sign-in is blocked.</li>
+            <li>Production personality-sensitive features remain gated and must not be auto-enabled from previews.</li>
+          </ul>
+        </section>
+
+        <section className="bg-[#2D2926] rounded-2xl p-6 space-y-3">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+            <Sparkles className="w-4 h-4" />
+            <span>Kesher Skills Hub</span>
+          </div>
+          <p className="text-sm text-white/80 italic">
+            Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
+          </p>
+          <p className="text-xs text-white/55">
+            All {PROTOTYPE_SKILL_COUNT} prototype pages are visible from the hub.
+          </p>
+          <a
+            href="/prototype/personality"
+            data-testid="prototype-personality-link"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white/15 transition-all mr-3"
+          >
+            Open Personality Prototype
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <a
+            href="/skills-hub"
+            data-testid="prototype-skills-hub-link"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#2D2926] rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[#E5C048] transition-all"
+          >
+            Open Skills Hub
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 text-xs text-[#8C7E6E] flex flex-wrap items-center gap-2">
+          <GitBranch className="w-4 h-4" />
+          <span>Vercel env: {env.VITE_VERCEL_ENV || 'n/a'}</span>
+          <span>•</span>
+          <span>Vercel target env: {env.VITE_VERCEL_TARGET_ENV || 'n/a'}</span>
+          <span>•</span>
+          <span>PR ID: {env.VITE_VERCEL_GIT_PULL_REQUEST_ID || 'n/a'}</span>
+          <span>•</span>
+          <Link2 className="w-3.5 h-3.5" />
+          <a href={STABLE_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+            open stable app
+          </a>
+        </section>
+      </main>
     </div>
   );
-};
-
-interface MetaItemProps {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-}
-
-const MetaItem: React.FC<MetaItemProps> = ({ icon, label, value }) => (
-  <div className="flex items-start gap-2">
-    <span className="mt-0.5 flex-shrink-0">{icon}</span>
-    <div className="min-w-0">
-      <div className="text-xs text-[#9E8E7E] mb-0.5">{label}</div>
-      <div className="text-sm font-medium truncate">{value}</div>
-    </div>
-  </div>
-);
-
-const StatusIcon: React.FC<{ status: ExecutionItem['status'] }> = ({ status }) => {
-  if (status === 'done') {
-    return <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />;
-  }
-
-  if (status === 'blocked') {
-    return <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />;
-  }
-
-  return <Settings className="w-5 h-5 text-[#C8956B] mt-0.5 flex-shrink-0" />;
 };

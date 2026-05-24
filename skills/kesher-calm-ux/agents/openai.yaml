@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Calm UX"
+  short_description: "Premium calm dating UX guidance"
+  default_prompt: "Use $kesher-calm-ux to design a quiet, trust-forward Kesher screen or flow."

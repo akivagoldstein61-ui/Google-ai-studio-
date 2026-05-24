@@ -4,7 +4,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...path]" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/__version", "destination": "/api/version" },
+    { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

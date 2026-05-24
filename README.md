@@ -16,6 +16,8 @@ View your app in AI Studio: https://ai.studio/apps/bd65b2e7-1010-405f-8e3a-13786
 |---|---|
 | **Stable prototype URL** | **<https://google-ai-studio-sage-sigma.vercel.app>** |
 | **Prototype info page** | <https://google-ai-studio-sage-sigma.vercel.app/prototype> |
+| **Kesher skills hub** | <https://google-ai-studio-sage-sigma.vercel.app/skills-hub> |
+| **View-only demo mode** | <https://google-ai-studio-sage-sigma.vercel.app/demo?demo=1> |
 
 Every push to `main` automatically triggers a new Vercel production deployment.  
 The stable URL above always serves the latest `main` build — use it for demos, QA, and design reviews.
@@ -23,13 +25,19 @@ The stable URL above always serves the latest `main` build — use it for demos,
 ### How it works
 
 1. **CI** (`.github/workflows/ci.yml`) — runs on every push to `main` and on every PR:
-   - TypeScript type-check (`tsc --noEmit`)
-   - Personality smoke tests
-   - `vite build` (injects `VITE_COMMIT_SHA` and `VITE_BUILD_TIME`)
+   - TypeScript type-check (`npm run typecheck`)
+   - Forbidden-field and log scans
+   - Personality smoke/schema/scoring/RTL tests
+   - `npm run build` (injects deployment metadata)
+   - Client bundle secret scan on `dist/`
    - Uploads `dist/` as a build artifact
 2. **Deploy** (`.github/workflows/deploy.yml`) — runs on push to `main` only:
    - Calls `vercel build --prod` then `vercel deploy --prebuilt --prod`
    - Uses Vercel CLI authenticated via repository secrets
+   - Injects build markers (`VITE_COMMIT_SHA`, `VITE_BUILD_TIME`, `VITE_GIT_BRANCH`, `VITE_DEPLOY_ENV`)
+3. **Preview verification** (`.github/workflows/preview-verification.yml`) — runs on PRs:
+   - Discovers Vercel preview URL from deployment metadata when available
+   - Runs smoke checks against preview root, `/prototype`, `/skills-hub`, `/demo?demo=1`, `/api/health`, `/api/version`, `/__version`, and an unmatched `/api/*` route
 
 ### Required GitHub repository secrets
 
@@ -86,11 +94,12 @@ Every branch deploy on Vercel gets a unique subdomain (e.g. `google-ai-studio-gi
 **The app now handles this automatically:**
 
 - On mount, the sign-in screen checks whether it is running on an authorized hostname.
-- If it detects a preview/branch URL, it shows a banner and redirects the user to the stable production URL before any sign-in is attempted.
+- If it detects a preview/branch URL, it shows a banner with two safe actions:
+  - open canonical production URL for sign-in
+  - continue in view-only demo mode (`/demo?demo=1`)
 - If `auth/unauthorized-domain` is raised for any other reason (e.g. an unlisted custom domain), the app redirects to the canonical production URL silently instead of showing a cryptic error.
 
-To change the canonical (production) URL, update `CANONICAL_ORIGIN` at the top of
-`src/features/auth/WelcomeScreen.tsx` and add the new URL to `AUTHORIZED_HOSTNAMES`.
+To change the canonical (production) URL, update `src/lib/prototypeMode.ts`.
 
 ---
 
@@ -98,7 +107,7 @@ To change the canonical (production) URL, update `CANONICAL_ORIGIN` at the top o
 
 ### Option 1 — Vercel (current setup, CI/CD enabled)
 
-The repository includes a `vercel.json` that configures the SPA rewrite rule and security headers. The CI/CD workflows (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) handle automated builds and deployments on every push to `main`. See the [Prototype section](#-prototype-always-up-to-date-main-build) above for setup instructions.
+The repository includes a `vercel.json` that configures Vercel Functions, an SPA rewrite rule that excludes `/api/*`, and security headers. The CI/CD workflows (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) handle automated builds and deployments on every push to `main`. See the [Prototype section](#-prototype-always-up-to-date-main-build) above for setup instructions.
 
 **Important:** only the **Production** deployment URL needs to be in Firebase's authorized domains list. All preview/branch URLs are automatically redirected to the production URL by the app.
 
@@ -114,18 +123,30 @@ npm run build
 firebase deploy --only hosting
 ```
 
-### Option 3 — Netlify
+### Option 3 — Netlify (static mirror only)
 
 1. Connect the repository to a Netlify project.
-2. Set **Build command** to `vite build` and **Publish directory** to `dist`.
-3. Add a `public/_redirects` file with `/* /index.html 200` for SPA routing.
-4. Add the Netlify domain to Firebase's authorized domains list.
+2. Netlify configuration is in `netlify.toml`:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+   - SPA fallback: `/* → /index.html 200`
+3. Add the Netlify domain to Firebase's authorized domains list if sign-in is required.
+4. For stakeholder review, prefer demo mode (`/demo?demo=1`) on Netlify.
 
 ### Option 4 — Cloudflare Pages
 
 1. Connect the repository; set build command to `vite build` and output to `dist`.
 2. Add a `_routes.json` or configure "Functions" routing so all paths serve `index.html`.
 3. Add the `*.pages.dev` domain to Firebase's authorized domains list.
+
+### Option 5 — GitSpark
+
+Use GitSpark with either:
+
+- **Node/fullstack mode (recommended):** `npm ci` → `npm run build` → `npm run start`
+- **Static mode (fallback):** `npm ci` → `npm run build` with output directory `dist` (no Express `/api/*` routes)
+
+See `docs/deployment/gitspark.md` for repository connection steps, server-only env vars, required quality gates, and post-deploy verification.
 
 ---
 
@@ -139,3 +160,12 @@ firebase deploy --only hosting
 | `FIREBASE_PRIVATE_KEY` | Server only | Firebase service account private key |
 | `APP_URL` | Server only | Canonical URL of the deployment |
 
+See full deployment docs in `docs/deployment/`:
+
+- `vercel.md`
+- `netlify.md`
+- `gitspark.md`
+- `neon.md`
+- `env-vars.md`
+- `preview-workflow.md`
+- `rollback.md`

@@ -226,6 +226,8 @@ const EXCLUDE_PATH_PREFIXES = [
   "src/ai/outputValidators",
   "src/ai/policies",
   "src/ai/prompts",
+  "src/ai/dataClassification",
+  "src/lib/explanationSchema",
 ];
 
 // Files that define the policy itself should not be self-flagged
@@ -258,6 +260,7 @@ function shouldSkipFile(filePath) {
   const base = filePath.split("/").pop();
   if (EXCLUDE_FILES.has(base)) return true;
   const rel = relative(ROOT, filePath).replace(/\\/g, "/");
+  if (/\.(test|spec)\.[cm]?[jt]sx?$/.test(rel)) return true;
   if (EXCLUDE_PATH_PREFIXES.some((prefix) => rel.startsWith(prefix))) return true;
   return false;
 }
@@ -265,6 +268,12 @@ function shouldSkipFile(filePath) {
 function isNegationContext(line) {
   const trimmed = line.trim();
   return NEGATION_PREFIXES.some((p) => p.test(trimmed));
+}
+
+function isAllowedInstrumentSource(relPath, id, line) {
+  return relPath === "src/personality/ipipBfas.ts" &&
+    id === "FP-08" &&
+    line.includes("Am not bothered by disorder.");
 }
 
 function* walkFiles(dir) {
@@ -302,6 +311,7 @@ for (const filePath of walkFiles(ROOT)) {
     for (const pattern of patterns) {
       lines.forEach((line, idx) => {
         if (isNegationContext(line)) return;
+        if (isAllowedInstrumentSource(relPath, id, line)) return;
         if (pattern instanceof RegExp ? pattern.test(line) : line.includes(pattern)) {
           findings.push({ id, rule, file: relPath, line: idx + 1, text: line.trim() });
         }

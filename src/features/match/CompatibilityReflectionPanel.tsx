@@ -4,6 +4,7 @@ import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiService } from '@/services/aiService';
 import { Profile } from '@/types';
+import { isPrototypeDemoMode } from '@/lib/prototypeMode';
 
 interface Props {
   user: Profile;
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate, bothOptedIn }) => {
-  const [agreed, setAgreed] = useState(false);
+  const [agreed, setAgreed] = useState(isPrototypeDemoMode());
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +134,7 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
         <span>Reflect together — mutual consent</span>
       </div>
       <p className="text-sm text-white/80 leading-relaxed italic font-serif">
-        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a compatibility score, and the reflection only uses mutually visible signals.
+        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a numeric fit rating, and the reflection only uses mutually visible signals.
       </p>
       {!bothOptedIn && (
         <p className="text-[11px] text-amber-300 italic">
@@ -148,7 +149,7 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
           className="mt-1 accent-[#D4AF37]"
         />
         <span>
-          I understand this is a reflection, not a prediction. Raw scores, private taste and private messages are not used.
+          I understand this is a reflection, not a prediction. Exact personality values, private taste, and private messages are not used.
         </span>
       </label>
       <Button

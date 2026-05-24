@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher High Thinking Routing"
+  short_description: "Gemini reasoning route policy"
+  default_prompt: "Use $kesher-high-thinking-routing to decide whether a Kesher AI feature needs deeper Gemini reasoning."

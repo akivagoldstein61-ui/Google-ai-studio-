@@ -1,25 +1,11 @@
-export const WHY_MATCH_ALLOWED_SIGNALS = [
-  "visible_values",
-  "visible_intent",
-  "visible_observance",
-  "visible_lifestyle",
-  "visible_interests",
-  "visible_prompts",
-  "self_declared_profile_fields",
-] as const;
+import {
+  WHY_MATCH_ALLOWED_SIGNALS,
+  WHY_MATCH_FORBIDDEN_SIGNALS,
+  containsBannedPhrase,
+} from './dataClassification';
 
-export const WHY_MATCH_FORBIDDEN_SIGNALS = [
-  "private_taste_profile",
-  "hidden_dealbreakers",
-  "hidden_ranking_signals",
-  "raw_personality_scores",
-  "private_messages",
-  "exact_location",
-  "protected_trait_inference",
-] as const;
-
-const WHY_MATCH_ALLOWED_SIGNAL_SET = new Set<string>(WHY_MATCH_ALLOWED_SIGNALS);
-const WHY_MATCH_FORBIDDEN_SIGNAL_SET = new Set<string>(WHY_MATCH_FORBIDDEN_SIGNALS);
+// Re-export for backward compatibility (schemas.ts imports these from outputValidators)
+export { WHY_MATCH_ALLOWED_SIGNALS, WHY_MATCH_FORBIDDEN_SIGNALS } from './dataClassification';
 
 export const COMPATIBILITY_ALLOWED_SIGNALS = [
   "mutually_shared_values",
@@ -31,6 +17,8 @@ export const COMPATIBILITY_ALLOWED_SIGNALS = [
   "mutually_approved_share_card",
 ] as const;
 
+const WHY_MATCH_ALLOWED_SIGNAL_SET = new Set<string>(WHY_MATCH_ALLOWED_SIGNALS);
+const WHY_MATCH_FORBIDDEN_SIGNAL_SET = new Set<string>(WHY_MATCH_FORBIDDEN_SIGNALS);
 const COMPATIBILITY_ALLOWED_SIGNAL_SET = new Set<string>(COMPATIBILITY_ALLOWED_SIGNALS);
 
 const PROHIBITED_PATTERNS: { code: string; pattern: RegExp; message: string }[] = [
@@ -177,12 +165,85 @@ export const outputValidators = {
     if (
       !output ||
       !output.weights ||
-      typeof output.weights.attraction_weight !== "number"
+      typeof output.weights !== "object" ||
+      !Object.values(output.weights).some((v) => typeof v === "number")
     ) {
       throw new Error("Invalid Taste Profile output: missing weights.");
     }
     return output;
   },
+
+  validateWhyMatch(output: any) {
+    if (!output || !output.reasons || !Array.isArray(output.reasons)) {
+      throw new Error("Invalid Why Match output: missing reasons array.");
+    }
+
+    // Banned phrases — protect against soulmate/score regressions even when
+    // structured-output guards pass.
+    for (const reason of output.reasons) {
+      if (typeof reason !== 'string') continue;
+      const bad = containsBannedPhrase(reason);
+      if (bad) {
+        throw new Error(`Invalid Why Match output: banned phrase "${bad}" in reason.`);
+      }
+    }
+    if (typeof output.first_question === 'string') {
+      const bad = containsBannedPhrase(output.first_question);
+      if (bad) {
+        throw new Error(`Invalid Why Match output: banned phrase "${bad}" in first_question.`);
+      }
+    }
+
+    // signals_used / signals_not_used — must be arrays if present, and
+    // must NOT include any forbidden signal name.
+    const allowed = new Set<string>(WHY_MATCH_ALLOWED_SIGNALS);
+    const forbidden = new Set<string>(WHY_MATCH_FORBIDDEN_SIGNALS);
+    const checkSignalArray = (arr: unknown, fieldName: string): string[] => {
+      if (arr === undefined) return [];
+      if (!Array.isArray(arr)) {
+        throw new Error(`Invalid Why Match output: ${fieldName} must be an array.`);
+      }
+      const out: string[] = [];
+      for (const s of arr) {
+        if (typeof s !== 'string') continue;
+        if (forbidden.has(s)) {
+          throw new Error(`Invalid Why Match output: forbidden signal "${s}" in ${fieldName}.`);
+        }
+        // Drop unknown signals silently rather than fail — model may emit
+        // a label not in the allowlist; we just don't surface it.
+        if (allowed.has(s)) out.push(s);
+      }
+      return out;
+    };
+
+    const signalsUsed = checkSignalArray(output.signals_used, 'signals_used');
+    const signalsNotUsed = checkSignalArray(output.signals_not_used, 'signals_not_used');
+
+    return {
+      ...output,
+      signals_used: signalsUsed,
+      signals_not_used: signalsNotUsed,
+    };
+  },
+
+  validateRephrase(output: any) {
+    if (!output || !Array.isArray(output.options) || output.options.length < 1) {
+      throw new Error("Invalid Rephrase output: missing options array.");
+    }
+    if (output.options.length > 4) {
+      throw new Error("Invalid Rephrase output: too many options (max 4).");
+    }
+    for (const opt of output.options) {
+      if (typeof opt !== 'string') {
+        throw new Error("Invalid Rephrase output: options must be strings.");
+      }
+    }
+    if (typeof output.what_changed !== 'string') {
+      throw new Error("Invalid Rephrase output: what_changed must be a string.");
+    }
+    return output;
+  },
+
 
   validateSafetyScan(output: any) {
     if (!output || !output.risk_level) {
@@ -192,16 +253,12 @@ export const outputValidators = {
   },
 
   validateDatePlanner(output: any) {
-    if (!output) {
-      throw new Error("Invalid Date Planner output: empty.");
-    }
-
     // Handle fallback if model returns suggested_venues instead of venues
-    if (output.suggested_venues && !output.venues) {
+    if (output?.suggested_venues && !output?.venues) {
       output.venues = output.suggested_venues;
     }
 
-    if (!output.venues || !Array.isArray(output.venues)) {
+    if (!output || !output.venues || !Array.isArray(output.venues)) {
       throw new Error("Invalid Date Planner output: missing venues array.");
     }
 
@@ -239,13 +296,6 @@ export const outputValidators = {
       throw new Error("Invalid Openers output: missing or empty array.");
     }
     validateStringFields(output);
-    return output;
-  },
-
-  validateRephrase(output: any) {
-    if (!output || !output.original) {
-      throw new Error("Invalid Rephrase output: missing original text.");
-    }
     return output;
   },
 
@@ -308,25 +358,6 @@ export const outputValidators = {
     }
     validateCompatibilitySignals(output);
     validateStringFields(output);
-    return output;
-  },
-
-  validateWhyMatch(output: any) {
-    if (!output || !output.reasons_he || !Array.isArray(output.reasons_he)) {
-      throw new Error("Invalid Why Match output: missing reasons array.");
-    }
-    if (output.reasons_he.length < 2 || output.reasons_he.length > 3) {
-      throw new Error("Invalid Why Match output: reasons must contain 2 to 3 items.");
-    }
-    if (!output.first_question_he || typeof output.first_question_he !== "string") {
-      throw new Error("Invalid Why Match output: missing first_question_he.");
-    }
-    if (!output.uncertainty_he || typeof output.uncertainty_he !== "string") {
-      throw new Error("Invalid Why Match output: missing uncertainty_he.");
-    }
-    validateWhyMatchSignals(output);
-    const { signals_used, signals_not_used, ...textFields } = output;
-    validateStringFields(textFields);
     return output;
   },
 

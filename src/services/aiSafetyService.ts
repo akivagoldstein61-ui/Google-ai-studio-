@@ -1,23 +1,17 @@
 import { MessageSafetyScanSchema, ModerationSummarySchema } from "@/ai/schemas";
-import { auth } from '@/firebase';
-
-const getHeaders = async () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (auth.currentUser) {
-    const token = await auth.currentUser.getIdToken();
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
+import { isPrototypeDemoMode } from '@/lib/prototypeMode';
+import { buildJsonAuthHeaders } from './authHeaders';
 
 export const aiSafetyService = {
   async scanMessageSafety(text: string) {
     try {
+      if (isPrototypeDemoMode()) {
+        return { risk_level: 'low', categories: [], recommended_action: 'allow', short_rationale: 'Demo mode mock response.' };
+      }
+
       const response = await fetch('/api/ai/message-safety', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ text })
       });
       
@@ -41,9 +35,13 @@ export const aiSafetyService = {
 
   async summarizeModerationCase(reports: any[]) {
     try {
+      if (isPrototypeDemoMode()) {
+        return { summary: 'Demo mode moderation summary.', claims: [], evidence: [], riskLevel: 'low', escalationRecommended: false };
+      }
+
       const response = await fetch('/api/ai/moderation-summary', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ reports })
       });
       
@@ -67,9 +65,13 @@ export const aiSafetyService = {
 
   async getSafetyAdvice(question: string): Promise<string> {
     try {
+      if (isPrototypeDemoMode()) {
+        return 'Demo mode: AI safety advice is mocked and no server request was made.';
+      }
+
       const response = await fetch('/api/ai/safety-advice', {
         method: 'POST',
-        headers: await getHeaders(),
+        headers: await buildJsonAuthHeaders(),
         body: JSON.stringify({ question })
       });
       

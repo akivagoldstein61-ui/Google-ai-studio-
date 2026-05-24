@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Shield, CreditCard, Bell, Globe, LogOut, ChevronRight, Sparkles, ShieldCheck, Terminal, FlaskConical, EyeOff, Trash2, LifeBuoy, X, RefreshCw } from 'lucide-react';
+import { User, Shield, CreditCard, Bell, Globe, LogOut, ChevronRight, Sparkles, ShieldCheck, Terminal, FlaskConical, EyeOff, Trash2, LifeBuoy, X, RefreshCw, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -11,11 +11,12 @@ export const SettingsScreen: React.FC<{
   onShowSafety: () => void, 
   onShowAITrust: () => void,
   onShowPersonalityProfile: () => void,
+  onShowPersonalityVisibility: () => void,
   onShowAIOps: () => void,
   onShowExperiments: () => void,
   onEditProfile: () => void
-}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowAIOps, onShowExperiments, onEditProfile }) => {
-  const { user, isPremium } = useApp();
+}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowPersonalityVisibility, onShowAIOps, onShowExperiments, onEditProfile }) => {
+  const { user, isPremium, signOut } = useApp();
 
   const [devClicks, setDevClicks] = useState(0);
   const [showPauseSheet, setShowPauseSheet] = useState(false);
@@ -136,6 +137,11 @@ export const SettingsScreen: React.FC<{
             <MenuItem icon={Bell} label="Notifications" />
           </MenuGroup>
 
+          <MenuGroup title="Personality">
+            <MenuItem icon={Sparkles} label="Personality Profile" onClick={onShowPersonalityProfile} />
+            <MenuItem icon={Eye} label="Personality Visibility" onClick={onShowPersonalityVisibility} />
+          </MenuGroup>
+
           <MenuGroup title="Safety & Privacy">
             <MenuItem icon={Shield} label="Safety Center" onClick={onShowSafety} />
             <MenuItem icon={ShieldCheck} label="Verification Status" onClick={() => alert("Verification Status: Verified. In production, this opens the verification details.")} />
@@ -145,8 +151,9 @@ export const SettingsScreen: React.FC<{
 
           <MenuGroup title="Support">
             <MenuItem icon={Globe} label="Community Guidelines" />
+            <MenuItem icon={Globe} label="Help Center" />
             <MenuItem icon={LifeBuoy} label="Contact Support" onClick={handleContactSupport} />
-            <MenuItem icon={LogOut} label="Log Out" color="text-red-600" />
+            <MenuItem icon={LogOut} label="Log Out" color="text-red-600" onClick={signOut} />
             <MenuItem icon={Trash2} label="Delete Account" color="text-red-600" onClick={() => setShowDeleteSheet(true)} />
           </MenuGroup>
         </div>
