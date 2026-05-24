@@ -34,7 +34,7 @@ const RISKY_LOG_PATTERNS = [
 ];
 
 const SCAN_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
-const EXCLUDE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage"]);
+const EXCLUDE_DIRS = new Set(["node_modules", ".git", "dist", ".vercel", "build", "coverage"]);
 const EXCLUDE_FILES = new Set(["scan-logs.mjs"]);
 
 function* walkFiles(dir) {

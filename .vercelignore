@@ -10,11 +10,14 @@ dist
 # Bulky governance source bundles — referenced for review but not needed by
 # the runtime. The runtime reads docs/ only via npm test, not at request time.
 kesher-personality-skills.zip
-skills
-skills 2
-skills 3
-skills 4
-public/downloads
+/skills
+/skills 2
+/skills 3
+/skills 4
+/public/downloads
+/.claude/skills
+/.github/skills
+/kesher-app/skills
 
 # Ad-hoc dev scratch files at repo root.
 test_genai.js

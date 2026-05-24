@@ -17,6 +17,7 @@ const staticSkillsUrl = new URL('/prototype/skills.html', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
 const dailyUrl = new URL('/daily', baseUrl).toString();
 const versionUrl = new URL('/__version', baseUrl).toString();
+const buildUrl = new URL('/__build', baseUrl).toString();
 const apiVersionUrl = new URL('/api/version', baseUrl).toString();
 const healthUrl = new URL('/api/health', baseUrl).toString();
 const unknownApiUrl = new URL('/api/__smoke_missing_route', baseUrl).toString();
@@ -27,12 +28,16 @@ const secretPatterns = [
   /DIRECT_DATABASE_URL/i,
   /GEMINI_API_KEY/i,
   /FIREBASE_PRIVATE_KEY/i,
+  /FIREBASE_CLIENT_EMAIL/i,
   /PRIVATE KEY/i,
+  /SERVICE_ACCOUNT/i,
   /postgres:\/\//i,
   /postgresql:\/\//i,
   /NEON_API_KEY/i,
   /VERCEL_TOKEN/i,
   /NETLIFY_AUTH_TOKEN/i,
+  /@google\/genai/i,
+  /GoogleGenAI/i,
 ];
 
 const requiredShaPatterns = expectedSha
@@ -302,6 +307,15 @@ async function runBrowserChecks(checks) {
   }
   checks.push(`/__version JSON verified (${version.json.source || 'unknown source'})`);
 
+  const build = await fetchJson(buildUrl);
+  if (build.json.status !== 'ok' || build.json.repository !== 'akivagoldstein61-ui/Google-ai-studio-') {
+    throw new Error('/__build did not return deployment metadata');
+  }
+  if (isVercelTarget && build.json.source !== 'vercel-api-function') {
+    throw new Error(`/__build source was ${build.json.source}; expected vercel-api-function`);
+  }
+  checks.push(`/__build JSON verified (${build.json.source || 'unknown source'})`);
+
   const missingApi = await fetchJson(unknownApiUrl, 404);
   if (missingApi.json.source !== 'vercel-api-function' && missingApi.json.source !== 'express-server') {
     throw new Error('/api/* missing route did not return API JSON from a backend handler (expected source vercel-api-function or express-server)');
@@ -325,7 +339,8 @@ async function runBrowserChecks(checks) {
       prototype.text.includes(sha) ||
       bundleText.includes(sha) ||
       version.text.includes(sha) ||
-      apiVersion.text.includes(sha)
+      apiVersion.text.includes(sha) ||
+      build.text.includes(sha)
     ));
     if (!hasSha) {
       throw new Error(`Deployment metadata does not include expected commit SHA marker (${expectedSha})`);
