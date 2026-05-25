@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SlidersHorizontal, Grid, LayoutList, Check, X, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
 
-export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
+export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void; onOpenRoute?: (path: string) => void }> = ({ onSelect, onOpenRoute }) => {
   const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -37,6 +38,15 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> =
           </Button>
         </div>
       </header>
+
+      <SkillRecommendationRail
+        surface="explore"
+        title="Explore controls"
+        subtitle="Tune filters and preference learning without hidden scores."
+        skillIds={['filtering-marketplace', 'learned-taste', 'private-recommendations']}
+        limit={3}
+        onOpenRoute={onOpenRoute}
+      />
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
         <div className={cn(

@@ -45,7 +45,7 @@ const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABL
 // visible module, not only entries with a skillId, so /prototype mirrors
 // everything reviewers can open in /skills-hub.
 const SKILL_MODULE_COUNT = SKILLS.length;
-const PROTOTYPE_SKILL_COUNT = SKILLS.filter((skill) => skill.status === 'prototype').length;
+const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.operationalStatus !== 'reference_only').length;
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -287,7 +287,7 @@ export const PrototypeScreen: React.FC = () => {
             Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
           </p>
           <p className="text-xs text-white/55">
-            All {PROTOTYPE_SKILL_COUNT} prototype pages are visible from the hub.
+            All {OPERATIONAL_SKILL_COUNT} operational or gated skill pages are visible from the hub.
           </p>
           <a
             href="/prototype/personality"

@@ -1,5 +1,8 @@
 export { SkillsRouter } from './SkillsRouter';
-export { SkillsHub, SKILLS } from './SkillsHub';
+export { SkillsHub } from './SkillsHub';
+export * from './skillRegistry';
+export * from './types';
+export * from './useSkillState';
 export { PersonalityProfileSkill } from './PersonalityProfileSkill';
 export { PacingCoachSkill } from './PacingCoachSkill';
 export { PrivateTasteSkill } from './PrivateTasteSkill';

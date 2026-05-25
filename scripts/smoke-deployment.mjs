@@ -20,7 +20,7 @@ const versionUrl = new URL('/__version', baseUrl).toString();
 const buildUrl = new URL('/__build', baseUrl).toString();
 const apiVersionUrl = new URL('/api/version', baseUrl).toString();
 const healthUrl = new URL('/api/health', baseUrl).toString();
-const unknownApiUrl = new URL('/api/__smoke_missing_route', baseUrl).toString();
+const unknownApiUrl = new URL('/api/smoke-missing-route', baseUrl).toString();
 const isVercelTarget = new URL(baseUrl).hostname.endsWith('.vercel.app');
 
 const secretPatterns = [
@@ -175,15 +175,19 @@ async function runBrowserChecks(checks) {
     await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
 
     const skillsState = await page.evaluate(() => {
-      const cards = Array.from(document.querySelectorAll('main section.grid > button'));
+      const cards = Array.from(document.querySelectorAll('[data-testid^="skill-card-"]'));
       const countElement = document.querySelector('[data-testid="skills-hub-count"]');
       const declaredCount = Number(countElement?.getAttribute('data-skill-count') || 0);
+      const statusBadges = cards
+        .map((card) => card.querySelector('[data-skill-status]')?.getAttribute('data-skill-status') || '')
+        .filter(Boolean);
       return {
         headingVisible: document.body.innerText.includes('Kesher Skills Hub'),
         declaredCount,
         visibleCards: cards.length,
-        plannedCards: cards.filter((card) => card.querySelector('[data-skill-status="planned"]')).length,
-        prototypeCards: cards.filter((card) => card.querySelector('[data-skill-status="prototype"]')).length,
+        plannedCards: statusBadges.filter((status) => status === 'planned').length,
+        gatedCards: statusBadges.filter((status) => status === 'gated').length,
+        operationalCards: statusBadges.filter((status) => status === 'live' || status === 'prototype').length,
         cardTitles: cards.map((card) => card.querySelector('h3')?.textContent?.trim() || '').filter(Boolean),
         hasLegacyFallbackCopy: /coming soon|implementation is coming soon/i.test(document.body.innerText),
       };
@@ -195,18 +199,19 @@ async function runBrowserChecks(checks) {
     if (skillsState.declaredCount !== 35 || skillsState.visibleCards !== 35) {
       throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
     }
-    if (skillsState.plannedCards !== 0 || skillsState.prototypeCards !== 35) {
-      throw new Error(`/skills-hub status mismatch: ${skillsState.prototypeCards} prototype, ${skillsState.plannedCards} planned`);
+    if (skillsState.plannedCards !== 0 || skillsState.gatedCards < 1 || skillsState.operationalCards < 1) {
+      throw new Error(`/skills-hub status mismatch: ${skillsState.operationalCards} operational, ${skillsState.gatedCards} gated, ${skillsState.plannedCards} planned`);
     }
     if (skillsState.hasLegacyFallbackCopy) {
       throw new Error('/skills-hub exposed legacy coming-soon fallback copy');
     }
-    checks.push('/skills-hub browser rendered 35 clickable prototype cards');
+    checks.push('/skills-hub browser rendered 35 clickable operational/gated cards');
 
     for (const [index, title] of skillsState.cardTitles.entries()) {
       await page.evaluate((cardIndex) => {
-        const cards = Array.from(document.querySelectorAll('main section.grid > button'));
-        cards[cardIndex]?.click();
+        const cards = Array.from(document.querySelectorAll('[data-testid^="skill-card-"]'));
+        const launchButton = cards[cardIndex]?.querySelector('button');
+        if (launchButton instanceof HTMLButtonElement) launchButton.click();
       }, index);
       await page.waitForFunction((expectedTitle) => {
         const header = document.querySelector('header h1')?.textContent || '';
@@ -224,7 +229,7 @@ async function runBrowserChecks(checks) {
       });
       await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
     }
-    checks.push('all 35 skills opened as prototype experiences');
+    checks.push('all 35 skills opened as app-native skill experiences');
 
     await page.goto(prototypeUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
@@ -349,8 +354,8 @@ async function runBrowserChecks(checks) {
   }
 
   // Match rendered HTML attributes (`data-demo-mode=`) and bundled/source code
-  // object keys or JSX props (`data-demo-mode:`) used by local/dev fallback.
-  const demoModeMarkerPattern = /data-demo-mode(?:=|:)/i;
+  // object keys or JSX props (`"data-demo-mode":`) used by local/dev fallback.
+  const demoModeMarkerPattern = /data-demo-mode["']?\s*(?:=|:)/i;
   const hasDemoModeMarker = demoModeMarkerPattern.test(demo.text) || demoModeMarkerPattern.test(visibilityText);
   if (!hasDemoModeMarker) {
     throw new Error('/demo?demo=1 did not expose the rendered data-demo-mode marker or its client implementation');

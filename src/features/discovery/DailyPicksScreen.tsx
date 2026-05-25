@@ -6,11 +6,13 @@ import { Heart, X, Info, Sparkles, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { aiService } from '@/services/aiService';
+import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
 
 export const DailyPicksScreen: React.FC<{ 
   onSelect: (profile: Profile) => void,
-  onMatch: (profile: Profile) => void
-}> = ({ onSelect, onMatch }) => {
+  onMatch: (profile: Profile) => void,
+  onOpenRoute?: (path: string) => void
+}> = ({ onSelect, onMatch, onOpenRoute }) => {
   const { dailyPicks, likeProfile, passProfile, moreLikeThis, lessLikeThis, user, trackEvent } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -227,6 +229,15 @@ export const DailyPicksScreen: React.FC<{
           {currentIndex + 1} / {dailyPicks.length}
         </div>
       </header>
+
+      <SkillRecommendationRail
+        surface="daily"
+        title="Skills for today"
+        subtitle="Understand matches, tune taste privately, and keep discovery calm."
+        skillIds={['why-this-match', 'private-taste', 'pacing-coach', 'explainable-ai']}
+        limit={4}
+        onOpenRoute={onOpenRoute}
+      />
 
       <div className="flex-1 relative">
         <AnimatePresence mode="wait">

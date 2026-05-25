@@ -8,6 +8,7 @@ import { aiService } from '@/services/aiService';
 import { cn } from '@/lib/utils';
 import { SafetyMenu } from '@/features/safety/SafetyMenu';
 import { ReportFlow } from '@/features/safety/ReportFlow';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 import { trustService } from '@/services/trustService';
 
@@ -15,8 +16,9 @@ export const ProfileDetail: React.FC<{
   profile: Profile, 
   onBack: () => void,
   onLike: () => void,
-  onPass: () => void
-}> = ({ profile, onBack, onLike, onPass }) => {
+  onPass: () => void,
+  onOpenRoute?: (path: string) => void
+}> = ({ profile, onBack, onLike, onPass, onOpenRoute }) => {
   const [openers, setOpeners] = useState<any[]>([]);
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
@@ -203,6 +205,14 @@ export const ProfileDetail: React.FC<{
               </span>
             </div>
           </section>
+
+          <SkillContextPanel
+            surface="profile"
+            title="Understand this profile"
+            description="Visible explanations only. Private taste, raw scores, and hidden ranking stay out of profile detail."
+            skillIds={['why-this-match', 'permissioned-sharing', 'compatibility-reflection']}
+            onOpenRoute={onOpenRoute}
+          />
 
           {/* Bio */}
           <section className="space-y-4">

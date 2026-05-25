@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -75,7 +75,7 @@ function ensureNodeModulesSymlink() {
     throw new Error('node_modules is missing; run npm ci before npm run check:vercel-upload');
   }
   if (!existsSync(uploadNodeModules)) {
-    symlinkSync(sourceNodeModules, uploadNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
+    symlinkSync(realpathSync(sourceNodeModules), uploadNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
   }
 }
 
@@ -112,7 +112,7 @@ try {
     throw new Error('Vite binary is missing; run npm ci before npm run check:vercel-upload');
   }
 
-  run(viteBinary, ['build', '--outDir', 'dist', '--emptyOutDir'], { cwd: uploadRoot });
+  run(process.execPath, [viteBinary, 'build', '--outDir', 'dist', '--emptyOutDir'], { cwd: uploadRoot });
 
   console.log('✅ Simulated Vercel upload kept runtime files and built successfully');
 } catch (error) {

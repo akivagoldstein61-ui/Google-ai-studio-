@@ -1,40 +1,82 @@
 /**
- * Vercel serverless catch-all that exposes the full Express app at /api/*.
+ * Vercel serverless catch-all for /api/*.
  *
- * Why a catch-all instead of one file per route? The existing Express routers
- * (server/aiRoutes, server/trustRoutes, server/shareRoutes) already share
- * middleware (auth, rate limit, Firebase Admin init, request shape). Splitting
- * each route into its own Vercel function file would duplicate that middleware
- * three ways. A single catch-all is simpler and keeps `npm run dev` (which
- * boots the same Express app via `tsx server.ts`) behaviour identical to
- * production.
- *
- * The app instance is cached across warm invocations to avoid re-initializing
- * Firebase Admin and the Gemini client on every request.
+ * Unknown API namespaces return a small JSON 404 before the full Express app is
+ * imported. That keeps smoke checks deterministic even if a cold start would
+ * otherwise need Firebase Admin or Gemini dependencies.
  */
 
-import type { IncomingMessage, ServerResponse } from "node:http";
-import { createApp } from "../server.ts";
+import type { IncomingMessage, ServerResponse } from 'node:http';
 
 type ExpressHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
+const SUPPORTED_API_NAMESPACES = new Set([
+  'ai',
+  'taste',
+  'discovery',
+  'safety',
+  'profile',
+  'account',
+  'support',
+  'share',
+]);
+
 let cached: Promise<ExpressHandler> | null = null;
 
-function getApp(): Promise<ExpressHandler> {
+function createApiNotFound(path: string) {
+  return {
+    status: 'not_found',
+    source: 'vercel-api-function',
+    service: 'kesher',
+    path,
+    message: 'API route not implemented in this prototype server.',
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function sendJson(response: ServerResponse, statusCode: number, body: unknown) {
+  response.statusCode = statusCode;
+  response.setHeader('Cache-Control', 'no-store, max-age=0');
+  response.setHeader('Content-Type', 'application/json; charset=utf-8');
+  response.end(JSON.stringify(body));
+}
+
+function normalizeApiUrlInPlace(request: IncomingMessage) {
+  const url = typeof request.url === 'string' ? request.url : '';
+  if (url.startsWith('/api')) return;
+
+  const requestWithQuery = request as IncomingMessage & { query?: Record<string, string | string[]> };
+  const pathParam = requestWithQuery.query?.path;
+  const path = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
+  const queryStart = url.indexOf('?');
+  const search = queryStart >= 0 ? url.slice(queryStart) : '';
+  const cleanPath = typeof path === 'string' ? path.replace(/^\/+/, '') : '';
+  const normalizedUrl = `/api/${cleanPath}${search}`;
+
+  try {
+    new URL(normalizedUrl, 'http://localhost');
+    request.url = normalizedUrl;
+  } catch {
+    request.url = '/api';
+  }
+}
+
+function getApiNamespace(url: string) {
+  const pathname = new URL(url, 'http://localhost').pathname;
+  const [, namespace] = pathname.replace(/^\/+/, '').split('/');
+  return namespace;
+}
+
+async function getApp(): Promise<ExpressHandler> {
   if (cached) return cached;
-  cached = createApp().then((app) => app as unknown as ExpressHandler);
+  cached = import('../server.ts')
+    .then(({ createApp }) => createApp())
+    .then((app) => app as unknown as ExpressHandler);
   return cached;
 }
 
-// Eagerly warm the cache at cold start so the first request doesn't pay the
-// Firebase Admin init cost on top of network latency.
-void getApp();
-
-// Vercel function config — see vercel.json for the matching `functions` block.
-// `runtime: "nodejs"` is required because firebase-admin and @google/genai are
-// Node-only (no edge runtime support).
 export const config = {
-  runtime: "nodejs",
+  runtime: 'nodejs',
   maxDuration: 60,
 };
 
@@ -42,6 +84,14 @@ export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
+  normalizeApiUrlInPlace(req);
+
+  const namespace = getApiNamespace(req.url ?? '/api');
+  if (!namespace || !SUPPORTED_API_NAMESPACES.has(namespace)) {
+    sendJson(res, 404, createApiNotFound(req.url ?? '/api'));
+    return;
+  }
+
   const app = await getApp();
   return app(req, res);
 }

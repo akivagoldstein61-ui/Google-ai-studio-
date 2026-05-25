@@ -12,13 +12,15 @@ import { cn } from '@/lib/utils';
 import { SafetyMenu } from '@/features/safety/SafetyMenu';
 import { ReportFlow } from '@/features/safety/ReportFlow';
 import { DatePlannerModal } from '@/features/match/DatePlannerModal';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 import { trustService } from '@/services/trustService';
 
 export const ChatThread: React.FC<{ 
   conversation: Conversation, 
-  onBack: () => void 
-}> = ({ conversation, onBack }) => {
+  onBack: () => void,
+  onOpenRoute?: (path: string) => void
+}> = ({ conversation, onBack, onOpenRoute }) => {
   const { user, sendMessage } = useApp();
   const [inputText, setInputText] = useState('');
   const [isRephrasing, setIsRephrasing] = useState(false);
@@ -246,6 +248,15 @@ export const ChatThread: React.FC<{
               </p>
             </motion.div>
           )}
+
+          <SkillContextPanel
+            surface="chat"
+            title="Chat skills"
+            description="Everything here drafts or checks. You choose what, if anything, gets sent."
+            skillIds={['maps-date-planner', 'pacing-coach', 'permissioned-sharing', 'compatibility-reflection']}
+            compact
+            onOpenRoute={onOpenRoute}
+          />
 
           {conversation.messages.length === 0 && openerSuggestions.length === 0 && !isGeneratingOpeners && (
             <motion.div 

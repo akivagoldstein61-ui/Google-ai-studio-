@@ -6,8 +6,9 @@ import { aiSafetyService } from '@/services/aiSafetyService';
 import { cn } from '@/lib/utils';
 import { ReportFlow } from '@/features/safety/ReportFlow';
 import { useApp } from '@/context/AppContext';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
-export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const SafetyCenter: React.FC<{ onBack: () => void; onOpenRoute?: (path: string) => void }> = ({ onBack, onOpenRoute }) => {
   const { user } = useApp();
   const [safetyQuestion, setSafetyQuestion] = useState('');
   const [safetyAdvice, setSafetyAdvice] = useState<string | null>(null);
@@ -102,6 +103,15 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </AnimatePresence>
           </div>
         </section>
+
+        <SkillContextPanel
+          surface="safety"
+          title="Safety skills"
+          description="Resource grounding, reporting, privacy rights, and anti-dark-pattern checks stay visible here."
+          skillIds={['grounded-search', 'israeli-privacy', 'dark-pattern-audit', 'image-analysis']}
+          limit={4}
+          onOpenRoute={onOpenRoute}
+        />
 
         {/* Safety Explanations */}
         <section className="space-y-6">

@@ -114,6 +114,7 @@ const DailyPicksRoute: React.FC = () => {
       <DailyPicksScreen
         onSelect={(profile) => navigate(`/profile/${profile.id}`, { state: { profile } })}
         onMatch={setShowMatch}
+        onOpenRoute={(path) => navigate(path)}
       />
       <AnimatePresence>
         {showMatch && (
@@ -133,12 +134,22 @@ const DailyPicksRoute: React.FC = () => {
 
 const ExploreRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <ExploreScreen onSelect={(profile) => navigate(`/profile/${profile.id}`, { state: { profile } })} />;
+  return (
+    <ExploreScreen
+      onSelect={(profile) => navigate(`/profile/${profile.id}`, { state: { profile } })}
+      onOpenRoute={(path) => navigate(path)}
+    />
+  );
 };
 
 const InboxRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <InboxScreen onSelect={(conv) => navigate(`/inbox/${conv.id}`, { state: { conversation: conv } })} />;
+  return (
+    <InboxScreen
+      onSelect={(conv) => navigate(`/inbox/${conv.id}`, { state: { conversation: conv } })}
+      onOpenRoute={(path) => navigate(path)}
+    />
+  );
 };
 
 const SettingsRoute: React.FC = () => {
@@ -181,6 +192,7 @@ const ProfileDetailRoute: React.FC = () => {
         onBack={() => navigate(-1)}
         onLike={handleLike}
         onPass={() => { passProfile(profile.id); navigate(-1); }}
+        onOpenRoute={(path) => navigate(path)}
       />
       <AnimatePresence>
         {showMatch && (
@@ -203,17 +215,24 @@ const ChatThreadRoute: React.FC = () => {
   const location = useLocation();
   const conversation = (location.state as any)?.conversation as Conversation | undefined;
   if (!conversation) return <Navigate to="/inbox" replace />;
-  return <ChatThread conversation={conversation} onBack={() => navigate(-1)} />;
+  return <ChatThread conversation={conversation} onBack={() => navigate(-1)} onOpenRoute={(path) => navigate(path)} />;
 };
 
 const SafetyCenterRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <SafetyCenter onBack={() => navigate(-1)} />;
+  return <SafetyCenter onBack={() => navigate(-1)} onOpenRoute={(path) => navigate(path)} />;
 };
 
 const AITrustHubRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <AITrustHub onBack={() => navigate(-1)} onShowTasteProfile={() => navigate('/settings/taste-profile')} />;
+  return (
+    <AITrustHub
+      onBack={() => navigate(-1)}
+      onShowTasteProfile={() => navigate('/settings/taste-profile')}
+      onShowPersonalityVisibility={() => navigate('/settings/personality-visibility')}
+      onOpenRoute={(path) => navigate(path)}
+    />
+  );
 };
 
 const TasteProfileRoute: React.FC = () => {
@@ -243,7 +262,7 @@ const PersonalityVisibilityRoute: React.FC = () => {
 
 const AIOpsRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <AIOpsScreen onBack={() => navigate(-1)} />;
+  return <AIOpsScreen onBack={() => navigate(-1)} onOpenRoute={(path) => navigate(path)} />;
 };
 
 const ExperimentsRoute: React.FC = () => {
@@ -306,7 +325,7 @@ export default function App() {
       // Wrap in AppProvider so deepened skill pages can use useApp() here too.
       return (
         <AppProvider>
-          <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />
+          <SkillsRouter onBack={() => { window.location.assign('/prototype'); }} />
         </AppProvider>
       );
     }
