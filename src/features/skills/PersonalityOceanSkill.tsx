@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Star, Check, Info } from 'lucide-react';
+import { ChevronLeft, Star, Check, Info, Sparkles } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
 import {
   OCEAN_DOMAINS,
   reflectOcean,
@@ -29,6 +30,52 @@ const OBSERVANCE_MASORTI_DATI: ObservanceProfile = { selfDescriptionId: 'masorti
 
 const AREA_LABELS: Record<string, string> = { shabbat: 'Shabbat', kashrut: 'Kashrut', community: 'Community', family: 'Family' };
 
+const OCEAN_KEYS = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'] as const;
+
+/**
+ * LIVE: renders the signed-in user's REAL deterministic OCEAN domain scores
+ * (from the opt-in assessment) as owner-only reflection bars. Tendencies, not
+ * fixed labels; observance is shown as a separate self-declared layer.
+ */
+const LiveOcean: React.FC = () => {
+  const { user } = useApp();
+  const scores = (user?.personalityScores ?? {}) as Record<string, number>;
+  const has = OCEAN_KEYS.some((k) => typeof scores[k] === 'number');
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your OCEAN profile</span></div>
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to see your private OCEAN reflection.</p>
+        ) : !has ? (
+          <p className="text-sm text-white/70 italic leading-relaxed">Take the optional personality assessment first — your five OCEAN domains will appear here as a private reflection.</p>
+        ) : (
+          <div className="space-y-2.5">
+            {OCEAN_KEYS.map((k) => {
+              const v = typeof scores[k] === 'number' ? Math.max(0, Math.min(100, scores[k])) : null;
+              if (v === null) return null;
+              return (
+                <div key={k} className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-white/90">{FRIENDLY[k] ?? k}</span>
+                    <span className="text-[10px] text-white/50 font-mono">{v}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${v}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+            <p className="text-[9px] text-white/40 italic pt-1">Owner-only. Tendencies, not fixed labels — and never a compatibility score. Observance is a separate self-declared layer below.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [profileA, setProfileA] = useState<OceanScores>({ ...DEMO_PROFILE_HIGH_WARMTH });
   const [showObservance, setShowObservance] = useState(false);
@@ -54,6 +101,9 @@ export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real OCEAN reflection */}
+        <LiveOcean />
+
         {/* What this does */}
         <section className="p-6 bg-amber-50 rounded-[24px] border border-amber-100 space-y-2">
           <div className="flex items-center gap-2 text-amber-700">
