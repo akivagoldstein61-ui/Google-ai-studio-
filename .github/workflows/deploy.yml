@@ -73,7 +73,7 @@ jobs:
 
           found=0
           for pattern in "${PATTERNS[@]}"; do
-            if grep -RIn --binary-files=without-match --include='*.html' --include='*.js' --include='*.css' -E "$pattern" .vercel/output/static; then
+            if grep -ql -R --binary-files=without-match --include='*.html' --include='*.js' --include='*.css' -E "$pattern" .vercel/output/static; then
               echo "::error::Forbidden pattern found in Vercel static output: $pattern"
               found=1
             fi
