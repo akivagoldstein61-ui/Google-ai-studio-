@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ShoppingBag, Check, X, Info, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ShoppingBag, Check, X, Info, AlertTriangle, Sparkles } from 'lucide-react';
 import {
   violatesHardFilters,
   directionalScore,
@@ -11,6 +11,87 @@ import {
   type FairnessState,
 } from '@/lib/filteringGrammar';
 import { MOCK_PROFILES } from '@/data/mockProfiles';
+import { useApp } from '@/context/AppContext';
+import type { RecommendationMode } from '@/types';
+
+const REC_MODES: { value: RecommendationMode; label: string; blurb: string }[] = [
+  { value: 'values_first', label: 'Values-first', blurb: 'Prioritize shared values & intent' },
+  { value: 'balanced', label: 'Balanced', blurb: 'Even weight across signals' },
+  { value: 'serendipity', label: 'Serendipity', blurb: 'Gentle surprise, still in-bounds' },
+  { value: 'open_exploration', label: 'Open', blurb: 'Widest in-bounds pool' },
+];
+
+/**
+ * LIVE: real discovery preferences. recommendationMode is persisted via
+ * setPreferences (owner-controlled). Hard filters strictly narrow the pool;
+ * soft preferences only re-rank — never hide. No hidden overrides.
+ */
+const LiveFiltering: React.FC = () => {
+  const { user, preferences, setPreferences, trackEvent } = useApp();
+  const [saving, setSaving] = useState(false);
+  const mode = preferences?.recommendationMode ?? 'balanced';
+  const hard = (preferences?.hardFilters ?? []) as unknown[];
+  const soft = (preferences?.softPreferences ?? []) as unknown[];
+
+  const choose = async (next: RecommendationMode) => {
+    if (!preferences || next === mode) return;
+    setSaving(true);
+    try {
+      await setPreferences({ ...preferences, recommendationMode: next });
+      trackEvent?.('skill_applied', { skillId: 'filtering-marketplace', recommendationMode: next });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your live discovery controls</span></div>
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to tune how your finite daily pool is ranked.</p>
+        ) : (
+          <>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-2">Recommendation mode</p>
+              <div className="grid grid-cols-2 gap-2">
+                {REC_MODES.map((m) => {
+                  const active = mode === m.value;
+                  return (
+                    <button key={m.value} onClick={() => choose(m.value)} disabled={saving}
+                      className={`text-left p-3 rounded-2xl border transition-all ${active ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 bg-white/5 hover:border-white/25'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white/90">{m.label}</span>
+                        {active && <Check size={13} className="text-[#D4AF37]" />}
+                      </div>
+                      <p className="text-[10px] text-white/55 italic mt-0.5">{m.blurb}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Hard filters · strict</p>
+                {hard.length ? (
+                  <div className="flex flex-wrap gap-1.5">{hard.map((h, i) => <span key={i} className="px-2 py-0.5 rounded-md text-[10px] bg-red-500/15 text-red-300 border border-red-500/20">{String(h)}</span>)}</div>
+                ) : <p className="text-[11px] text-white/40 italic">None — full pool</p>}
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Soft prefs · re-rank only</p>
+                {soft.length ? (
+                  <div className="flex flex-wrap gap-1.5">{soft.map((s, i) => <span key={i} className="px-2 py-0.5 rounded-md text-[10px] bg-green-500/15 text-green-300 border border-green-500/20">{String(s)}</span>)}</div>
+                ) : <p className="text-[11px] text-white/40 italic">None yet</p>}
+              </div>
+            </div>
+            <p className="text-[9px] text-white/40 italic">{saving ? 'Saving…' : 'Hard filters narrow strictly; soft preferences only re-order — they never hide anyone. No hidden ranking overrides.'}</p>
+          </>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const HARD_FILTER_LABELS: Record<HardFilterId, string> = {
   age_range: 'Age range',
@@ -117,6 +198,9 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real discovery preferences */}
+        <LiveFiltering />
+
         {/* Purpose */}
         <section className="p-6 bg-lime-50 rounded-[24px] border border-lime-100 space-y-2">
           <div className="flex items-center gap-2 text-lime-700">
