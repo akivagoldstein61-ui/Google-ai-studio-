@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Activity, Check, X, Info, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Activity, Check, X, Info, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
 import {
   authority,
   signOf,
@@ -47,6 +49,82 @@ function authorityBar(authorityValue: number) {
   );
 }
 
+/**
+ * LIVE: grounds the learning model in the user's REAL captured signals
+ * (likes / passes / more-like-this / less-like-this) and shows current
+ * owner-only leanings. Recompute calls /api/ai/taste-profile. No raw weight
+ * vectors, no protected-trait fields.
+ */
+const LiveLearnedSignals: React.FC = () => {
+  const { user, interactions, tasteProfile, trackEvent } = useApp();
+  const [model, setModel] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const counts = {
+    likes: interactions?.likes?.length ?? 0,
+    passes: interactions?.passes?.length ?? 0,
+    more: interactions?.moreLikeThis?.length ?? 0,
+    less: interactions?.lessLikeThis?.length ?? 0,
+  };
+  const total = counts.likes + counts.passes + counts.more + counts.less;
+  const leanToward: string[] = model?.soft_preferences ?? tasteProfile?.soft_preferences ?? [];
+  const dealbreakers: string[] = model?.hard_dealbreakers ?? tasteProfile?.hard_dealbreakers ?? [];
+
+  const recompute = async () => {
+    setLoading(true);
+    try {
+      const r = await aiService.analyzeTasteProfile(interactions, tasteProfile);
+      setModel(r);
+      trackEvent?.('skill_completed', { skillId: 'learned-taste', hasResult: !!r, signals: total });
+    } catch {
+      setModel(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your live signals</span></div>
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to see what Kesher has learned from your real interactions.</p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { k: 'Likes', v: counts.likes }, { k: 'Passes', v: counts.passes },
+                { k: 'More-like-this', v: counts.more }, { k: 'Less-like-this', v: counts.less },
+              ].map((s) => (
+                <span key={s.k} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/70">{s.k}: <span className="text-[#D4AF37]">{s.v}</span></span>
+              ))}
+            </div>
+            {(leanToward.length > 0 || dealbreakers.length > 0) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                {leanToward.length > 0 && (
+                  <div className="space-y-1.5"><p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Leans toward</p><div className="flex flex-wrap gap-1.5">{leanToward.map((x) => <span key={x} className="px-2 py-0.5 rounded-md text-[10px] bg-green-500/15 text-green-300 border border-green-500/20">{x}</span>)}</div></div>
+                )}
+                {dealbreakers.length > 0 && (
+                  <div className="space-y-1.5"><p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Dealbreakers</p><div className="flex flex-wrap gap-1.5">{dealbreakers.map((x) => <span key={x} className="px-2 py-0.5 rounded-md text-[10px] bg-red-500/15 text-red-300 border border-red-500/20">{x}</span>)}</div></div>
+                )}
+              </div>
+            )}
+            {total === 0 ? (
+              <p className="text-sm text-white/70 italic leading-relaxed">Like or pass on profiles in Daily Picks — your authority-weighted signals appear here. Messages, location, and protected traits are never used.</p>
+            ) : (
+              <button onClick={recompute} className="h-10 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] inline-flex items-center gap-2">
+                {loading ? <><Loader2 size={14} className="animate-spin" /> Recomputing</> : 'Recompute from my signals'}
+              </button>
+            )}
+            <p className="text-[9px] text-white/40 italic">Owner-only. Category-level leanings only — exact authority weights are never shown to anyone.</p>
+          </>
+        )}
+      </div>
+    </section>
+  );
+};
+
 export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [tasteState, setTasteState] = useState<TasteState>(emptyTasteState(Date.now()));
   const [log, setLog] = useState<string[]>([]);
@@ -91,6 +169,9 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real captured signals */}
+        <LiveLearnedSignals />
+
         {/* Purpose */}
         <section className="p-6 bg-green-50 rounded-[24px] border border-green-100 space-y-2">
           <div className="flex items-center gap-2 text-green-700">
