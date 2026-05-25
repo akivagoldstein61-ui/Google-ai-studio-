@@ -4,8 +4,9 @@ import { Database, Shield, AlertCircle, CheckCircle, Activity, Settings, Termina
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { aiOpsService } from '@/services/aiOpsService';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
-export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const AIOpsScreen: React.FC<{ onBack: () => void; onOpenRoute?: (path: string) => void }> = ({ onBack, onOpenRoute }) => {
   const health = aiOpsService.getSystemHealth();
   const features = aiOpsService.getFeatureStatus();
   const interventions = aiOpsService.getRecentInterventions();
@@ -84,6 +85,16 @@ export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             ))}
           </div>
         </section>
+
+        <SkillContextPanel
+          surface="admin"
+          title="Operator skills"
+          description="Admin-only controls for AI governance, moderation summaries, release checks, and experiments."
+          skillIds={['ai-runtime-governance', 'gemini-integration', 'personality-delivery', 'video-generator']}
+          includeInternal
+          limit={4}
+          onOpenRoute={onOpenRoute}
+        />
 
         {/* Moderation Queue Stub */}
         <section className="space-y-4">

@@ -20,19 +20,25 @@ const LiveCompatibility: React.FC = () => {
   const { user, dailyPicks, trackEvent } = useApp();
   const candidate = dailyPicks?.[0];
   const [agreed, setAgreed] = useState(false);
+  const [counterpartyAgreed, setCounterpartyAgreed] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     if (!user || !candidate) return;
+    const mutualConsent = agreed && counterpartyAgreed;
+    if (!mutualConsent) {
+      setError('Both consent toggles must be on before the reflection route can run.');
+      return;
+    }
     setLoading(true);
     setError(null);
     trackEvent?.('skill_consent_accepted', { skillId: 'compatibility-reflection' });
     try {
       const r = await aiService.getCompatibilityReflection(sharedInputsFrom(candidate), {
-        mutualConsent: true,
-        bothOptedIn: true,
+        mutualConsent,
+        bothOptedIn: counterpartyAgreed,
       });
       if (!r) {
         setError('Reflection unavailable right now. We never invent a compatibility report.');
@@ -91,9 +97,13 @@ const LiveCompatibility: React.FC = () => {
             </p>
             <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer select-none">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-[#D4AF37]" />
-              <span>We both consent. I understand this is a reflection, not a prediction — no scores, no verdicts.</span>
+              <span>I consent. I understand this is a reflection, not a prediction — no scores, no verdicts.</span>
             </label>
-            <button onClick={run} disabled={!agreed} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] disabled:opacity-40">
+            <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer select-none">
+              <input type="checkbox" checked={counterpartyAgreed} onChange={(e) => setCounterpartyAgreed(e.target.checked)} className="mt-0.5 accent-[#D4AF37]" />
+              <span>Demo fixture: the other person has explicitly opted in to this shared reflection.</span>
+            </label>
+            <button onClick={run} disabled={!agreed || !counterpartyAgreed} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] disabled:opacity-40">
               Generate reflection
             </button>
             {error && <p className="text-xs text-amber-200/90 italic">{error}</p>}

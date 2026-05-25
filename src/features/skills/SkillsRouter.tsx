@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SkillsHub, SKILLS } from './SkillsHub';
+import { SkillsHub } from './SkillsHub';
+import { getSkillById } from './skillRegistry';
 import { PersonalityAssessmentSkill } from './PersonalityAssessmentSkill';
 import { ConsentUxSkill } from './ConsentUxSkill';
 import { IsraeliPrivacySkill } from './IsraeliPrivacySkill';
@@ -18,15 +19,22 @@ import { PersonalityOceanSkill } from './PersonalityOceanSkill';
 import { LearnedTasteSkill } from './LearnedTasteSkill';
 import { FilteringMarketplaceSkill } from './FilteringMarketplaceSkill';
 import { PlannedSkillPage } from './PlannedSkillPage';
+import { useSkillState } from './useSkillState';
 
 export const SkillsRouter: React.FC<{
   onBack: () => void;
   onOpenFeature?: (path: string) => void;
 }> = ({ onBack, onOpenFeature }) => {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const { startSkill } = useSkillState();
+
+  const openSkill = (skillId: string) => {
+    startSkill(skillId, 'skills');
+    setActiveSkill(skillId);
+  };
 
   if (!activeSkill) {
-    return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
+    return <SkillsHub onBack={onBack} onSelect={openSkill} onOpenFeature={onOpenFeature} />;
   }
 
   const skillProps = { onBack: () => setActiveSkill(null) };
@@ -67,11 +75,18 @@ export const SkillsRouter: React.FC<{
     case 'filtering-marketplace':
       return <FilteringMarketplaceSkill {...skillProps} />;
     default: {
-      const meta = SKILLS.find(s => s.id === activeSkill);
+      const meta = getSkillById(activeSkill);
       if (meta) {
-        return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
+        return (
+          <PlannedSkillPage
+            skill={meta}
+            onBack={() => setActiveSkill(null)}
+            onOpenFeature={onOpenFeature}
+            onOpenSkill={openSkill}
+          />
+        );
       }
-      return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
+      return <SkillsHub onBack={onBack} onSelect={openSkill} onOpenFeature={onOpenFeature} />;
     }
   }
 };

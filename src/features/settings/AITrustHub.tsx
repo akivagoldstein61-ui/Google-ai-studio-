@@ -14,8 +14,14 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 
 import { useApp } from '@/context/AppContext';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
-export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void, onShowPersonalityVisibility?: () => void }> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility }) => {
+export const AITrustHub: React.FC<{
+  onBack: () => void,
+  onShowTasteProfile?: () => void,
+  onShowPersonalityVisibility?: () => void,
+  onOpenRoute?: (path: string) => void,
+}> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility, onOpenRoute }) => {
   const { resetTasteProfile, user } = useApp();
   const [enabledFeatures, setEnabledFeatures] = useState<string[]>(
     AI_FEATURE_REGISTRY.filter(f => f.default_enabled).map(f => f.id)
@@ -168,6 +174,25 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
             ))}
           </div>
         </section>
+
+        <SkillContextPanel
+          surface="ai-trust"
+          title="AI trust skills"
+          description="Inspect consent, AI feature boundaries, disclosure, and privacy controls."
+          skillIds={['consent-ux', 'explainable-ai', 'ai-feature-modules', 'ai-runtime-governance']}
+          limit={4}
+          onOpenRoute={(path) => {
+            if (path === '/settings/taste-profile') {
+              onShowTasteProfile?.();
+              return;
+            }
+            if (path === '/settings/personality-visibility') {
+              onShowPersonalityVisibility?.();
+              return;
+            }
+            onOpenRoute?.(path);
+          }}
+        />
 
         {/* Data & Privacy */}
         <section className="space-y-6">
