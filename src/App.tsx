@@ -57,13 +57,14 @@ const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Tab layout — wraps the 4 main tab screens with MainLayout + tab bar
 // ---------------------------------------------------------------------------
 
-const TAB_ROUTES = ['/daily', '/explore', '/inbox', '/settings'] as const;
+const TAB_ROUTES = ['/daily', '/explore', '/inbox', '/skills', '/settings'] as const;
 type TabPath = typeof TAB_ROUTES[number];
 
-const TAB_MAP: Record<TabPath, 'daily' | 'explore' | 'matches' | 'profile'> = {
+const TAB_MAP: Record<TabPath, 'daily' | 'explore' | 'matches' | 'skills' | 'profile'> = {
   '/daily': 'daily',
   '/explore': 'explore',
   '/inbox': 'matches',
+  '/skills': 'skills',
   '/settings': 'profile',
 };
 
@@ -73,14 +74,17 @@ const TabLayout: React.FC = () => {
 
   const currentPath = location.pathname as TabPath;
   const activeTab = TAB_MAP[currentPath] || 'daily';
+  const withDemoSearch = (path: string) => (
+    location.search.includes('demo=') && !path.includes('?') ? `${path}${location.search}` : path
+  );
 
   const setActiveTab = (tab: 'daily' | 'explore' | 'matches' | 'profile' | 'skills') => {
     if (tab === 'skills') {
-      navigate('/skills');
+      navigate(withDemoSearch('/skills'));
       return;
     }
     const path = Object.entries(TAB_MAP).find(([, v]) => v === tab)?.[0];
-    if (path) navigate(path);
+    if (path) navigate(withDemoSearch(path));
   };
 
   return (
@@ -198,6 +202,31 @@ const ProfileDetailRoute: React.FC = () => {
   );
 };
 
+const ProfileEditRoute: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, setUser } = useApp();
+  if (!user) return <Navigate to="/daily" replace />;
+
+  return (
+    <div className="h-full overflow-y-auto bg-[#FDFCFB] px-6 py-8">
+      <ProfileBuilder
+        initialData={user}
+        onComplete={(data) => {
+          setUser({
+            ...user,
+            photos: data.photos.map((photo: any) => photo.url),
+            prompts: data.prompts,
+            bio: data.bio,
+            personalityScores: data.personalityScores,
+            isVerified: data.isVerified,
+          });
+          navigate('/settings');
+        }}
+      />
+    </div>
+  );
+};
+
 const ChatThreadRoute: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -213,7 +242,13 @@ const SafetyCenterRoute: React.FC = () => {
 
 const AITrustHubRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <AITrustHub onBack={() => navigate(-1)} onShowTasteProfile={() => navigate('/settings/taste-profile')} />;
+  return (
+    <AITrustHub
+      onBack={() => navigate(-1)}
+      onShowTasteProfile={() => navigate('/settings/taste-profile')}
+      onShowPersonalityVisibility={() => navigate('/settings/personality-visibility')}
+    />
+  );
 };
 
 const TasteProfileRoute: React.FC = () => {
@@ -270,11 +305,13 @@ const AppContent: React.FC = () => {
             <Route path="/daily" element={<DailyPicksRoute />} />
             <Route path="/explore" element={<ExploreRoute />} />
             <Route path="/inbox" element={<InboxRoute />} />
+            <Route path="/skills" element={<SkillsRoute />} />
             <Route path="/settings" element={<SettingsRoute />} />
           </Route>
 
           {/* Full-screen routes (no tab bar) */}
           <Route path="/profile/:profileId" element={<ProfileDetailRoute />} />
+          <Route path="/profile/edit" element={<ProfileEditRoute />} />
           <Route path="/inbox/:conversationId" element={<ChatThreadRoute />} />
           <Route path="/settings/safety" element={<SafetyCenterRoute />} />
           <Route path="/settings/ai-trust" element={<AITrustHubRoute />} />
@@ -283,7 +320,7 @@ const AppContent: React.FC = () => {
           <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
-          <Route path="/skills" element={<SkillsRoute />} />
+          <Route path="/demo" element={<Navigate to="/daily?demo=1" replace />} />
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/daily" replace />} />

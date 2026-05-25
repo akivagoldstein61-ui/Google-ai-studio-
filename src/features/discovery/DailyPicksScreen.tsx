@@ -6,6 +6,7 @@ import { Heart, X, Info, Sparkles, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { aiService } from '@/services/aiService';
+import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
 
 export const DailyPicksScreen: React.FC<{ 
   onSelect: (profile: Profile) => void,
@@ -158,6 +159,11 @@ export const DailyPicksScreen: React.FC<{
           )}
         </div>
         <div className="space-y-3 w-full max-w-sm">
+          <SkillRecommendationRail
+            surface="daily"
+            skillIds={['why-this-match', 'private-taste', 'pacing-coach']}
+            limit={3}
+          />
           <Button 
             onClick={() => setShowIntro(false)}
             className="w-full h-14 text-sm font-bold rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all uppercase tracking-widest"
@@ -202,6 +208,15 @@ export const DailyPicksScreen: React.FC<{
             </motion.div>
           )}
         </AnimatePresence>
+        <div className="w-full max-w-sm">
+          <SkillRecommendationRail
+            surface="daily"
+            title="Reflect on today"
+            subtitle="Save what felt useful and keep tomorrow's picks intentional."
+            skillIds={['pacing-coach', 'learned-taste', 'calm-ux']}
+            limit={3}
+          />
+        </div>
 
         <div className="h-px w-16 bg-[#2D2926] opacity-10" />
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Intentional • Finite • Calm</p>
@@ -223,6 +238,12 @@ export const DailyPicksScreen: React.FC<{
           {currentIndex + 1} / {dailyPicks.length}
         </div>
       </header>
+
+      <SkillRecommendationRail
+        surface="daily"
+        skillIds={['why-this-match', 'filtering-marketplace', 'learned-taste']}
+        limit={3}
+      />
 
       <div className="flex-1 relative">
         <AnimatePresence mode="wait">

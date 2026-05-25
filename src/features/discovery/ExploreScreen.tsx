@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SlidersHorizontal, Grid, LayoutList, Check, X, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
   const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
@@ -39,6 +40,15 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> =
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
+        <div className="mb-5">
+          <SkillContextPanel
+            surface="explore"
+            title="Explore skills"
+            description="Tune discovery privately without exposing taste internals or turning people into scores."
+            skillIds={['filtering-marketplace', 'private-taste', 'learned-taste']}
+            compact
+          />
+        </div>
         <div className={cn(
           "grid gap-4",
           viewMode === 'grid' ? "grid-cols-2" : "grid-cols-1"
@@ -191,7 +201,7 @@ const FilterDrawer: React.FC<{
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Soft Preferences</h4>
-            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Ranking biases</span>
+            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Soft signals</span>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -210,6 +220,14 @@ const FilterDrawer: React.FC<{
           </div>
         </section>
 
+        <SkillContextPanel
+          surface="explore"
+          title="Preference skills"
+          description="Use filters and learned taste as private controls. Other members never see your taste profile."
+          skillIds={['filtering-marketplace', 'learned-taste', 'privacy-recommendation']}
+          compact
+        />
+
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Recommendation Mode</h4>
@@ -220,7 +238,7 @@ const FilterDrawer: React.FC<{
             {[
               { id: 'values_first', label: 'Values' },
               { id: 'balanced', label: 'Balanced' },
-              { id: 'chemistry_first', label: 'Chemistry' }
+              { id: 'chemistry_first', label: 'Serendipity' }
             ].map(mode => (
               <button 
                 key={mode.id}

@@ -4,6 +4,7 @@ import { Database, Shield, AlertCircle, CheckCircle, Activity, Settings, Termina
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { aiOpsService } from '@/services/aiOpsService';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const health = aiOpsService.getSystemHealth();
@@ -35,6 +36,14 @@ export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <StatCard icon={CheckCircle} label="Success Rate" value={health.successRate} color="text-blue-600" />
           <StatCard icon={Database} label="Token Usage" value={health.tokenUsage} color="text-slate-600" />
         </section>
+
+        <SkillContextPanel
+          surface="admin"
+          title="Internal skill controls"
+          description="Operator-only governance skills stay out of member surfaces and do not expose moderation reasoning."
+          skillIds={['ai-runtime-governance', 'gemini-integration', 'low-latency-ai', 'personality-delivery']}
+          includeInternal
+        />
 
         {/* Feature Registry Status */}
         <section className="space-y-4">

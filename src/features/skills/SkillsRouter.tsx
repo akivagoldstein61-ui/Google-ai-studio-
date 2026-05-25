@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SkillsHub, SKILLS } from './SkillsHub';
+import { SkillsHub } from './SkillsHub';
+import { SKILLS } from './skillRegistry';
 import { PersonalityAssessmentSkill } from './PersonalityAssessmentSkill';
 import { ConsentUxSkill } from './ConsentUxSkill';
 import { IsraeliPrivacySkill } from './IsraeliPrivacySkill';
@@ -18,15 +19,26 @@ import { PersonalityOceanSkill } from './PersonalityOceanSkill';
 import { LearnedTasteSkill } from './LearnedTasteSkill';
 import { FilteringMarketplaceSkill } from './FilteringMarketplaceSkill';
 import { PlannedSkillPage } from './PlannedSkillPage';
+import { useSkillState } from './hooks/useSkillState';
+import { useApp } from '@/context/AppContext';
+import { emitSkillEvent } from './skillEvents';
 
 export const SkillsRouter: React.FC<{
   onBack: () => void;
   onOpenFeature?: (path: string) => void;
 }> = ({ onBack, onOpenFeature }) => {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const { startSkill } = useSkillState();
+  const { trackEvent } = useApp();
+
+  const handleSelectSkill = (skillId: string) => {
+    emitSkillEvent(trackEvent, 'skill_viewed', { skillId, surface: 'skills-hub' });
+    startSkill(skillId, 'skills-hub');
+    setActiveSkill(skillId);
+  };
 
   if (!activeSkill) {
-    return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
+    return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
   }
 
   const skillProps = { onBack: () => setActiveSkill(null) };
@@ -71,7 +83,7 @@ export const SkillsRouter: React.FC<{
       if (meta) {
         return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
       }
-      return <SkillsHub onBack={onBack} onSelect={setActiveSkill} onOpenFeature={onOpenFeature} />;
+      return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
     }
   }
 };
