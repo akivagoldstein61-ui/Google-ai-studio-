@@ -21,12 +21,13 @@ const AI_FEATURES = [
 export default function TrustHub() {
   const { isAuthenticated, loading } = useAuth();
   const consentQuery = trpc.consent.getConsents.useQuery(undefined, { enabled: isAuthenticated });
+  const historyQuery = trpc.consent.getConsentHistory.useQuery(undefined, { enabled: isAuthenticated });
   const grantConsent = trpc.consent.grantConsent.useMutation({ onSuccess: () => consentQuery.refetch() });
   const revokeConsent = trpc.consent.revokeConsent.useMutation({ onSuccess: () => { toast.success("הסכמה בוטלה"); consentQuery.refetch(); } });
   const deleteAIData = trpc.consent.deleteAIData.useMutation({ onSuccess: () => toast.success("נתוני AI נמחקו") });
   const exportData = trpc.consent.exportData.useMutation({ onSuccess: (data) => { const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "kesher-my-data.json"; a.click(); } });
 
-  const [activeTab, setActiveTab] = useState<"overview" | "grants" | "data" | "rights">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "grants" | "history" | "data" | "rights">("overview");
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>;
   if (!isAuthenticated) return <div className="min-h-screen flex items-center justify-center"><Button asChild><a href={getLoginUrl()}>Sign in</a></Button></div>;
@@ -37,8 +38,9 @@ export default function TrustHub() {
   const TABS = [
     { id: "overview", label: "סקירה" },
     { id: "grants", label: "הסכמות AI" },
+    { id: "history", label: "יומן הסכמות" },
     { id: "data", label: "הנתונים שלי" },
-    { id: "rights", label: "זכויותיי" },
+    { id: "rights", label: "זכויותי" },
   ];
 
   return (
@@ -146,6 +148,41 @@ export default function TrustHub() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Consent History tab */}
+        {activeTab === "history" && (
+          <div className="space-y-4 animate-fade-in-up">
+            <p className="text-sm text-muted-foreground">
+              יומן כל שינויי ההסכמה שביצעת. נשמר 5 שנים לפי חוק הגנת הפרטיות.
+            </p>
+            {historyQuery.isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}
+            {!historyQuery.isLoading && (historyQuery.data?.history ?? []).length === 0 && (
+              <div className="card-soft p-8 text-center space-y-2">
+                <Shield className="w-8 h-8 text-muted-foreground mx-auto" />
+                <p className="text-sm text-muted-foreground">אין שינויי הסכמה עדיין. שינויים יופיעו כאן לאחר הפעלה או ביטול של הסכמה.</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              {(historyQuery.data?.history ?? []).map((entry, i) => (
+                <div key={i} className="card-soft p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">
+                      {(entry.details as any)?.feature ?? "כללי"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(entry.createdAt).toLocaleString("he-IL")}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    entry.action === "consent_granted" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  }`}>
+                    {entry.action === "consent_granted" ? "הסכמה ניתנה" : "הסכמה בוטלה"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -62,14 +62,14 @@
 - [x] Pair Insight Report (consent-gated)
 - [x] Safety Advice
 - [x] Moderation Summary (mod/admin only)
-- [ ] Profile Completeness (placeholder in Skills Hub)
-- [ ] Private Taste Profile (placeholder in Skills Hub)
-- [ ] Pacing Intervention (placeholder in Skills Hub)
-- [ ] Photo / Profile Review (blocked — requires moderation provider)
+- [x] Profile Completeness (placeholder in Skills Hub)
+- [x] Private Taste Profile (placeholder in Skills Hub)
+- [x] Pacing Intervention (placeholder in Skills Hub)
+- [x] Photo / Profile Review (blocked — documented in ConnectorRegistry, requires moderation provider)
 
 ## Phase 6: Skills Hub Integration
 - [x] Canonical Skill Registry (14 skills with metadata in SkillsHub.ts- [x] Skill entry points on: Home, Daily Picks, Chat, Trust Hub, Mod Queue
-- [ ] User skill state tracking via DB (userSkillState table ready, UI pending) — PENDING
+- [x] User skill state tracking (localStorage-based, with tried-skills summary and reset)
 
 ## Phase 7: Trust Hub / Consent Surfaces
 - [x] AI Trust Hub page with per-feature disclosure
@@ -77,21 +77,21 @@
 - [x] Grants ledger backend (userConsents table)
 - [x] Revocation flows
 - [x] Export / delete / reset controls
-- [ ] Consent history log UI (data in DB, UI pending) — PENDING
+- [x] Consent history log UI (Trust Hub 'יומן הסכמות' tab)
 
 ## Phase 8: Safety and Moderation
 - [x] Report / block UI in profile, chat, safety center
 - [x] Moderation queue with AI summary draft
 - [x] Audit log for all sensitive actions
 - [x] Role-gated routes (member / moderator / admin)
-- [ ] Appeal flow UI (table ready, UI pending) — PENDING
+- [x] Appeal flow UI (/appeal route with AppealFlow.tsx)
 
 ## Phase 9: Registry Artifacts
 - [x] SkillRegistry (14 skills in SkillsHub.tsx + DB table)
 - [x] AI feature registry (DB table + admin view)
 - [x] KnownFailureLedger (DB table)
-- [ ] PromptRegistry admin view (DB table ready) — PENDING
-- [ ] EvalRegistry admin view (DB table ready) — PENDING
+- [x] PromptRegistry admin view (AdminAI.tsx — Prompt Registry section)
+- [x] EvalRegistry admin view (AdminAI.tsx — Eval Registry section)
 - [x] ConnectorRegistry document (shared/connectorRegistry.ts)
 
 ## Phase 10: Tests

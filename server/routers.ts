@@ -157,6 +157,24 @@ export const appRouter = router({
       const consents = await getConsents(ctx.user.id);
       return { consents };
     }),
+    getConsentHistory: protectedProcedure.query(async ({ ctx }) => {
+      // Return audit log entries for this user's consent events
+      const allLog = await getAuditLog();
+      const history = allLog.filter(
+        (e) => e.userId === ctx.user.id && (e.action === "consent_granted" || e.action === "consent_revoked")
+      );
+      return { history };
+    }),
+    submitAppeal: protectedProcedure
+      .input(z.object({
+        reason: z.string().min(20).max(3000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Appeals are stored as reports with reason="appeal" and reportedUserId=0 (self)
+        await submitReport(ctx.user.id, ctx.user.id, "appeal", input.reason);
+        await logAudit("appeal_submitted", "user", ctx.user.id, ctx.user.id, {});
+        return { success: true };
+      }),
     grantConsent: protectedProcedure
       .input(z.object({ featureKey: z.string() }))
       .mutation(async ({ ctx, input }) => {

@@ -5,6 +5,7 @@ import { AppNav } from "@/components/AppNav";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Sparkles, Shield, Heart, MessageCircle, Users, Loader2, Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import React from "react";
 
 // Static skill definitions (canonical registry)
 const SKILLS = [
@@ -172,6 +173,22 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
 
 export default function SkillsHub() {
   const { user, isAuthenticated, loading } = useAuth();
+  // Track which skills the user has tried (client-side state, persisted to localStorage)
+  const [triedSkills, setTriedSkills] = React.useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("kesher_tried_skills");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const markTried = (slug: string) => {
+    setTriedSkills((prev) => {
+      const next = new Set(prev);
+      next.add(slug);
+      try { localStorage.setItem("kesher_tried_skills", JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>;
   if (!isAuthenticated) return <div className="min-h-screen flex items-center justify-center"><Button asChild><a href={getLoginUrl()}>Sign in</a></Button></div>;
@@ -214,6 +231,23 @@ export default function SkillsHub() {
           </div>
         </div>
 
+        {/* User skill state summary */}
+        {triedSkills.size > 0 && (
+          <div className="card-soft p-4 flex items-center gap-3 bg-emerald-50/50 border-emerald-200/60 max-w-2xl">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <p className="text-sm text-emerald-700">
+              ניסית {triedSkills.size} כישור{triedSkills.size > 1 ? "ים" : ""} עד כה.
+              {triedSkills.size < 5 && " המשך/י לגלות עוד כלים שיעזרו לך."}
+            </p>
+            <button
+              className="mr-auto text-xs text-muted-foreground hover:text-foreground underline"
+              onClick={() => { setTriedSkills(new Set()); localStorage.removeItem("kesher_tried_skills"); }}
+            >
+              איפוס
+            </button>
+          </div>
+        )}
+
         {/* Skills by category */}
         {categories.map((cat) => {
           const catSkills = visibleSkills.filter((s) => s.category === cat);
@@ -255,9 +289,10 @@ export default function SkillsHub() {
                         </p>
                       )}
                       {!isBlocked && skill.surface && (
-                        <Link href={`/skills/${skill.slug}`}>
-                          <Button variant="outline" size="sm" className="w-full text-xs">
-                            פתח כישור
+                        <Link href={`/skills/${skill.slug}`} onClick={() => markTried(skill.slug)}>
+                          <Button variant="outline" size="sm" className="w-full text-xs gap-1.5">
+                            {triedSkills.has(skill.slug) && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                            {triedSkills.has(skill.slug) ? "פתח שוב" : "פתח כישור"}
                           </Button>
                         </Link>
                       )}

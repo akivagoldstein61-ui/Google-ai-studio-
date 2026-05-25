@@ -41,6 +41,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAudit from "./pages/AdminAudit";
 import AdminAI from "./pages/AdminAI";
+import AppealFlow from "./pages/AppealFlow";
 
 function Router() {
   return (
@@ -82,6 +83,9 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/audit" component={AdminAudit} />
       <Route path="/admin/ai" component={AdminAI} />
+
+      {/* Appeal */}
+      <Route path="/appeal" component={AppealFlow} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
