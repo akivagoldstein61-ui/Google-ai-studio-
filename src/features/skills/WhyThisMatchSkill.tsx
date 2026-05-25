@@ -88,7 +88,7 @@ const LiveWhyMatch: React.FC = () => {
                 <p className="text-sm text-[#D4AF37] italic font-serif">"{result.first_question_he}"</p>
               </div>
             )}
-            {(result.signals_used?.length || result.signals_not_used?.length) && (
+            {(result.signals_used?.length > 0 || result.signals_not_used?.length > 0) && (
               <div className="pt-3 border-t border-white/10 space-y-2">
                 {result.signals_used?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
