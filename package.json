@@ -21,7 +21,8 @@
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
     "scan:logs": "node scripts/scan-logs.mjs",
     "build:skills": "node scripts/build-shareable-skills.mjs",
-    "smoke:deployment": "node scripts/smoke-deployment.mjs"
+    "smoke:deployment": "node scripts/smoke-deployment.mjs",
+    "check:vercel-upload": "node scripts/check-vercel-upload.mjs"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.116",

@@ -77,7 +77,7 @@ export async function createApp(): Promise<Express> {
 
   app.use(express.json({ limit: "1mb" }));
 
-  app.get(["/__version", "/api/version"], (_req, res) => {
+  app.get(["/__version", "/__build", "/api/version"], (_req, res) => {
     res.json(getBuildFingerprint());
   });
 

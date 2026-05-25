@@ -212,6 +212,7 @@ const EXCLUDE_DIRS = new Set([
   "node_modules",
   ".git",
   "dist",
+  ".vercel",
   ".next",
   "build",
   "coverage",

@@ -5,6 +5,7 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...path]" },
     { "source": "/__version", "destination": "/api/version" },
+    { "source": "/__build", "destination": "/api/version" },
     { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ],
   "headers": [
