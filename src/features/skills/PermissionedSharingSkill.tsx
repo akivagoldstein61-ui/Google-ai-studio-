@@ -79,6 +79,7 @@ const LiveShareCard: React.FC = () => {
             <button onClick={revoke} className="h-10 px-5 rounded-full border border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] inline-flex items-center gap-2">
               {loading ? <><Loader2 size={14} className="animate-spin" /> Revoking</> : <><Trash2 size={14} /> Revoke now</>}
             </button>
+            {error && <p className="text-xs text-amber-200/90 italic">{error}</p>}
           </div>
         ) : (
           <div className="space-y-3">
