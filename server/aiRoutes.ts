@@ -23,6 +23,7 @@ import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
 import {
   outputValidators,
   sanitizeWhyMatchSignals,
+  WHY_MATCH_FORBIDDEN_SIGNALS,
 } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
 import {
@@ -268,7 +269,7 @@ aiRouter.post("/taste-profile", async (req, res) => {
       soft_preferences: [],
       things_to_avoid: [],
       weights: {
-        attraction_weight: 0.5,
+        values_weight: 0.5,
         stability_weight: 0.5,
         pacing_weight: 0.5
       },
@@ -430,7 +431,7 @@ aiRouter.post("/explain-match", async (req, res) => {
         : selectedSignals,
       signals_not_used: validated.signals_not_used?.length
         ? validated.signals_not_used
-        : [],
+        : [...WHY_MATCH_FORBIDDEN_SIGNALS],
       reasons_he: validated.reasons,
       first_question_he: validated.first_question,
       gentle_clarification_he: validated.possible_mismatch_to_clarify ?? "",
@@ -457,7 +458,7 @@ aiRouter.post("/explain-match", async (req, res) => {
         first_question: fb.first_question_he,
         possible_mismatch_to_clarify: "",
         signals_used: selectedSignals,
-        signals_not_used: [],
+        signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
         confidence: 0.5,
         evidence_label: "HEURISTIC",
         reasons_he: fb.reasons_he,
@@ -473,7 +474,7 @@ aiRouter.post("/explain-match", async (req, res) => {
         first_question: firstQuestion,
         possible_mismatch_to_clarify: "",
         signals_used: selectedSignals,
-        signals_not_used: [],
+        signals_not_used: [...WHY_MATCH_FORBIDDEN_SIGNALS],
         confidence: 0.5,
         evidence_label: "HEURISTIC",
         reasons_he: reasons,

@@ -1,6 +1,106 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Users, Check, ArrowRight, Shield, X } from 'lucide-react';
+import { ChevronLeft, Users, Check, ArrowRight, Shield, X, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { shareCardService } from '@/services/shareCardService';
+
+/**
+ * LIVE: creates and revokes a real, server-side share card via shareCardService
+ * against a real recipient (a current match/daily pick). Honors preview ->
+ * scope -> confirm -> revoke. Scope is summary-only here; never raw answers,
+ * raw scores, or private taste.
+ */
+const LiveShareCard: React.FC = () => {
+  const { user, dailyPicks, trackEvent } = useApp();
+  const recipient = dailyPicks?.[0];
+  const [agreed, setAgreed] = useState(false);
+  const [cardId, setCardId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [revoked, setRevoked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const create = async () => {
+    if (!user || !recipient) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await shareCardService.create({
+        ownerUid: user.uid,
+        recipientUid: recipient.uid,
+        scope: ['summary'],
+        expiresInDays: 7,
+        payload: { summary_he: 'סיכום אישיות קצר ומכבד, משותף בהסכמה ולזמן מוגבל.' },
+      });
+      setCardId(r.cardId);
+      setRevoked(false);
+      trackEvent?.('skill_completed', { skillId: 'permissioned-sharing', created: true });
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to create share card');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const revoke = async () => {
+    if (!cardId) return;
+    setLoading(true);
+    try {
+      await shareCardService.revoke(cardId);
+      setRevoked(true);
+      trackEvent?.('skill_dismissed', { skillId: 'permissioned-sharing', revoked: true });
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to revoke');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Create a real share card</span></div>
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to create a permissioned share card.</p>
+        ) : !recipient ? (
+          <p className="text-sm text-white/70 italic">Load your Daily Picks to choose a real recipient.</p>
+        ) : revoked ? (
+          <div className="space-y-3">
+            <p className="text-sm text-white/85 italic leading-relaxed">Share card revoked. Future in-app access is blocked; past views and screenshots are outside our control.</p>
+            <button onClick={() => { setCardId(null); setAgreed(false); }} className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">Start over</button>
+          </div>
+        ) : cardId ? (
+          <div className="space-y-3">
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1">
+              <div className="flex items-center gap-2 text-[#D4AF37]"><Check size={14} /><span className="text-[10px] font-bold uppercase tracking-widest">Shared with {recipient.displayName}</span></div>
+              <p className="text-[11px] text-white/55">Summary-only · expires in 7 days · revocable anytime</p>
+              <p className="text-[9px] text-white/35 font-mono break-all">{cardId}</p>
+            </div>
+            <button onClick={revoke} className="h-10 px-5 rounded-full border border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] inline-flex items-center gap-2">
+              {loading ? <><Loader2 size={14} className="animate-spin" /> Revoking</> : <><Trash2 size={14} /> Revoke now</>}
+            </button>
+            {error && <p className="text-xs text-amber-200/90 italic">{error}</p>}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-white/70 italic leading-relaxed">
+              Share a summary-only personality card with {recipient.displayName} for 7 days. Preview is exactly what they'd see;
+              raw answers, raw scores, and private taste are never included.
+            </p>
+            <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer select-none">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-[#D4AF37]" />
+              <span>I previewed it and consent to share a summary-only card. I can revoke anytime.</span>
+            </label>
+            <button onClick={create} disabled={!agreed || loading} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] disabled:opacity-40 inline-flex items-center gap-2">
+              {loading ? <><Loader2 size={14} className="animate-spin" /> Sharing</> : <>Create share card <ArrowRight size={14} /></>}
+            </button>
+            {error && <p className="text-xs text-amber-200/90 italic">{error}</p>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [flowStep, setFlowStep] = useState(0);
@@ -23,6 +123,9 @@ export const PermissionedSharingSkill: React.FC<{ onBack: () => void }> = ({ onB
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real share-card create + revoke */}
+        <LiveShareCard />
+
         {/* Core Principle */}
         <section className="p-6 bg-pink-50 rounded-[24px] border border-pink-100 space-y-3">
           <div className="flex items-center gap-2 text-pink-700">

@@ -3,8 +3,10 @@ import express, { Express } from "express";
 import path from "path";
 import { aiRouter } from "./server/aiRoutes.ts";
 import { authMiddleware } from "./server/authMiddleware.ts";
+import discoveryRoutes from "./server/discoveryRoutes.ts";
 import trustRoutes from "./server/trustRoutes.ts";
 import shareRoutes from "./server/shareRoutes.ts";
+import tasteRoutes from "./server/tasteRoutes.ts";
 
 const GITHUB_REPO_URL = "https://github.com/akivagoldstein61-ui/Google-ai-studio-";
 
@@ -75,7 +77,7 @@ export async function createApp(): Promise<Express> {
 
   app.use(express.json({ limit: "1mb" }));
 
-  app.get(["/__version", "/api/version"], (_req, res) => {
+  app.get(["/__version", "/__build", "/api/version"], (_req, res) => {
     res.json(getBuildFingerprint());
   });
 
@@ -91,6 +93,10 @@ export async function createApp(): Promise<Express> {
 
   // AI feature routes — all Gemini SDK usage is server-side only.
   app.use("/api/ai", authMiddleware, aiRouter);
+
+  // Taste profile and discovery ranking routes.
+  app.use("/api/taste", tasteRoutes);
+  app.use("/api/discovery", discoveryRoutes);
 
   // Trust & Safety Routes (same router mounted at multiple prefixes for
   // backwards-compat with the existing client paths).
@@ -124,7 +130,11 @@ export async function createApp(): Promise<Express> {
 // Using an env-var guard instead of `import.meta.url === file://${argv[1]}`
 // because esbuild's CJS output for the `npm start` bundle strips `import.meta`
 // to an empty object — that would silently disable the listen block.
-const isServerless = !!process.env.VERCEL;
+const isTestRunner = process.env.NODE_ENV === "test" || process.argv.some((arg) => arg === "--test");
+const isServerless =
+  !!process.env.VERCEL ||
+  isTestRunner ||
+  process.env.KESHER_SUPPRESS_SERVER_LISTEN === "true";
 
 if (!isServerless) {
   (async () => {

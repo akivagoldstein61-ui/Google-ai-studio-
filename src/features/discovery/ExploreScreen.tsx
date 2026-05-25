@@ -17,7 +17,7 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> =
       <header className="flex justify-between items-center">
         <div className="space-y-1">
           <h2 className="text-2xl font-serif italic text-[#2D2926]">Explore</h2>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Discover more connections</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Explore beyond daily picks</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -201,7 +201,7 @@ const FilterDrawer: React.FC<{
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2D2926]">Soft Preferences</h4>
-            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Soft signals</span>
+            <span className="text-[9px] font-bold text-[#8C7E6E] uppercase tracking-widest">Soft priorities</span>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -238,7 +238,7 @@ const FilterDrawer: React.FC<{
             {[
               { id: 'values_first', label: 'Values' },
               { id: 'balanced', label: 'Balanced' },
-              { id: 'chemistry_first', label: 'Serendipity' }
+              { id: 'serendipity', label: 'Serendipity' }
             ].map(mode => (
               <button 
                 key={mode.id}
@@ -274,7 +274,7 @@ const FilterDrawer: React.FC<{
         <div className="pt-4 space-y-4">
           <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">
             <Sparkles size={12} />
-            <span>Based on your settings • AI Draft • Human Control</span>
+            <span>Based on your settings • Human Control</span>
           </div>
           <Button 
             className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all" 
