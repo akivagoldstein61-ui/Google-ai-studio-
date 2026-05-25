@@ -27,6 +27,7 @@ const LiveVisibility: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,13 +54,18 @@ const LiveVisibility: React.FC = () => {
 
   const setScope = async (key: string, scope: Scope) => {
     if (!user) return;
+    const previous = fields;
     const next = { ...fields, [key]: scope };
     setFields(next);
     setSaving(true);
+    setSaveError(false);
     try {
       await trustService.updatePersonalityVisibility(user.uid, next);
       trackEvent?.('skill_applied', { skillId: 'personality-visibility', field: key, scope });
-    } catch { /* surfaced by saving state */ } finally {
+    } catch {
+      setFields(previous);
+      setSaveError(true);
+    } finally {
       setSaving(false);
     }
   };
@@ -92,7 +98,7 @@ const LiveVisibility: React.FC = () => {
                 </div>
               </div>
             ))}
-            <p className="text-[9px] text-white/40 italic">{saving ? 'Saving…' : 'Saved automatically. Default is private; raw answers and scores never leave your private store.'}</p>
+            <p className={`text-[9px] italic ${saveError ? 'text-red-400' : 'text-white/40'}`}>{saving ? 'Saving…' : saveError ? 'Save failed — your change was reverted. Please try again.' : 'Saved automatically. Default is private; raw answers and scores never leave your private store.'}</p>
           </div>
         )}
       </div>
