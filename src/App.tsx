@@ -279,7 +279,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div
-      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]"
+      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-x-hidden font-sans text-[#2D2926]"
       data-demo-mode={demoMode ? 'true' : undefined}
     >
       <AuthGuard>
