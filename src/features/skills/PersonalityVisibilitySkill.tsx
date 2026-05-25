@@ -99,7 +99,6 @@ const LiveVisibility: React.FC = () => {
               </div>
             ))}
             <p className={`text-[9px] italic ${saveError ? 'text-red-400' : 'text-white/40'}`}>{saving ? 'Saving…' : saveError ? 'Save failed — your change was reverted. Please try again.' : 'Saved automatically. Default is private; raw answers and scores never leave your private store.'}</p>
-            <p className={`text-[9px] italic ${saveError ? 'text-red-400' : 'text-white/40'}`}>{saving ? 'Saving…' : saveError ? 'Save failed — your change was reverted. Please try again.' : 'Saved automatically. Default is private; raw answers and scores never leave your private store.'}</p>
           </div>
         )}
       </div>
