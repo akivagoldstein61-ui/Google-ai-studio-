@@ -1,6 +1,96 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Shield, Check, X, Eye, Download, Trash2, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Shield, Check, X, Eye, Download, Trash2, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+
+/**
+ * LIVE: real per-feature consent toggles persisted to the same owner-only
+ * Firestore doc the AI & Trust Hub uses (users/{uid}/private/preferences).
+ * Default-enabled features come from the canonical registry; nothing about
+ * personality data is paywalled.
+ */
+const LiveConsent: React.FC = () => {
+  const { user, trackEvent } = useApp();
+  const userVisible = AI_FEATURE_REGISTRY.filter((f) => f.user_visible);
+  const defaults = userVisible.filter((f) => f.default_enabled).map((f) => f.id);
+  const [enabled, setEnabled] = useState<string[]>(defaults);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) { setLoading(false); return; }
+      try {
+        const snap = await getDoc(doc(db, `users/${user.uid}/private/preferences`));
+        if (!cancelled && snap.exists() && Array.isArray(snap.data().enabledFeatures)) {
+          setEnabled(snap.data().enabledFeatures);
+        }
+      } catch { /* keep defaults */ } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const toggle = async (id: string) => {
+    if (!user) return;
+    const wasOn = enabled.includes(id);
+    const next = wasOn ? enabled.filter((x) => x !== id) : [...enabled, id];
+    setEnabled(next);
+    setSaving(true);
+    try {
+      await setDoc(doc(db, `users/${user.uid}/private/preferences`), {
+        enabledFeatures: next,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      trackEvent?.(wasOn ? 'skill_consent_declined' : 'skill_consent_accepted', { skillId: 'consent-ux', feature: id });
+    } catch { /* surfaced via saving state */ } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your live AI consent</span></div>
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to manage which AI features are enabled for you.</p>
+        ) : loading ? (
+          <div className="flex items-center gap-3 text-white/70"><Loader2 size={18} className="animate-spin text-[#D4AF37]" /><span className="text-sm italic">Loading your preferences…</span></div>
+        ) : (
+          <div className="space-y-2">
+            {userVisible.map((f) => {
+              const on = enabled.includes(f.id);
+              return (
+                <div key={f.id} className="flex items-center justify-between gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white/90 truncate">{f.name}</p>
+                    {f.notes && <p className="text-[11px] text-white/50 italic truncate">{f.notes}</p>}
+                  </div>
+                  <button
+                    onClick={() => toggle(f.id)}
+                    role="switch"
+                    aria-checked={on}
+                    aria-label={`Toggle ${f.name}`}
+                    className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${on ? 'bg-[#D4AF37]' : 'bg-white/15'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${on ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+              );
+            })}
+            <p className="text-[9px] text-white/40 italic pt-1">{saving ? 'Saving…' : 'Saved to your private preferences. Safety and privacy controls are never paywalled.'}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const CONSENT_LOG_DEMO = [
   { action: 'granted', scope: 'assessment', timestamp: '2026-05-10T14:30:00Z', version: '1.0' },
@@ -37,6 +127,9 @@ export const ConsentUxSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => 
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real per-feature consent toggles */}
+        <LiveConsent />
+
         {/* Section 11 Notice */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Section 11 Notice Requirements</h2>
