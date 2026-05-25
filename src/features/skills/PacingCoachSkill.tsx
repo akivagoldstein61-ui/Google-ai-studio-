@@ -1,6 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Coffee, Check, X, AlertTriangle, Clock } from 'lucide-react';
+import { ChevronLeft, Coffee, Check, X, AlertTriangle, Clock, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
+
+/**
+ * LIVE: runs the real /api/ai/pacing-intervention route with adjustable
+ * coarse session signals and renders the gentle, dismissible nudge.
+ * Coarse signals only (session length, swipe velocity) — never messages,
+ * personality answers, or sensitive traits.
+ */
+const LivePacing: React.FC = () => {
+  const { trackEvent } = useApp();
+  const [sessionMin, setSessionMin] = useState(25);
+  const [velocity, setVelocity] = useState(14);
+  const [result, setResult] = useState<{ message_he?: string; reflection_prompt_he?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  const run = async () => {
+    setLoading(true);
+    setDismissed(false);
+    try {
+      const r = await aiService.getPacingIntervention(sessionMin, velocity);
+      setResult(r);
+      trackEvent?.('skill_completed', { skillId: 'pacing-coach', hasResult: !!r });
+    } catch {
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Try a live nudge</span></div>
+        <p className="text-sm text-white/70 italic leading-relaxed">
+          Simulate a discovery session. Only coarse signals are used — session length and swipe velocity — never your
+          messages, answers, or sensitive traits.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Session: {sessionMin} min</span>
+            <input type="range" min={1} max={90} value={sessionMin} onChange={(e) => setSessionMin(Number(e.target.value))} className="w-full accent-[#D4AF37]" />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Swipes/min: {velocity}</span>
+            <input type="range" min={1} max={40} value={velocity} onChange={(e) => setVelocity(Number(e.target.value))} className="w-full accent-[#D4AF37]" />
+          </label>
+        </div>
+        {loading ? (
+          <div className="flex items-center gap-3 text-white/70"><Loader2 size={18} className="animate-spin text-[#D4AF37]" /><span className="text-sm italic">Checking your pacing…</span></div>
+        ) : result && !dismissed ? (
+          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3" dir="rtl">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-white/90 italic font-serif leading-relaxed">{result.message_he}</p>
+              <button onClick={() => setDismissed(true)} className="text-white/40 hover:text-white shrink-0" aria-label="Dismiss" dir="ltr"><X size={16} /></button>
+            </div>
+            {result.reflection_prompt_he && <p className="text-xs text-white/60 leading-relaxed pt-2 border-t border-white/10">{result.reflection_prompt_he}</p>}
+          </div>
+        ) : null}
+        <button onClick={run} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px]">
+          {result ? 'Check again' : 'Check my pacing'}
+        </button>
+      </div>
+    </section>
+  );
+};
 
 const TRIGGER_THRESHOLDS = [
   { signal: 'Session length', threshold: '> 25 minutes continuous', description: 'Gentle break suggestion' },
@@ -73,6 +141,9 @@ export const PacingCoachSkill: React.FC<{ onBack: () => void }> = ({ onBack }) =
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real pacing nudge */}
+        <LivePacing />
+
         {/* Core Principle */}
         <section className="p-6 bg-green-50 rounded-[24px] border border-green-100 space-y-3">
           <div className="flex items-center gap-2 text-green-700">

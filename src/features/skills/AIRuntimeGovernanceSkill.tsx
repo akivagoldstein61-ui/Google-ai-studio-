@@ -1,5 +1,56 @@
 import React from 'react';
 import { ChevronLeft, Sparkles, Check, X, AlertTriangle, Shield, Server } from 'lucide-react';
+import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
+
+/**
+ * LIVE: renders the actual AI_FEATURE_REGISTRY — the real governance state that
+ * the server enforces. Model route, risk, consent, and human-confirmation flags
+ * are read straight from the canonical registry, so this view can never drift
+ * from what the app actually does.
+ */
+const RISK_CHIP: Record<string, string> = {
+  low: 'bg-white/5 text-white/60',
+  medium: 'bg-amber-500/15 text-amber-300',
+  high: 'bg-red-500/15 text-red-300',
+};
+
+const LiveGovernance: React.FC = () => {
+  const features = [...AI_FEATURE_REGISTRY].sort((a, b) => a.category.localeCompare(b.category));
+  const consentCount = AI_FEATURE_REGISTRY.filter((f) => f.requires_consent).length;
+  const humanCount = AI_FEATURE_REGISTRY.filter((f) => f.requires_human_confirmation).length;
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Live feature registry</span></div>
+        <p className="text-sm text-white/70 italic leading-relaxed">
+          The actual governance table the server enforces — {AI_FEATURE_REGISTRY.length} features, {consentCount} consent-gated,
+          {' '}{humanCount} requiring human confirmation. Read straight from <code className="text-[#D4AF37]">AI_FEATURE_REGISTRY</code>.
+        </p>
+        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+          {features.map((f) => (
+            <div key={f.id} className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-white/90">{f.name}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest ${RISK_CHIP[f.risk_level] ?? RISK_CHIP.low}`}>{f.risk_level}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-mono bg-white/5 text-white/55">{f.runtime_model_route}</span>
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-white/5 text-white/45">{f.category.replace(/_/g, ' ')}</span>
+                {f.requires_consent && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-blue-500/15 text-blue-300">consent</span>}
+                {f.requires_human_confirmation && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-[#D4AF37]/15 text-[#D4AF37]">human confirm</span>}
+                {f.requires_citation_ui && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-teal-500/15 text-teal-300">citations</span>}
+                {f.capability_exception && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-purple-500/15 text-purple-300" title={f.exception_reason}>exception</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[9px] text-white/40 italic">This is the source of truth — the server validates every AI call against these entries.</p>
+      </div>
+    </section>
+  );
+};
 
 const PROVIDER_MATRIX = [
   { feature: 'Personality scoring/reflection', provider: 'Vertex AI', rationale: 'ZDR, no training on data, enterprise DPA' },
@@ -47,6 +98,9 @@ export const AIRuntimeGovernanceSkill: React.FC<{ onBack: () => void }> = ({ onB
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: real feature registry */}
+        <LiveGovernance />
+
         {/* Critical Rule */}
         <section className="p-6 bg-red-50 rounded-[24px] border border-red-200 space-y-3">
           <div className="flex items-center gap-2 text-red-700">
