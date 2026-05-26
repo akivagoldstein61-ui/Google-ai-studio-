@@ -10,6 +10,7 @@ export const AIOpsScreen: React.FC<{ onBack: () => void; onOpenRoute?: (path: st
   const health = aiOpsService.getSystemHealth();
   const features = aiOpsService.getFeatureStatus();
   const interventions = aiOpsService.getRecentInterventions();
+  const readiness = aiOpsService.getProductReadinessReport();
 
   return (
     <div className="h-full flex flex-col bg-[#FDFCFB]">
@@ -35,6 +36,57 @@ export const AIOpsScreen: React.FC<{ onBack: () => void; onOpenRoute?: (path: st
           <StatCard icon={AlertCircle} label="Safety Blocks" value={health.safetyBlocks.toString()} color="text-amber-600" />
           <StatCard icon={CheckCircle} label="Success Rate" value={health.successRate} color="text-blue-600" />
           <StatCard icon={Database} label="Token Usage" value={health.tokenUsage} color="text-slate-600" />
+        </section>
+
+        <section className="space-y-4" data-testid="ai-ops-product-readiness">
+          <div className="flex items-center justify-between px-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Product Completion Gates</h4>
+            <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">
+              {readiness.blockers.length} blockers
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Object.entries(readiness.counts).map(([status, count]) => (
+              <div key={status} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl shadow-sm">
+                <p className="text-lg font-bold text-[#2D2926]">{count}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">{status}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white border border-[#F3EFEA] rounded-[24px] overflow-hidden shadow-sm">
+            {readiness.gates.map((gate, index) => (
+              <div
+                key={gate.id}
+                className={cn(
+                  "p-4 flex flex-col gap-2 border-b border-[#F3EFEA] last:border-none",
+                  index % 2 === 0 ? "bg-white" : "bg-[#FDFCFB]"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-[#2D2926]">{gate.label}</span>
+                    <p className="text-[10px] text-[#8C7E6E] leading-relaxed">{gate.nextAction}</p>
+                  </div>
+                  <span className={cn(
+                    "text-[8px] font-bold uppercase px-2 py-0.5 rounded-full border",
+                    gate.status === 'missing' ? "bg-red-50 text-red-700 border-red-100" :
+                    gate.status === 'gated' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                    gate.status === 'prototype' ? "bg-amber-50 text-amber-700 border-amber-100" :
+                    "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  )}>
+                    {gate.status}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {gate.evidence.map((item) => (
+                    <span key={item} className="text-[8px] font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Feature Registry Status */}

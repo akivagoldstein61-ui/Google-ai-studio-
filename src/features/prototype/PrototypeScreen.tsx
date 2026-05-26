@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { ExternalLink, GitBranch, Globe, Info, Link2, Server, Sparkles } from 'lucide-react';
 import { STABLE_PROTOTYPE_URL } from '@/lib/prototypeMode';
 import { SKILLS } from '@/features/skills';
+import {
+  PRODUCT_COMPLETION_GATES,
+  getCompletionStatusCounts,
+  getLaunchBlockingGates,
+} from '@/product/completionPlan';
 
 const GITHUB_REPO_URL = 'https://github.com/akivagoldstein61-ui/Google-ai-studio-';
 const CI_BADGE_URL = `${GITHUB_REPO_URL}/actions/workflows/ci.yml/badge.svg`;
@@ -38,14 +43,18 @@ const NETLIFY_MIRROR_URL = env.VITE_NETLIFY_MIRROR_URL || '';
 const NEON_MODE = env.VITE_DATABASE_MODE || 'none';
 const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
+const SKILLS_URL = new URL('/skills', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
 const PERSONALITY_PROTOTYPE_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
 // SKILLS is the visible registry for this prototype surface. Count every
 // visible module, not only entries with a skillId, so /prototype mirrors
-// everything reviewers can open in /skills-hub.
+// everything reviewers can open in /skills.
 const SKILL_MODULE_COUNT = SKILLS.length;
 const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.operationalStatus !== 'reference_only').length;
+const PRODUCT_GATE_COUNT = PRODUCT_COMPLETION_GATES.length;
+const LAUNCH_BLOCKER_COUNT = getLaunchBlockingGates().length;
+const PRODUCT_GATE_COUNTS = getCompletionStatusCounts();
 
 const CURRENT_ENV =
   env.VITE_VERCEL_ENV ||
@@ -73,7 +82,16 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     ),
   },
   {
-    label: 'Kesher Skills Hub',
+    label: 'Kesher Skills route',
+    value: (
+      <a href={SKILLS_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {SKILLS_URL}
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+    ),
+  },
+  {
+    label: 'Kesher Skills Hub alias',
     value: (
       <a href={SKILLS_HUB_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {SKILLS_HUB_URL}
@@ -287,7 +305,7 @@ export const PrototypeScreen: React.FC = () => {
             Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
           </p>
           <p className="text-xs text-white/55">
-            All {OPERATIONAL_SKILL_COUNT} operational or gated skill pages are visible from the hub.
+            {OPERATIONAL_SKILL_COUNT} operational or gated skill pages are visible from the hub, with {PRODUCT_GATE_COUNT} final-product gates now tracked as launch readiness evidence.
           </p>
           <a
             href="/prototype/personality"
@@ -298,13 +316,36 @@ export const PrototypeScreen: React.FC = () => {
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <a
-            href="/skills-hub"
+            href="/skills"
             data-testid="prototype-skills-hub-link"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#2D2926] rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[#E5C048] transition-all"
           >
             Open Skills Hub
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
+            <Sparkles className="w-4 h-4" />
+            Product completion readiness
+          </div>
+          <p className="text-sm text-[#6B5E52]">
+            The implementation plan is now part of the app registry: added skills, deepened skills,
+            required plugins, test gates, and launch blockers are visible in `/skills` and `/admin/ai-ops`.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div className="rounded-xl bg-[#F7F2EE] p-3">
+              <p className="text-lg font-bold text-[#2D2926]">{LAUNCH_BLOCKER_COUNT}</p>
+              <p className="text-[10px] uppercase tracking-widest text-[#8C7E6E]">open gates</p>
+            </div>
+            {Object.entries(PRODUCT_GATE_COUNTS).map(([status, count]) => (
+              <div key={status} className="rounded-xl bg-[#F7F2EE] p-3">
+                <p className="text-lg font-bold text-[#2D2926]">{count}</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#8C7E6E]">{status}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 text-xs text-[#8C7E6E] flex flex-wrap items-center gap-2">

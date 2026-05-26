@@ -10,11 +10,28 @@ import {
 import { SkillCard } from './components/SkillCard';
 import { useSkillState } from './useSkillState';
 import type { SkillCategory } from './types';
+import {
+  PRODUCT_COMPLETION_GATES,
+  getCompletionStatusCounts,
+  getLaunchBlockingGates,
+  getP0CompletionSkills,
+  type CompletionStatus,
+} from '@/product/completionPlan';
 
 type SkillFilter = 'all' | SkillCategory;
 
 export { SKILLS, SKILL_LIVE_ROUTES };
 export type { SkillMeta };
+
+const completionStatusClass = (status: CompletionStatus) => {
+  const map = {
+    operational: 'bg-green-100 text-green-700 border-green-200',
+    prototype: 'bg-amber-100 text-amber-700 border-amber-200',
+    gated: 'bg-blue-100 text-blue-700 border-blue-200',
+    missing: 'bg-red-100 text-red-700 border-red-200',
+  };
+  return map[status];
+};
 
 export const SkillsHub: React.FC<{
   onBack: () => void;
@@ -27,6 +44,9 @@ export const SkillsHub: React.FC<{
   const filtered = activeCategory === 'all'
     ? SKILLS
     : SKILLS.filter((skill) => skill.category === activeCategory);
+  const completionCounts = getCompletionStatusCounts();
+  const blockingGateCount = getLaunchBlockingGates().length;
+  const p0Skills = getP0CompletionSkills();
 
   const handleSelect = (skillId: string) => onSelect(skillId);
 
@@ -87,6 +107,68 @@ export const SkillsHub: React.FC<{
                 Planned: {SKILL_COUNTS.planned}
               </span>
             )}
+          </div>
+        </section>
+
+        <section className="space-y-4" data-testid="product-completion-gates">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 px-1">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Product Completion Plan</p>
+              <h2 className="text-lg font-bold text-[#2D2926]">Final-product readiness gates</h2>
+              <p className="text-sm text-[#6B5E52] leading-relaxed">
+                The registry now separates concept cards from launch blockers: auth, discovery, matching,
+                safety operations, AI governance, payments, notifications, and release monitoring.
+              </p>
+            </div>
+            <div className="shrink-0 text-left sm:text-right">
+              <p className="text-2xl font-bold text-[#2D2926]" data-testid="launch-blocker-count">
+                {blockingGateCount}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Open gates</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Object.entries(completionCounts).map(([status, count]) => (
+              <div key={status} className="bg-white border border-[#F3EFEA] rounded-2xl p-4">
+                <p className="text-xl font-bold text-[#2D2926]">{count}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">{status}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {PRODUCT_COMPLETION_GATES.map((gate) => (
+              <article key={gate.id} className="bg-white border border-[#F3EFEA] rounded-2xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-[#2D2926]">{gate.label}</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+                      {gate.category.replace('_', ' ')}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${completionStatusClass(gate.status)}`}>
+                    {gate.status}
+                  </span>
+                </div>
+                <p className="text-xs text-[#6B5E52] leading-relaxed">{gate.nextAction}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {gate.evidence.map((item) => (
+                    <span key={item} className="px-2 py-1 rounded-full bg-[#F7F2EE] text-[#6B5E52] text-[9px]">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 px-1">
+            {p0Skills.map((skill) => (
+              <span key={skill.id} className="px-3 py-1 rounded-full bg-[#2D2926] text-white text-[9px] font-bold uppercase tracking-widest">
+                {skill.shortTitle}: {skill.status}
+              </span>
+            ))}
           </div>
         </section>
 

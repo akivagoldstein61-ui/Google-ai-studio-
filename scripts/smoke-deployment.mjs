@@ -12,7 +12,7 @@ if (!baseUrl) {
 const rootUrl = new URL('/', baseUrl).toString();
 const prototypeUrl = new URL('/prototype', baseUrl).toString();
 const personalityPrototypeUrl = new URL('/prototype/personality', baseUrl).toString();
-const skillsHubUrl = new URL('/skills-hub', baseUrl).toString();
+const skillsHubUrl = new URL('/skills', baseUrl).toString();
 const staticSkillsUrl = new URL('/prototype/skills.html', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
 const dailyUrl = new URL('/daily', baseUrl).toString();
@@ -194,18 +194,18 @@ async function runBrowserChecks(checks) {
     });
 
     if (!skillsState.headingVisible) {
-      throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
+      throw new Error('/skills did not render the Kesher Skills Hub heading');
     }
-    if (skillsState.declaredCount !== 35 || skillsState.visibleCards !== 35) {
-      throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
+    if (skillsState.declaredCount !== 43 || skillsState.visibleCards !== 43) {
+      throw new Error(`/skills rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
     }
-    if (skillsState.plannedCards !== 0 || skillsState.gatedCards < 1 || skillsState.operationalCards < 1) {
-      throw new Error(`/skills-hub status mismatch: ${skillsState.operationalCards} operational, ${skillsState.gatedCards} gated, ${skillsState.plannedCards} planned`);
+    if (skillsState.plannedCards < 1 || skillsState.gatedCards < 1 || skillsState.operationalCards < 1) {
+      throw new Error(`/skills status mismatch: ${skillsState.operationalCards} operational, ${skillsState.gatedCards} gated, ${skillsState.plannedCards} planned`);
     }
     if (skillsState.hasLegacyFallbackCopy) {
-      throw new Error('/skills-hub exposed legacy coming-soon fallback copy');
+      throw new Error('/skills exposed legacy coming-soon fallback copy');
     }
-    checks.push('/skills-hub browser rendered 35 clickable operational/gated cards');
+    checks.push('/skills browser rendered 43 clickable product skill cards');
 
     for (const [index, title] of skillsState.cardTitles.entries()) {
       await page.evaluate((cardIndex) => {
@@ -229,7 +229,7 @@ async function runBrowserChecks(checks) {
       });
       await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
     }
-    checks.push('all 35 skills opened as app-native skill experiences');
+    checks.push('all 43 skills opened as app-native skill experiences');
 
     await page.goto(prototypeUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
@@ -270,14 +270,14 @@ async function runBrowserChecks(checks) {
   checks.push(`/prototype/personality reachable (${personalityPrototype.response.status})`);
 
   const skillsHub = await fetchText(skillsHubUrl);
-  checks.push(`/skills-hub reachable without auth redirect (${skillsHub.response.status})`);
+  checks.push(`/skills reachable without auth redirect (${skillsHub.response.status})`);
 
   const staticSkills = await fetchText(staticSkillsUrl);
   const staticSkillCards = (staticSkills.text.match(/class="skill"/g) || []).length;
-  if (staticSkillCards !== 35 || !staticSkills.text.includes('/prototype/personality')) {
+  if (staticSkillCards !== 43 || !staticSkills.text.includes('/prototype/personality')) {
     throw new Error(`/prototype/skills.html rendered ${staticSkillCards} static skill cards`);
   }
-  checks.push('/prototype/skills.html static bundle exposes 35 skills');
+  checks.push('/prototype/skills.html static bundle exposes 43 skills');
 
   const demo = await fetchText(demoUrl);
   checks.push(`/demo?demo=1 reachable (${demo.response.status})`);
@@ -328,14 +328,14 @@ async function runBrowserChecks(checks) {
   checks.push('/api/* fallback JSON verified');
 
   const { bundleText, visibilityText } = await getVisibilityText(prototype.text);
-  if (!visibilityText.includes('/skills-hub') || !visibilityText.includes('Kesher Skills Hub')) {
+  if (!visibilityText.includes('/skills') || !visibilityText.includes('Kesher Skills Hub')) {
     throw new Error('/prototype client bundle does not expose the visible Kesher Skills Hub link');
   }
   if (!visibilityText.includes('/prototype/personality') || !visibilityText.includes('IPIP-BFAS 100')) {
     throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
   if (!visibilityText.includes('Integrated Skill Modules')) {
-    throw new Error('/skills-hub client bundle does not expose the skills hub surface');
+    throw new Error('/skills client bundle does not expose the skills hub surface');
   }
   checks.push('skills hub link and surface verified in client bundle');
 

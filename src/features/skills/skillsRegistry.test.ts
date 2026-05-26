@@ -51,11 +51,19 @@ const EXPECTED_SKILL_IDS = [
   'psychometric-validation',
   'dark-pattern-audit',
   'personality-delivery',
+  'identity-verification',
+  'match-lifecycle',
+  'trust-safety-ops',
+  'notifications',
+  'subscription-entitlements',
+  'ai-evaluation-observability',
+  'data-rights-retention',
+  'release-readiness',
 ];
 
 describe('Kesher skills registry prototype visibility', () => {
-  it('keeps all 35 Kesher skills visible as operationalized experiences', () => {
-    expect(SKILLS).toHaveLength(35);
+  it('keeps all 43 Kesher skills visible as operationalized experiences', () => {
+    expect(SKILLS).toHaveLength(43);
     expect(SKILLS.every((skill) => ['live', 'prototype', 'gated', 'planned'].includes(skill.status))).toBe(true);
   });
 
@@ -217,6 +225,6 @@ describe('Kesher skills registry prototype visibility', () => {
       .filter((entry) => entry.isDirectory())
       .filter((entry) => existsSync(join('skills', entry.name, 'SKILL.md')));
 
-    expect(skillDirs).toHaveLength(35);
+    expect(skillDirs).toHaveLength(43);
   });
 });

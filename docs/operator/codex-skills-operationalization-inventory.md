@@ -84,8 +84,8 @@ Available but not materially used for this implementation unless a later task ne
 
 - `/`: app root redirects through auth/onboarding into `/daily`.
 - `/prototype`: deployment/status prototype page.
-- `/skills-hub`: direct unauthenticated deep link wrapped with `AppProvider`.
-- `/skills`: authenticated app Skills route.
+- `/skills`: direct unauthenticated deep link wrapped with `AppProvider`, plus authenticated in-app navigation when already inside the router.
+- `/skills-hub`: compatibility alias for the public Skills Hub.
 - `/daily`: finite Daily Picks, why-match explanation, pacing intervention, skills rail.
 - `/explore`: controlled Explore and filter drawer, skills rail.
 - `/inbox`: conversation list, AI safety tip, chat skills rail.
@@ -108,7 +108,7 @@ Available but not materially used for this implementation unless a later task ne
 - Components: `SkillCard`, `SkillLauncher`, `SkillConsentPanel`, `SkillContextPanel`, `SkillRecommendationRail`, `SkillProgressPill`.
 - Implemented skill pages: personality assessment/profile/ocean/visibility, consent/privacy/recommendation/private taste, why-match, permissioned sharing, compatibility reflection, filtering, learned taste, pacing, AI governance, psychometric validation, dark-pattern audit.
 - Fallback page: `PlannedSkillPage.tsx`, now a useful app-native launcher/contract surface for gated/reference modules.
-- Skill packages: 35 `skills/*/SKILL.md` packages.
+- Skill packages: 43 `skills/*/SKILL.md` packages.
 - Legacy `.skill` exports: none discovered.
 
 ## Package Scripts
@@ -129,7 +129,7 @@ Baseline local checks before implementation in this worktree:
 
 - Vitest: 130 tests passed.
 - TypeScript: passed.
-- Skill package script: 35 skills validated.
+- Skill package script: 43 skills validated.
 
 Known production issue at start:
 

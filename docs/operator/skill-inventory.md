@@ -43,6 +43,14 @@ This inventory maps the interactive Skills Hub, AI Studio reference skills, repo
 | `psychometric-validation` | `kesher-psychometric-validation` | `kesher-psychometric-validation` | prototype | `PsychometricValidationSkill.tsx`, AI Studio Skill 8 | repo-local |
 | `dark-pattern-audit` | `kesher-dark-pattern-audit` | `kesher-dark-pattern-audit` | prototype | `DarkPatternAuditSkill.tsx`, AI Studio Skill 10 | repo-local |
 | `personality-delivery` | `kesher-personality-delivery` | none | planned | delivery plugin map and verification matrix | repo-local + installed global |
+| `identity-verification` | `kesher-identity-verification` | none | gated | product completion registry, auth/verification launch gate | repo-local |
+| `match-lifecycle` | `kesher-match-lifecycle` | none | prototype | product completion registry, discovery-to-chat state machine | repo-local |
+| `trust-safety-ops` | `kesher-trust-safety-ops` | none | prototype | product completion registry, report queue and operator audit plan | repo-local |
+| `notifications` | `kesher-notifications` | none | planned | product completion registry, preference-managed delivery plan | repo-local |
+| `subscription-entitlements` | `kesher-subscription-entitlements` | none | planned | product completion registry, commercial entitlement plan | repo-local |
+| `ai-evaluation-observability` | `kesher-ai-evaluation-observability` | none | prototype | product completion registry, AI eval and route health gates | repo-local |
+| `data-rights-retention` | `kesher-data-rights-retention` | none | prototype | product completion registry, export/delete/retention gates | repo-local |
+| `release-readiness` | `kesher-release-readiness` | none | prototype | product completion registry, CI/smoke/rollback gate plan | repo-local |
 
 ## Legacy Or Planned Reference Cards
 
@@ -61,3 +69,4 @@ These Skills Hub cards intentionally do not link to a `skills/<id>` directory. T
 - Use GitHub and PR review as the durable control plane for code changes.
 - Use Vercel for the live web prototype; Netlify is a static mirror unless explicitly expanded.
 - Use Firebase as the current data/auth system; do not introduce Supabase, Neon, or Render persistence paths without a separate approved design.
+- Product-completion gates live in `src/product/completionPlan.ts`, surface in `/skills` and `/admin/ai-ops`, and remain launch blockers until marked operational with tests and monitoring.

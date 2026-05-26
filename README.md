@@ -16,6 +16,7 @@ View your app in AI Studio: https://ai.studio/apps/bd65b2e7-1010-405f-8e3a-13786
 |---|---|
 | **Stable prototype URL** | **<https://google-ai-studio-sage-sigma.vercel.app>** |
 | **Prototype info page** | <https://google-ai-studio-sage-sigma.vercel.app/prototype> |
+| **Kesher skills route** | <https://google-ai-studio-sage-sigma.vercel.app/skills> |
 | **Kesher skills hub** | <https://google-ai-studio-sage-sigma.vercel.app/skills-hub> |
 | **View-only demo mode** | <https://google-ai-studio-sage-sigma.vercel.app/demo?demo=1> |
 
@@ -37,7 +38,11 @@ The stable URL above always serves the latest `main` build — use it for demos,
    - Injects build markers (`VITE_COMMIT_SHA`, `VITE_BUILD_TIME`, `VITE_GIT_BRANCH`, `VITE_DEPLOY_ENV`)
 3. **Preview verification** (`.github/workflows/preview-verification.yml`) — runs on PRs:
    - Discovers Vercel preview URL from deployment metadata when available
-   - Runs smoke checks against preview root, `/prototype`, `/skills-hub`, `/demo?demo=1`, `/api/health`, `/api/version`, `/__version`, and an unmatched `/api/*` route
+   - Runs smoke checks against preview root, `/prototype`, `/skills`, `/demo?demo=1`, `/api/health`, `/api/version`, `/__version`, and an unmatched `/api/*` route
+
+### Product completion readiness
+
+The `/skills` prototype now includes the final-product completion plan as source-owned data in `src/product/completionPlan.ts`. It adds eight launch-readiness skills for identity verification, match lifecycle, trust and safety ops, notifications, subscriptions, AI eval/observability, data rights, and release readiness. The same gates surface in `/admin/ai-ops`, with details in `docs/operator/product-completion-readiness.md`.
 
 ### Required GitHub repository secrets
 

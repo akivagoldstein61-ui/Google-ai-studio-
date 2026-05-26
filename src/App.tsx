@@ -321,7 +321,7 @@ export default function App() {
     if (pathname === '/prototype/personality') {
       return <PersonalityPrototypeScreen />;
     }
-    if (pathname === '/skills-hub') {
+    if (pathname === '/skills' || pathname === '/skills-hub') {
       // Wrap in AppProvider so deepened skill pages can use useApp() here too.
       return (
         <AppProvider>

@@ -1,8 +1,8 @@
 # Kesher Personality Skills Bundle
 
-Generated: 2026-05-20T17:00:44.502Z
+Generated: 2026-05-25T23:19:36.583Z
 
-This shareable bundle contains 35 implementable skills from the canonical `skills/` folder.
+This shareable bundle contains 43 implementable skills from the canonical `skills/` folder.
 
 ---
 
@@ -18,6 +18,34 @@ description: "Build, deploy, and harden full-stack AI applications using Google 
 # Google AI Studio App Builder
 
 Use this skill as a compact implementation pointer for Google AI Studio sourced prototypes. Keep GitHub as the durable handoff, move secrets server-side, add CI gates before production, and verify exported code in the repo before shipping.
+
+---
+
+# kesher-ai-evaluation-observability
+
+Source: `skills/kesher-ai-evaluation-observability/SKILL.md`
+
+---
+name: kesher-ai-evaluation-observability
+description: Add Kesher AI evals, red-team prompts, latency budgets, output-quality dashboards, route health, and release-blocking model governance.
+---
+
+# Kesher AI Evaluation & Observability
+
+Use this skill for AI runtime hardening.
+
+## Requirements
+
+- Every AI route needs schema validation, fallback behavior, privacy exclusions, and unsafe-output tests.
+- Log feature id, route, model, fallback status, validator result, latency bucket, and prompt version.
+- Sensitive routes must fail closed when consent, provenance, or policy gates are missing.
+- Red-team prompts should cover private taste leakage, raw personality answers, hidden ranking weights, and unsafe message automation.
+
+## Acceptance
+
+- AI Ops can see route health and launch blockers.
+- Golden tests cover every `/api/ai/*` route.
+- Release gates fail when high-risk AI features lack tests or provenance.
 
 ---
 
@@ -232,6 +260,34 @@ Use this skill before shipping any Kesher UI that could pressure a user into sha
 
 ---
 
+# kesher-data-rights-retention
+
+Source: `skills/kesher-data-rights-retention/SKILL.md`
+
+---
+name: kesher-data-rights-retention
+description: Implement Kesher export, correction, deletion, retention windows, evidence separation, and privacy-rights audit trails.
+---
+
+# Kesher Data Rights & Retention
+
+Use this skill for privacy-rights and retention work.
+
+## Requirements
+
+- Export, correction, deletion, reset, and revocation requests must be user-accessible and auditable.
+- Private taste, private personality, share cards, messages, safety records, and billing records need distinct retention rules.
+- Taste reset must not erase safety records.
+- Share revocation should cascade to recipient-visible copies.
+
+## Acceptance
+
+- Settings exposes data-rights actions with clear status.
+- Admin tooling can verify pending, completed, and failed rights requests.
+- Retention rules are documented before launch.
+
+---
+
 # kesher-explainable-ai
 
 Source: `skills/kesher-explainable-ai/SKILL.md`
@@ -321,6 +377,35 @@ description: "Route Kesher Gemini thinking-mode work. Use when deciding when to 
 # Kesher High Thinking Routing
 
 Use this skill only for features that genuinely need deeper reasoning. Keep low-risk and latency-sensitive surfaces on faster routes, and reserve higher-thinking paths for safety, reflection, planning, or complex grounded synthesis.
+
+---
+
+# kesher-identity-verification
+
+Source: `skills/kesher-identity-verification/SKILL.md`
+
+---
+name: kesher-identity-verification
+description: Implement Kesher production auth, profile verification signals, anti-impersonation review, pause/reactivation, and account rights flows.
+---
+
+# Kesher Identity Verification
+
+Use this skill when turning Kesher from demo auth into a production identity surface.
+
+## Requirements
+
+- Keep Firebase Auth as the primary identity boundary unless a migration is approved.
+- Store verification status as a user-visible signal, not raw document evidence.
+- Separate identity evidence from discovery, private taste, personality, and match explanations.
+- Support pause, reactivation, account export, correction, and deletion request states.
+- Require human review for impersonation, suspicious identity reuse, and verification appeals.
+
+## Acceptance
+
+- Onboarding cannot enter discovery until required profile and terms gates are complete.
+- Verification status is recoverable and auditable.
+- Account deletion preserves only legally required safety/evidence records.
 
 ---
 
@@ -429,6 +514,62 @@ description: "Build Google Maps-grounded Kesher date planning with venue suggest
 # Kesher Maps Date Planner
 
 Use this skill when changing grounded date suggestions or venue planning. Keep locations coarse unless the user explicitly narrows them, show citations/provenance, and require user review before any plan is sent.
+
+---
+
+# kesher-match-lifecycle
+
+Source: `skills/kesher-match-lifecycle/SKILL.md`
+
+---
+name: kesher-match-lifecycle
+description: Implement Kesher like/pass/match/chat lifecycle state machines, history, and safe transitions across block, report, unmatch, pause, and delete.
+---
+
+# Kesher Match Lifecycle
+
+Use this skill for discovery-to-chat product behavior.
+
+## Requirements
+
+- Treat like, pass, match, message, unmatch, block, report, and delete as explicit state transitions.
+- Persist user-visible history so members understand what happened after any safety or privacy action.
+- Keep AI outputs draft-only; no opener, rephrase, reflection, or date plan may auto-send.
+- Preserve safety records after unmatch, block, and account deletion according to retention policy.
+
+## Acceptance
+
+- Mutual matches create one conversation and one match record.
+- Block/report/unmatch remove unsafe access without erasing operator evidence.
+- The UI has empty states for no picks, no matches, no conversations, and paused profiles.
+
+---
+
+# kesher-notifications
+
+Source: `skills/kesher-notifications/SKILL.md`
+
+---
+name: kesher-notifications
+description: Implement Kesher notification preferences and delivery for matches, messages, safety events, date reminders, and consent/share changes.
+---
+
+# Kesher Notifications
+
+Use this skill when adding email, push, or SMS delivery.
+
+## Requirements
+
+- Notification categories must be preference-managed and revocable.
+- Safety, consent, and account-rights notifications take priority over engagement nudges.
+- Never disclose sensitive match, personality, report, or safety details in notification previews.
+- Record delivery attempts, failures, unsubscribes, and provider callbacks.
+
+## Acceptance
+
+- Members can change notification categories from settings.
+- Delivery providers are called server-side only.
+- Notification copy is calm, non-pressuring, and compatible with Hebrew-first localization.
 
 ---
 
@@ -923,6 +1064,62 @@ Use this skill to decide whether a personality-related feature is prototype-only
 
 ---
 
+# kesher-release-readiness
+
+Source: `skills/kesher-release-readiness/SKILL.md`
+
+---
+name: kesher-release-readiness
+description: Implement Kesher CI, smoke tests, deployment checklist, rollback, preview verification, monitoring, and launch blocker tracking.
+---
+
+# Kesher Release Readiness
+
+Use this skill to decide whether Kesher can ship.
+
+## Requirements
+
+- Track launch gates for auth, discovery, match lifecycle, safety ops, AI runtime, payments, notifications, data rights, and observability.
+- CI must run typecheck, unit tests, AI contract tests, privacy scans, and build checks.
+- Preview verification should cover public, demo, and authenticated routes.
+- Rollback and incident response steps must be documented before production promotion.
+
+## Acceptance
+
+- AI Ops or release dashboards show blocker status.
+- Required checks are linked from PR/release documentation.
+- Production promotion is blocked when P0 gates are missing.
+
+---
+
+# kesher-subscription-entitlements
+
+Source: `skills/kesher-subscription-entitlements/SKILL.md`
+
+---
+name: kesher-subscription-entitlements
+description: Implement Kesher subscriptions, premium gates, quotas, billing webhooks, refunds, and abuse-resistant trials.
+---
+
+# Kesher Subscription Entitlements
+
+Use this skill for commercial readiness.
+
+## Requirements
+
+- Entitlement checks must run server-side and be reflected in client state.
+- Premium access cannot bypass safety, identity, privacy, or consent gates.
+- Webhook handlers must be idempotent and auditable.
+- Refunds, cancellations, trials, and charge disputes must update entitlements predictably.
+
+## Acceptance
+
+- Premium UI reads from canonical entitlement state.
+- Trial abuse controls are documented and tested.
+- Billing records avoid storing unnecessary sensitive dating data.
+
+---
+
 # kesher-system-prompt
 
 Source: `skills/kesher-system-prompt/SKILL.md`
@@ -935,6 +1132,34 @@ description: "Use the Kesher OS strategic framework for deep research, product e
 # Kesher System Prompt
 
 Use this skill for high-level Kesher operating-system work. Keep outputs evidence-labeled, trust-forward, implementation-ready, and routed to the appropriate specialist skill before code changes.
+
+---
+
+# kesher-trust-safety-ops
+
+Source: `skills/kesher-trust-safety-ops/SKILL.md`
+
+---
+name: kesher-trust-safety-ops
+description: Build Kesher trust and safety operations, including report queue, moderation summaries, scam triage, photo checks, appeals, escalation, and audit logs.
+---
+
+# Kesher Trust & Safety Ops
+
+Use this skill for member protection and operator workflows.
+
+## Requirements
+
+- Reports, blocks, unmatches, appeals, moderation summaries, and support contacts must create auditable records.
+- AI moderation may summarize and classify but never make final enforcement decisions.
+- Separate claims, evidence, AI summaries, human notes, actions, and appeal outcomes.
+- Keep safety evidence isolated from recommendation, private taste, and match explanation systems.
+
+## Acceptance
+
+- Operators can see status, severity, assignment, last action, and evidence retention state.
+- Scam/payment requests and coercive messages can be escalated.
+- Appeal and review decisions are idempotent and logged.
 
 ---
 
