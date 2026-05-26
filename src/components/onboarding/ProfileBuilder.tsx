@@ -193,6 +193,14 @@ export const ProfileBuilder: React.FC<{
         )}
       </section>
 
+      <SkillContextPanel
+        surface="profile-builder"
+        title="Profile skills"
+        description="Coaching, completeness, personality, visibility, and photo readiness stay private by default."
+        skillIds={['personality-assessment', 'personality-profile', 'consent-ux', 'image-analysis']}
+        limit={4}
+      />
+
       <section className="space-y-6">
         <div className="p-8 bg-gradient-to-br from-[#2D2926] to-[#1A1816] rounded-[40px] text-white space-y-6 relative overflow-hidden shadow-xl shadow-black/20">
           <div className="flex justify-between items-start relative z-10">

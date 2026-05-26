@@ -268,9 +268,17 @@ export const MatchSheet: React.FC<{
             <CompatibilityReflectionPanel
               user={user}
               candidate={profile}
-              bothOptedIn={true}
+              bothOptedIn={false}
             />
           )}
+
+          <SkillContextPanel
+            surface="match"
+            title="Match skills"
+            description="Understand, share, and plan with consent. Drafts stay under your control."
+            skillIds={['why-this-match', 'compatibility-reflection', 'permissioned-sharing', 'maps-date-planner']}
+            compact
+          />
 
           <Button
             onClick={onMessage}

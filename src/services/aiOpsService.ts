@@ -1,4 +1,10 @@
 import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
+import {
+  ADDED_PRODUCT_SKILLS,
+  PRODUCT_COMPLETION_GATES,
+  getCompletionStatusCounts,
+  getLaunchBlockingGates,
+} from '@/product/completionPlan';
 
 export const aiOpsService = {
   getSystemHealth() {
@@ -20,5 +26,14 @@ export const aiOpsService = {
       { id: 2, type: 'Bio Coach', action: 'Filtered PII', time: '1h ago' },
       { id: 3, type: 'Taste Profile', action: 'Reset by User', time: '2h ago' }
     ];
+  },
+
+  getProductReadinessReport() {
+    return {
+      gates: PRODUCT_COMPLETION_GATES,
+      counts: getCompletionStatusCounts(),
+      blockers: getLaunchBlockingGates(),
+      addedSkills: ADDED_PRODUCT_SKILLS,
+    };
   }
 };

@@ -45,8 +45,8 @@ const skills = skillDirs.map((dir) => {
   };
 });
 
-if (skills.length !== 35) {
-  throw new Error(`Expected 35 shareable skills, found ${skills.length}`);
+if (skills.length !== 43) {
+  throw new Error(`Expected 43 shareable skills, found ${skills.length}`);
 }
 
 mkdirSync('public/prototype', { recursive: true });
@@ -136,7 +136,7 @@ writeFileSync(HTML_OUT, `<!doctype html>
           public exact values, predictions, or production personality activation.
         </p>
         <div class="actions">
-          <a class="button" href="/skills-hub">Open Skills Hub</a>
+          <a class="button" href="/skills">Open Skills Hub</a>
           <a class="button secondary" href="/prototype/personality">Open IPIP-BFAS Journey</a>
           <a class="button secondary" href="/downloads/kesher-personality-skills.zip" download>Download Skills Zip</a>
         </div>

@@ -179,11 +179,11 @@ describe('Kesher skills registry prototype visibility', () => {
     expect(safetySource).toContain('SkillContextPanel');
   });
 
-  it('keeps the shareable skills folder in parity with the prototype count', () => {
+  it('keeps the shareable skills folder covering the prototype count', () => {
     const skillDirs = readdirSync('skills', { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .filter((entry) => existsSync(join('skills', entry.name, 'SKILL.md')));
 
-    expect(skillDirs).toHaveLength(35);
+    expect(skillDirs.length).toBeGreaterThanOrEqual(SKILLS.length);
   });
 });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Clock, Wallet, Sparkles, Loader2, ShieldCheck, ExternalLink } from 'lucide-react';
+import { X, Clock, Wallet, Sparkles, Loader2, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiDatePlannerService } from '@/services/aiDatePlannerService';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ export const DatePlannerModal: React.FC<{
   partnerName: string;
 }> = ({ onClose, partnerName }) => {
   const [step, setStep] = useState<'form' | 'loading' | 'results'>('form');
-  const [locationScope, setLocationScope] = useState<'city' | 'neighborhood' | 'exact'>('city');
+  const [locationScope, setLocationScope] = useState<'city' | 'neighborhood'>('city');
   const [locationValue, setLocationValue] = useState('');
   const [budget, setBudget] = useState<'low' | 'medium' | 'high'>('medium');
   const [vibe, setVibe] = useState('');
@@ -74,7 +74,7 @@ export const DatePlannerModal: React.FC<{
                 <div className="space-y-3">
                   <label className="text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">Location</label>
                   <div className="flex gap-2 bg-[#F7F2EE] p-1 rounded-xl">
-                    {(['city', 'neighborhood', 'exact'] as const).map((scope) => (
+                    {(['city', 'neighborhood'] as const).map((scope) => (
                       <button
                         key={scope}
                         onClick={() => setLocationScope(scope)}
@@ -90,39 +90,16 @@ export const DatePlannerModal: React.FC<{
                   <div className="flex gap-2">
                     <input 
                       type="text" 
-                      placeholder={locationScope === 'exact' ? "Enter exact address (requires consent)" : `Enter ${locationScope}`}
+                      placeholder={`Enter ${locationScope}`}
                       value={locationValue}
                       onChange={(e) => setLocationValue(e.target.value)}
                       className="w-full bg-[#F7F2EE] border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-[#D4AF37]/50 transition-all"
                     />
-                    {locationScope === 'exact' && (
-                      <button
-                        title="Locate me"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if ('geolocation' in navigator) {
-                            navigator.geolocation.getCurrentPosition(
-                              (position) => {
-                                setLocationValue(`${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
-                              },
-                              (err) => {
-                                alert("Location access denied or unavailable.");
-                              }
-                            );
-                          }
-                        }}
-                        className="p-4 bg-[#F7F2EE] text-[#D4AF37] rounded-xl hover:bg-[#E5DED5] transition-all"
-                      >
-                        <MapPin size={20} />
-                      </button>
-                    )}
                   </div>
-                  {locationScope === 'exact' && (
-                    <div className="flex items-start gap-2 text-[10px] text-amber-600 bg-amber-50 p-3 rounded-xl">
-                      <ShieldCheck size={14} className="shrink-0 mt-0.5" />
-                      <p>Exact location is only used for this search and is not saved to your profile.</p>
-                    </div>
-                  )}
+                  <div className="flex items-start gap-2 text-[10px] text-emerald-700 bg-emerald-50 p-3 rounded-xl">
+                    <ShieldCheck size={14} className="shrink-0 mt-0.5" />
+                    <p>Use a city or neighborhood only. Exact addresses are not sent to AI.</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

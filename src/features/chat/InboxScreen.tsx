@@ -4,8 +4,9 @@ import { Conversation } from '@/types';
 import { motion } from 'motion/react';
 import { MessageCircle, ShieldCheck, Search, Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
 
-export const InboxScreen: React.FC<{ onSelect: (conv: Conversation) => void }> = ({ onSelect }) => {
+export const InboxScreen: React.FC<{ onSelect: (conv: Conversation) => void; onOpenRoute?: (path: string) => void }> = ({ onSelect, onOpenRoute }) => {
   const { conversations } = useApp();
 
   return (
@@ -21,6 +22,15 @@ export const InboxScreen: React.FC<{ onSelect: (conv: Conversation) => void }> =
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-20 space-y-8">
+        <SkillRecommendationRail
+          surface="chat"
+          title="Conversation skills"
+          subtitle="Draft, pace, scan, and plan while you stay in control."
+          skillIds={['pacing-coach', 'maps-date-planner', 'permissioned-sharing', 'compatibility-reflection']}
+          limit={4}
+          onOpenRoute={onOpenRoute}
+        />
+
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-40">
             <div className="w-16 h-16 bg-[#F7F2EE] text-[#8C7E6E] rounded-full flex items-center justify-center">

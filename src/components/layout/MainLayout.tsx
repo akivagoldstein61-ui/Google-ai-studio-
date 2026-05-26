@@ -14,7 +14,7 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, setActiveTab }) => {
   return (
     <div className="flex flex-col h-screen bg-[#FDFCFB]">
-      <main className="flex-1 overflow-hidden relative">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative pb-24 relative">
         {children}
       </main>
 

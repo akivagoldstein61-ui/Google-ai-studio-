@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SKILLS_DIR = 'skills';
-const EXPECTED_SKILL_COUNT = 35;
+const EXPECTED_SKILL_COUNT = 43;
 
 const skillDirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
