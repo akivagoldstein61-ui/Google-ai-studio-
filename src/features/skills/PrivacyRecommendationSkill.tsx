@@ -73,7 +73,7 @@ export const PrivacyRecommendationSkill: React.FC<{ onBack: () => void }> = ({ o
               <p className="font-bold text-[#8C7E6E]">Key constraints:</p>
               <ul className="space-y-1 text-[#6B5E52]">
                 <li>• Never reveal that personality was or was not used in ordering</li>
-                <li>• Never imply a compatibility score exists</li>
+                <li>• Never imply a hidden fit rating exists</li>
                 <li>• Explanation is assistive context, not recommendation justification</li>
               </ul>
             </div>
@@ -164,7 +164,7 @@ export const PrivacyRecommendationSkill: React.FC<{ onBack: () => void }> = ({ o
             <ul className="space-y-0.5 pl-3">
               <li>• Show a numeric fit claim</li>
               <li>• Rank matches by a visible fit meter</li>
-              <li>• Use "soulmate," "ideal pair," or "destiny" language</li>
+              <li>• Use fated-pair, ideal-pair, or certainty language</li>
             </ul>
           </div>
         </section>

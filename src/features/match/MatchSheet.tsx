@@ -17,6 +17,7 @@ import { DatePlannerModal } from "./DatePlannerModal";
 import { CompatibilityReflectionPanel } from "./CompatibilityReflectionPanel";
 import { ShareCardModal } from "./ShareCardModal";
 import { Share2, Users } from "lucide-react";
+import { SkillContextPanel } from "@/features/skills/components/SkillContextPanel";
 
 const SIGNAL_LABELS: Record<string, string> = {
   visible_values: "Shared values",
@@ -26,10 +27,10 @@ const SIGNAL_LABELS: Record<string, string> = {
   visible_interests: "Visible interests",
   visible_prompts: "Profile prompts",
   self_declared_profile_fields: "Public profile fields",
-  private_taste_profile: "Private taste",
-  hidden_dealbreakers: "Hidden dealbreakers",
-  hidden_ranking_signals: "Hidden ranking",
-  raw_personality_scores: "Raw personality scores",
+  private_taste_profile: "Private preference signals",
+  hidden_dealbreakers: "Private exclusions",
+  hidden_ranking_signals: "System-only ranking signals",
+  raw_personality_scores: "Raw personality data",
   private_messages: "Private messages",
   exact_location: "Exact location",
   protected_trait_inference: "Sensitive inferences",
@@ -255,13 +256,29 @@ export const MatchSheet: React.FC<{
         </div>
 
         <div className="space-y-4 pt-4">
+          <SkillContextPanel
+            surface="match"
+            title="Use a match skill"
+            description="Save a gentle insight, plan safely, or share personality context only with permission."
+            skillIds={['why-this-match', 'compatibility-reflection', 'maps-date-planner', 'permissioned-sharing']}
+            compact
+          />
+
           {showReflectionPanel && user && (
             <CompatibilityReflectionPanel
               user={user}
               candidate={profile}
-              bothOptedIn={true}
+              bothOptedIn={false}
             />
           )}
+
+          <SkillContextPanel
+            surface="match"
+            title="Match skills"
+            description="Understand, share, and plan with consent. Drafts stay under your control."
+            skillIds={['why-this-match', 'compatibility-reflection', 'permissioned-sharing', 'maps-date-planner']}
+            compact
+          />
 
           <Button
             onClick={onMessage}

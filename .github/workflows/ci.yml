@@ -40,11 +40,17 @@ jobs:
       - name: Personality schema tests
         run: npm run test:schemas
 
+      - name: Skills bundle tests
+        run: npm run test:skills
+
       - name: Personality scoring tests
         run: npm run test:scoring
 
       - name: RTL tests
         run: npm run test:rtl
+
+      - name: Vercel upload simulation
+        run: npm run check:vercel-upload
 
       - name: Build
         run: npm run build
@@ -61,13 +67,18 @@ jobs:
           PATTERNS=(
             'DATABASE_URL'
             'DIRECT_DATABASE_URL'
+            'GEMINI_API_KEY'
             'FIREBASE_PRIVATE_KEY'
+            'FIREBASE_CLIENT_EMAIL'
             'PRIVATE KEY'
+            'SERVICE_ACCOUNT'
             'postgres://[^[:space:]]+'
             'postgresql://[^[:space:]]+'
             'NEON_API_KEY'
             'VERCEL_TOKEN'
             'NETLIFY_AUTH_TOKEN'
+            '@google/genai'
+            'GoogleGenAI'
           )
 
           found=0

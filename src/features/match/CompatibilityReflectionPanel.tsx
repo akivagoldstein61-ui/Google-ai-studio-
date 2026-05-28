@@ -4,6 +4,7 @@ import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { aiService } from '@/services/aiService';
 import { Profile } from '@/types';
+import { isPrototypeDemoMode } from '@/lib/prototypeMode';
 
 interface Props {
   user: Profile;
@@ -13,6 +14,7 @@ interface Props {
 
 export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate, bothOptedIn }) => {
   const [agreed, setAgreed] = useState(false);
+  const [counterpartyOptedIn, setCounterpartyOptedIn] = useState(bothOptedIn && !isPrototypeDemoMode());
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +36,8 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
         approvedShareCard: undefined,
       };
       const result = await aiService.getCompatibilityReflection(sharedInputs, {
-        mutualConsent: true,
-        bothOptedIn,
+        mutualConsent: agreed && counterpartyOptedIn,
+        bothOptedIn: counterpartyOptedIn,
       });
       if (!result) {
         setError('Reflection unavailable right now. We never invent compatibility.');
@@ -133,9 +135,9 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
         <span>Reflect together — mutual consent</span>
       </div>
       <p className="text-sm text-white/80 leading-relaxed italic font-serif">
-        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a compatibility score, and the reflection only uses mutually visible signals.
+        We can generate a short, calm reflection on how you and {candidate.displayName} might communicate, including shared strengths and friction loops to discuss. We never produce a numeric fit rating, and the reflection only uses mutually visible signals.
       </p>
-      {!bothOptedIn && (
+      {!counterpartyOptedIn && (
         <p className="text-[11px] text-amber-300 italic">
           {candidate.displayName} hasn't opted in yet. Reflections only run when both of you have agreed.
         </p>
@@ -148,12 +150,23 @@ export const CompatibilityReflectionPanel: React.FC<Props> = ({ user, candidate,
           className="mt-1 accent-[#D4AF37]"
         />
         <span>
-          I understand this is a reflection, not a prediction. Raw scores, private taste and private messages are not used.
+          I understand this is a reflection, not a prediction. Exact personality values, private taste, and private messages are not used.
+        </span>
+      </label>
+      <label className="flex items-start gap-3 text-xs text-white/80 leading-relaxed cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={counterpartyOptedIn}
+          onChange={(e) => setCounterpartyOptedIn(e.target.checked)}
+          className="mt-1 accent-[#D4AF37]"
+        />
+        <span>
+          Demo fixture: {candidate.displayName} has explicitly opted in to this reflection.
         </span>
       </label>
       <Button
         onClick={handleReflect}
-        disabled={!agreed || !bothOptedIn || loading}
+        disabled={!agreed || !counterpartyOptedIn || loading}
         className="w-full h-12 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-xs disabled:opacity-50"
       >
         {loading ? (

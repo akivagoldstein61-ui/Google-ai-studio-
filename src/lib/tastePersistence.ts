@@ -5,6 +5,8 @@ type SerializedTasteState = {
   fast: Record<string, number>;
   slow: Record<string, number>;
   lastUpdatedMs: number;
+  learningPaused?: boolean;
+  optedOut?: boolean;
 };
 
 export function serializeTasteState(state: TasteState): SerializedTasteState {
@@ -12,6 +14,8 @@ export function serializeTasteState(state: TasteState): SerializedTasteState {
     fast: Object.fromEntries(state.fast),
     slow: Object.fromEntries(state.slow),
     lastUpdatedMs: state.lastUpdatedMs,
+    learningPaused: state.learningPaused ?? false,
+    optedOut: state.optedOut ?? false,
   };
 }
 
@@ -23,6 +27,8 @@ export function deserializeTasteState(raw: unknown): TasteState {
       fast: new Map(Object.entries((r.fast as Record<string, number>) ?? {})),
       slow: new Map(Object.entries((r.slow as Record<string, number>) ?? {})),
       lastUpdatedMs: typeof r.lastUpdatedMs === 'number' ? r.lastUpdatedMs : Date.now(),
+      learningPaused: r.learningPaused === true,
+      optedOut: r.optedOut === true,
     };
   } catch {
     return emptyTasteState();
@@ -35,6 +41,8 @@ export function cloneTasteState(state: TasteState): TasteState {
     fast: new Map(state.fast),
     slow: new Map(state.slow),
     lastUpdatedMs: state.lastUpdatedMs,
+    learningPaused: state.learningPaused ?? false,
+    optedOut: state.optedOut ?? false,
   };
 }
 

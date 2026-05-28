@@ -11,8 +11,6 @@ jobs:
   deploy:
     name: Deploy (Production)
     runs-on: ubuntu-latest
-    # Skip this job if Vercel secrets are not configured in the repository
-    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
     environment:
       name: production
       url: https://google-ai-studio-sage-sigma.vercel.app
@@ -28,16 +26,38 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      - name: Check Vercel deployment secrets
+        id: vercel_secrets
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [[ -n "$VERCEL_TOKEN" && -n "$VERCEL_ORG_ID" && -n "$VERCEL_PROJECT_ID" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Vercel deploy secrets are not configured for this workflow. Vercel Git integration may still deploy the production app."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Vercel CLI
+        if: steps.vercel_secrets.outputs.available == 'true'
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment
+        if: steps.vercel_secrets.outputs.available == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      - name: Vercel upload simulation
+        if: steps.vercel_secrets.outputs.available == 'true'
+        run: npm run check:vercel-upload
+
       - name: Build for Vercel
+        if: steps.vercel_secrets.outputs.available == 'true'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -47,7 +67,42 @@ jobs:
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: production
 
+      - name: Vercel output client secret scan
+        if: steps.vercel_secrets.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PATTERNS=(
+            'DATABASE_URL'
+            'DIRECT_DATABASE_URL'
+            'GEMINI_API_KEY'
+            'FIREBASE_PRIVATE_KEY'
+            'FIREBASE_CLIENT_EMAIL'
+            'PRIVATE KEY'
+            'SERVICE_ACCOUNT'
+            'postgres://[^[:space:]]+'
+            'postgresql://[^[:space:]]+'
+            'NEON_API_KEY'
+            'VERCEL_TOKEN'
+            'NETLIFY_AUTH_TOKEN'
+            '@google/genai'
+            'GoogleGenAI'
+          )
+
+          found=0
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -ql -R --binary-files=without-match --include='*.html' --include='*.js' --include='*.css' -E "$pattern" .vercel/output/static; then
+              echo "::error::Forbidden pattern found in Vercel static output: $pattern"
+              found=1
+            fi
+          done
+
+          if [ "$found" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Deploy to Vercel (production)
+        if: steps.vercel_secrets.outputs.available == 'true'
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -56,3 +111,10 @@ jobs:
           VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: production
+
+      - name: API smoke check (production)
+        if: steps.vercel_secrets.outputs.available == 'true'
+        # Confirms /api/* routes are actually mounted on Vercel rather than
+        # falling through to the SPA's index.html (which would return HTML
+        # with status 200 — a silent regression). See scripts/api-smoke.mjs.
+        run: node scripts/api-smoke.mjs https://google-ai-studio-sage-sigma.vercel.app

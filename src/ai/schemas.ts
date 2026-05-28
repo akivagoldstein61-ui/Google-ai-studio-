@@ -1,4 +1,3 @@
-import { Type } from "@google/genai";
 import {
   COMPATIBILITY_ALLOWED_SIGNALS,
   WHY_MATCH_ALLOWED_SIGNALS,
@@ -7,7 +6,21 @@ import {
 
 /**
  * Structured Output Schemas for Gemini
+ *
+ * Keep this file dependency-free for client imports. Server routes pass these
+ * plain JSON-compatible schema objects to the Gemini SDK; browser bundles must
+ * not import @google/genai or any API-key-aware client code.
  */
+
+const Type = {
+  STRING: "STRING",
+  NUMBER: "NUMBER",
+  INTEGER: "INTEGER",
+  BOOLEAN: "BOOLEAN",
+  ARRAY: "ARRAY",
+  OBJECT: "OBJECT",
+  NULL: "NULL",
+} as const;
 
 export const EvidenceLabelEnum = [
   "verified",
@@ -258,7 +271,7 @@ export const PrivateTasteAdjustmentSchema = {
   type: Type.OBJECT,
   properties: {
     ...BaseSchemaProperties,
-    attraction_weight: { type: Type.NUMBER },
+    values_weight: { type: Type.NUMBER },
     stability_weight: { type: Type.NUMBER },
     pacing_weight: { type: Type.NUMBER },
     explanation_he: { type: Type.STRING },
@@ -267,7 +280,7 @@ export const PrivateTasteAdjustmentSchema = {
     "schemaVersion",
     "confidence",
     "evidenceLabel",
-    "attraction_weight",
+    "values_weight",
     "stability_weight",
     "pacing_weight",
     "explanation_he",
@@ -334,16 +347,16 @@ export const TasteProfileSchema = {
     weights: {
       type: Type.OBJECT,
       properties: {
-        attraction_weight: { type: Type.NUMBER, description: "0 to 1" },
+        values_weight: { type: Type.NUMBER, description: "0 to 1" },
         stability_weight: { type: Type.NUMBER, description: "0 to 1" },
         pacing_weight: { type: Type.NUMBER, description: "0 to 1" },
       },
-      required: ["attraction_weight", "stability_weight", "pacing_weight"],
+      required: ["values_weight", "stability_weight", "pacing_weight"],
     },
     explanation: {
       type: Type.STRING,
       description:
-        "A brief, user-friendly explanation of how this profile was formed based on their recent interactions.",
+        "A brief, user-friendly explanation of how this profile was formed from explicit and weak first-party activity.",
     },
   },
   required: ["hard_dealbreakers", "soft_preferences", "weights", "explanation"],

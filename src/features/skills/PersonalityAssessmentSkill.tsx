@@ -1,6 +1,74 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Brain, Check, AlertTriangle, Play, Pause } from 'lucide-react';
+import { ChevronLeft, Brain, Check, AlertTriangle, Play, Pause, Sparkles, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { PersonalityAssessment, SCORING_VERSION } from '@/components/onboarding/PersonalityAssessment';
+
+const DOMAIN_ORDER = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'];
+
+/**
+ * LIVE: runs the real, versioned 20-item BFAS/IPIP assessment used in
+ * onboarding (deterministic scoring, no LLM) and shows the computed 0–100
+ * domain approximations. This is the actual instrument, not a mock.
+ */
+const LiveAssessment: React.FC = () => {
+  const [scores, setScores] = useState<Record<string, number> | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
+
+  if (scores) {
+    return (
+      <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+        <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[#D4AF37]">
+              <Check size={16} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Your deterministic result</span>
+            </div>
+            <button onClick={() => { setScores(null); setVersion(null); }} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white">
+              <RotateCcw size={12} /> Retake
+            </button>
+          </div>
+          <div className="space-y-2.5">
+            {DOMAIN_ORDER.filter((d) => typeof scores[d] === 'number').map((d) => (
+              <div key={d} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-white/90">{d}</span>
+                  <span className="text-[10px] text-white/50 font-mono">{scores[d]}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${Math.max(0, Math.min(100, scores[d]))}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-white/40 italic">
+            Scored deterministically (no AI) · {version ?? SCORING_VERSION}. Approximate display values, not validated
+            percentiles. Raw answers stay private — only derived bands are ever sent to AI features.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-white border border-[#F3EFEA] rounded-[28px] p-6 space-y-4 shadow-sm">
+      <div className="flex items-center gap-2 text-[#C8956B]">
+        <Sparkles size={16} />
+        <span className="text-[10px] font-bold uppercase tracking-widest">Try the real assessment</span>
+      </div>
+      <p className="text-xs text-[#6B5E52] leading-relaxed italic">
+        This is the same opt-in, versioned 20-item instrument used in onboarding. Scoring is deterministic — no LLM
+        scores you. Reverse-keyed items are handled, and your raw answers never leave your private store.
+      </p>
+      <PersonalityAssessment
+        onComplete={(s, meta) => {
+          setScores(s);
+          setVersion(meta?.scoringVersion ?? SCORING_VERSION);
+        }}
+      />
+    </section>
+  );
+};
 
 const SAMPLE_ITEMS = [
   { id: 'E1', text: 'I am the life of the party', domain: 'Extraversion', aspect: 'Enthusiasm', reversed: false },
@@ -69,6 +137,9 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: run the real assessment */}
+        <LiveAssessment />
+
         {/* Instrument Selection */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Instrument Selection</h2>
@@ -83,7 +154,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               </thead>
               <tbody>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">BFAS (100 items)</td>
+                  <td className="py-2 pr-4">IPIP-BFAS 100</td>
                   <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Public domain</span></td>
                   <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Implementable</span></td>
                 </tr>
@@ -162,8 +233,8 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 space-y-3">
                 <h3 className="text-xs font-bold text-violet-800">Scoring Complete (Demo)</h3>
                 <p className="text-xs text-violet-700 italic">
-                  In production, scores are computed server-side via Vertex AI with structured output.
-                  Reverse-keyed items use formula: reverse = 6 - raw.
+                  The prototype uses deterministic IPIP-BFAS scoring. AI may interpret bands later,
+                  but it never scores responses. Reverse-keyed items use formula: reverse = 6 - response.
                 </p>
                 <div className="space-y-2">
                   {Object.entries(DOMAIN_LABELS).map(([scientific, friendly]) => (
@@ -238,7 +309,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               'Present in user\'s app language',
               'Score identically regardless of language',
               'Do NOT compare scores across languages until invariance established',
-              'Generate reflection cards in user\'s language via Vertex AI',
+              'Generate reflection cards from validated bands only after the scoring layer completes',
             ].map((rule, i) => (
               <li key={i} className="flex items-start gap-2">
                 <Check size={14} className="mt-0.5 shrink-0 text-violet-500" />

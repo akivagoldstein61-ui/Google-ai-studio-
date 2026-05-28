@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { SafetyMenu } from '@/features/safety/SafetyMenu';
 import { ReportFlow } from '@/features/safety/ReportFlow';
 import { DatePlannerModal } from '@/features/match/DatePlannerModal';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 import { trustService } from '@/services/trustService';
 
@@ -246,6 +247,15 @@ export const ChatThread: React.FC<{
               </p>
             </motion.div>
           )}
+
+          <SkillContextPanel
+            surface="chat"
+            title="Communication skills"
+            description="Draft openers, rephrase gently, scan safety, and plan dates. Kesher never sends for you."
+            skillIds={['ai-feature-modules', 'pacing-coach', 'maps-date-planner', 'voice-integration']}
+            limit={4}
+            compact
+          />
 
           {conversation.messages.length === 0 && openerSuggestions.length === 0 && !isGeneratingOpeners && (
             <motion.div 

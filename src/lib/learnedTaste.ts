@@ -25,8 +25,10 @@ export type EventName =
   // policy_consent
   | 'onboarding_completed'
   | 'hard_filter_edited'
+  | 'soft_preference_edited'
   | 'taste_consent_granted'
   | 'taste_reset'
+  | 'taste_pause'
   // explicit_preference
   | 'like'
   | 'pass'
@@ -70,6 +72,7 @@ export function authority(name: EventName): number {
       return 1.0;
     case 'more_like_this':
     case 'less_like_this':
+    case 'soft_preference_edited':
     case 'tag_edited':
     case 'taste_reset':
       return 0.85;
@@ -88,6 +91,7 @@ export function authority(name: EventName): number {
     case 'session_stage':
     case 'onboarding_completed':
     case 'taste_consent_granted':
+    case 'taste_pause':
       return 0.0;
   }
 }
@@ -100,6 +104,7 @@ export function signOf(name: EventName): -1 | 0 | 1 {
   switch (name) {
     case 'like':
     case 'more_like_this':
+    case 'soft_preference_edited':
     case 'reply_received':
     case 'long_dwell':
     case 'prompt_expanded':
@@ -125,6 +130,8 @@ export interface TasteState {
   fast: Map<string, number>;
   slow: Map<string, number>;
   lastUpdatedMs: number;
+  learningPaused?: boolean;
+  optedOut?: boolean;
 }
 
 export const FAST_HALFLIFE_MS = 14 * 24 * 60 * 60 * 1000;   // 2 weeks
@@ -145,6 +152,10 @@ function applyDecay(map: Map<string, number>, elapsedMs: number, halfLife: numbe
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function applyEvent(state: TasteState, ev: TasteEvent): TasteState {
+  if (ev.name === 'taste_reset') return resetTasteState(ev.occurredAt);
+  if (ev.name === 'taste_pause') return { ...cloneTasteState(state), learningPaused: true };
+  if (state.learningPaused || state.optedOut) return cloneTasteState(state);
+
   const a = authority(ev.name);
   const sign = signOf(ev.name);
   if (a === 0 || sign === 0) return state;
@@ -201,7 +212,7 @@ export function implicitAffinity(state: TasteState, candidateFeatures: string[])
  * records. Those must be persisted separately.
  */
 export function resetTasteState(now: number = Date.now()): TasteState {
-  return { fast: new Map(), slow: new Map(), lastUpdatedMs: now };
+  return { fast: new Map(), slow: new Map(), lastUpdatedMs: now, learningPaused: false, optedOut: false };
 }
 
 export function emptyTasteState(now: number = Date.now()): TasteState {
@@ -210,4 +221,14 @@ export function emptyTasteState(now: number = Date.now()): TasteState {
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
+}
+
+function cloneTasteState(state: TasteState): TasteState {
+  return {
+    fast: new Map(state.fast),
+    slow: new Map(state.slow),
+    lastUpdatedMs: state.lastUpdatedMs,
+    learningPaused: state.learningPaused ?? false,
+    optedOut: state.optedOut ?? false,
+  };
 }

@@ -3,7 +3,8 @@
 ## Runtime Shape
 - Imported implementation baseline: `akivagoldstein61-ui/Google-ai-studio-` on branch `main`.
 - Supporting local evidence lives outside this git repo in the original workspace folder: Kesher personality/privacy PDFs, an empty ADR placeholder, and `files.zip` containing the Kesher skills bundle. Those materials are reference-only unless copied in by an approved docs task.
-- `server.ts` starts the Express server, exposes `/api/health`, mounts `/api/ai` from `server/aiRoutes.ts`, mounts trust/account/profile/support routes from `server/trustRoutes.ts`, and serves the Vite SPA.
+- `server.ts` starts the Express server, exposes `/api/health`, mounts `/api/ai` from `server/aiRoutes.ts`, mounts trust/account/profile/support routes from `server/trustRoutes.ts`, returns JSON for unmatched `/api/*`, and serves the Vite SPA.
+- `api/health.ts`, `api/version.ts`, and `api/[...path].ts` provide Vercel Function JSON responses for runtime health, deployment metadata, and unmatched API routes.
 - `src/App.tsx` is the app shell. It switches among welcome, onboarding, Daily Picks, Explore, inbox/chat, settings, profile editing, safety, AI trust, private taste, personality, admin, experiments, profile detail, and match sheet views.
 - `src/context/AppContext.tsx` holds client state, Firebase auth listener, Firestore reads/writes, mock fallback discovery data, local matching simulation, private taste interactions, and messaging.
 

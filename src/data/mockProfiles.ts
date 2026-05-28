@@ -18,7 +18,7 @@ export const MOCK_PROFILES: Profile[] = [
     ],
     isVerified: true,
     isPremium: false,
-    tags: ['Traditional', 'History', 'Beach', 'Cooking'],
+    tags: ['Traditional', 'History', 'Beach', 'Cooking', 'Introverted', 'Thoughtful'],
     lastActive: '2026-03-22T10:00:00Z'
   },
   {
@@ -38,7 +38,7 @@ export const MOCK_PROFILES: Profile[] = [
     ],
     isVerified: true,
     isPremium: true,
-    tags: ['Modern Orthodox', 'Tech', 'Hiking', 'Jerusalem'],
+    tags: ['Modern Orthodox', 'Tech', 'Hiking', 'Jerusalem', 'Analytical', 'Planner'],
     lastActive: '2026-03-22T11:30:00Z'
   },
   {
@@ -58,7 +58,7 @@ export const MOCK_PROFILES: Profile[] = [
     ],
     isVerified: false,
     isPremium: false,
-    tags: ['Secular', 'Art', 'Nature', 'Haifa'],
+    tags: ['Secular', 'Art', 'Nature', 'Haifa', 'Spontaneous', 'Creative'],
     lastActive: '2026-03-22T09:15:00Z'
   },
   {
@@ -78,8 +78,48 @@ export const MOCK_PROFILES: Profile[] = [
     ],
     isVerified: true,
     isPremium: false,
-    tags: ['Dati', 'Education', 'Community', 'Growth'],
+    tags: ['Dati', 'Education', 'Community', 'Growth', 'Structured', 'Extroverted'],
     lastActive: '2026-03-22T12:00:00Z'
+  },
+  {
+    id: '5',
+    uid: 'user5',
+    displayName: 'Shira',
+    age: 27,
+    gender: 'female',
+    city: 'Tel Aviv',
+    photos: ['https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=600'],
+    bio: 'Masorti. Dog mom. Product manager who loves to organize weekends away and explore new culinary spots.',
+    observance: 'masorti',
+    intent: 'serious_relationship',
+    prompts: [
+      { id: 'p9', question: 'I know it is time to delete this app when', answer: 'We can argue about which Hummus place is best and still laugh.' },
+      { id: 'p10', question: 'My simple pleasure', answer: 'A long run on the tayelet.' }
+    ],
+    isVerified: true,
+    isPremium: true,
+    tags: ['Masorti', 'Dogs', 'Foodie', 'Running', 'Organized', 'Direct'],
+    lastActive: '2026-03-22T14:20:00Z'
+  },
+  {
+    id: '6',
+    uid: 'user6',
+    displayName: 'Daniel',
+    age: 33,
+    gender: 'male',
+    city: 'Jerusalem',
+    photos: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600'],
+    bio: 'Traditional. Writer and amateur chef. Seeking someone who appreciates good literature and deep discussions.',
+    observance: 'traditional',
+    intent: 'marriage_minded',
+    prompts: [
+      { id: 'p11', question: 'My most irrational fear', answer: 'Running out of good coffee beans.' },
+      { id: 'p12', question: 'A boundary of mine is', answer: 'I need quiet time in the mornings to write.' }
+    ],
+    isVerified: true,
+    isPremium: false,
+    tags: ['Traditional', 'Writing', 'Cooking', 'Coffee', 'Introverted', 'Reflective'],
+    lastActive: '2026-03-22T15:10:00Z'
   }
 ];
 

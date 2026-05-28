@@ -1,5 +1,118 @@
-import React from 'react';
-import { ChevronLeft, Heart, Check, X, AlertTriangle, Beaker } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, Heart, Check, X, AlertTriangle, Beaker, Sparkles, Loader2 } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
+import { aiService } from '@/services/aiService';
+
+const sharedInputsFrom = (p: any) => ({
+  values: [],
+  intent: p?.intent,
+  observance: p?.observance,
+  lifestyle: Array.isArray(p?.tags) ? p.tags.slice(0, 4) : [],
+  interests: Array.isArray(p?.tags) ? p.tags.slice(0, 6) : [],
+  prompts: Array.isArray(p?.prompts) ? p.prompts.slice(0, 3).map((x: any) => ({ question: x?.question, answer: x?.answer })) : [],
+});
+
+/**
+ * LIVE: mutual-consent compatibility reflection. The server rejects (403) unless
+ * mutualConsent && bothOptedIn are both true, and never returns a score.
+ */
+const LiveCompatibility: React.FC = () => {
+  const { user, dailyPicks, trackEvent } = useApp();
+  const candidate = dailyPicks?.[0];
+  const [agreed, setAgreed] = useState(false);
+  const [counterpartyAgreed, setCounterpartyAgreed] = useState(false);
+  const [report, setReport] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async () => {
+    if (!user || !candidate) return;
+    const mutualConsent = agreed && counterpartyAgreed;
+    if (!mutualConsent) {
+      setError('Both consent toggles must be on before the reflection route can run.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    trackEvent?.('skill_consent_accepted', { skillId: 'compatibility-reflection' });
+    try {
+      const r = await aiService.getCompatibilityReflection(sharedInputsFrom(candidate), {
+        mutualConsent,
+        bothOptedIn: counterpartyAgreed,
+      });
+      if (!r) {
+        setError('Reflection unavailable right now. We never invent a compatibility report.');
+      } else {
+        setReport(r);
+        trackEvent?.('skill_completed', { skillId: 'compatibility-reflection' });
+      }
+    } catch {
+      setError('Reflection unavailable right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center gap-2 text-[#D4AF37]">
+          <Sparkles size={16} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Live reflection — not a score</span>
+        </div>
+
+        {!user ? (
+          <p className="text-sm text-white/70 italic">Sign in to try a mutual-consent reflection.</p>
+        ) : !candidate ? (
+          <p className="text-sm text-white/70 italic">Load your Daily Picks first to reflect with a real candidate.</p>
+        ) : report ? (
+          <div className="space-y-4" dir="rtl">
+            {report.shared_strengths_he?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Shared strengths</p>
+                <ul className="space-y-1">{report.shared_strengths_he.map((s: string, i: number) => <li key={i} className="text-sm text-white/90 italic font-serif">• {s}</li>)}</ul>
+              </div>
+            )}
+            {report.friction_loops?.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Friction loops</p>
+                {report.friction_loops.map((f: any, i: number) => (
+                  <div key={i} className="text-sm text-white/90 italic font-serif"><p>• {f.dynamic_he}</p><p className="text-xs text-white/65 pr-4">↳ {f.advice_he}</p></div>
+                ))}
+              </div>
+            )}
+            {report.question_to_explore_he && <div className="pt-2 border-t border-white/10"><p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Question to explore</p><p className="text-sm text-[#D4AF37] italic font-serif">"{report.question_to_explore_he}"</p></div>}
+            {report.micro_habit_he && <div className="pt-2 border-t border-white/10"><p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Micro-habit</p><p className="text-sm text-white/90 italic">{report.micro_habit_he}</p></div>}
+            {report.gentle_boundary_he && <div className="pt-2 border-t border-white/10"><p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Gentle boundary</p><p className="text-sm text-white/90 italic">{report.gentle_boundary_he}</p></div>}
+            <p className="text-[9px] text-white/40 italic" dir="ltr">A reflection to talk better — never a percentage, ranking, or verdict.</p>
+          </div>
+        ) : loading ? (
+          <div className="flex items-center gap-3 text-white/70"><Loader2 size={18} className="animate-spin text-[#D4AF37]" /><span className="text-sm italic">Generating a consent-safe reflection…</span></div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-white/70 italic leading-relaxed">
+              Reflect with {candidate.displayName} on how you might communicate. Uses only mutually visible signals; the
+              server refuses to run without explicit mutual consent.
+            </p>
+            <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer select-none">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-[#D4AF37]" />
+              <span>I consent. I understand this is a reflection, not a prediction — no scores, no verdicts.</span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer select-none">
+              <input type="checkbox" checked={counterpartyAgreed} onChange={(e) => setCounterpartyAgreed(e.target.checked)} className="mt-0.5 accent-[#D4AF37]" />
+              <span>Demo fixture: the other person has explicitly opted in to this shared reflection.</span>
+            </label>
+            <button onClick={run} disabled={!agreed || !counterpartyAgreed} className="h-11 px-5 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] font-bold uppercase tracking-widest text-[10px] disabled:opacity-40">
+              Generate reflection
+            </button>
+            {error && <p className="text-xs text-amber-200/90 italic">{error}</p>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 const LENSES = [
   {
@@ -26,7 +139,7 @@ const LENSES = [
 
 const ANTI_PATTERNS = [
   { pattern: '"Numeric fit claim"', reason: 'No scientific basis; creates false precision' },
-  { pattern: '"Soulmate match"', reason: 'Destiny framing creates unhealthy expectations' },
+  { pattern: '"Fated-pair claim"', reason: 'Certainty framing creates unhealthy expectations' },
   { pattern: '"You complete each other"', reason: 'Essentializing and deterministic' },
   { pattern: '"Based on science"', reason: 'Overclaims; FTC scrutiny risk' },
   { pattern: '"Better than your other matches"', reason: 'Comparative ranking without invariance' },
@@ -52,6 +165,9 @@ export const CompatibilityReflectionSkill: React.FC<{ onBack: () => void }> = ({
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* LIVE: mutual-consent reflection */}
+        <LiveCompatibility />
+
         {/* Core Constraints */}
         <section className="p-6 bg-rose-50 rounded-[24px] border border-rose-100 space-y-4">
           <div className="flex items-center gap-2 text-rose-700">
@@ -60,7 +176,7 @@ export const CompatibilityReflectionSkill: React.FC<{ onBack: () => void }> = ({
           </div>
           <p className="text-xs text-rose-800 leading-relaxed">
             This is the highest-sensitivity feature in Kesher's personality stack. The scientific evidence does NOT support
-            deterministic compatibility scoring — personality similarity shows mixed or negligible incremental validity for relationship satisfaction.
+            deterministic fit scoring. Personality similarity shows mixed or negligible incremental validity for relationship satisfaction.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -73,7 +189,7 @@ export const CompatibilityReflectionSkill: React.FC<{ onBack: () => void }> = ({
             </div>
             <div className="space-y-2">
               <h4 className="text-[9px] font-bold uppercase tracking-widest text-red-700">What it is NOT:</h4>
-              {['A compatibility score', 'A prediction of success', 'A recommendation to pursue/avoid', 'A deterministic type match'].map(item => (
+              {['A numeric fit rating', 'A prediction of success', 'A recommendation to pursue/avoid', 'A deterministic type match'].map(item => (
                 <div key={item} className="flex items-start gap-1 text-xs text-red-700">
                   <X size={12} className="mt-0.5 shrink-0" /><span>{item}</span>
                 </div>

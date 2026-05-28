@@ -3,7 +3,9 @@
 ## Current Evidence
 - The repo contains an AI Studio app export link in `README.md`.
 - The app is deployable as a Node server serving a Vite SPA: `npm run build` produces `dist/index.html`, assets, and `dist/server.cjs`.
-- There is no Vercel, Netlify, Cloudflare, Neon, CircleCI, Docker, Firebase Hosting, or Cloud Run config in this baseline.
+- Vercel is configured through `vercel.json` with Vercel Functions for `/api/health`, `/api/version`, `/__version`, and a JSON API catch-all.
+- The Vercel SPA fallback excludes `/api/*` so API routes are not served as `index.html`.
+- `/prototype` links to `/skills-hub`, which exposes all prototype skill modules without Firebase auth.
 
 ## Required Environment
 - `GEMINI_API_KEY`: server-only. Required for live AI responses.

@@ -8,6 +8,7 @@ import { aiService } from '@/services/aiService';
 import { cn } from '@/lib/utils';
 import { SafetyMenu } from '@/features/safety/SafetyMenu';
 import { ReportFlow } from '@/features/safety/ReportFlow';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 import { trustService } from '@/services/trustService';
 
@@ -203,6 +204,13 @@ export const ProfileDetail: React.FC<{
               </span>
             </div>
           </section>
+
+          <SkillContextPanel
+            surface="profile"
+            title="Understand this profile"
+            description="Use visible context only. Hidden ranking signals, private answers, and safety flags stay out of match explanations."
+            skillIds={['why-this-match', 'private-taste', 'permissioned-sharing']}
+          />
 
           {/* Bio */}
           <section className="space-y-4">

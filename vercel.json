@@ -3,9 +3,10 @@
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/[...path]" },
     { "source": "/__version", "destination": "/api/version" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/__build", "destination": "/api/version" },
+    { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -16,5 +17,10 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/[...path].ts": {
+      "maxDuration": 60
+    }
+  }
 }

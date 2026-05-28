@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Private Recommendations"
+  short_description: "Private recommender controls"
+  default_prompt: "Use $kesher-private-recommendations to review permissioned or private Kesher recommendation behavior."

@@ -212,6 +212,7 @@ const EXCLUDE_DIRS = new Set([
   "node_modules",
   ".git",
   "dist",
+  ".vercel",
   ".next",
   "build",
   "coverage",
@@ -270,6 +271,12 @@ function isNegationContext(line) {
   return NEGATION_PREFIXES.some((p) => p.test(trimmed));
 }
 
+function isAllowedInstrumentSource(relPath, id, line) {
+  return relPath === "src/personality/ipipBfas.ts" &&
+    id === "FP-08" &&
+    line.includes("Am not bothered by disorder.");
+}
+
 function* walkFiles(dir) {
   for (const entry of readdirSync(dir)) {
     if (shouldSkipDir(entry)) continue;
@@ -305,6 +312,7 @@ for (const filePath of walkFiles(ROOT)) {
     for (const pattern of patterns) {
       lines.forEach((line, idx) => {
         if (isNegationContext(line)) return;
+        if (isAllowedInstrumentSource(relPath, id, line)) return;
         if (pattern instanceof RegExp ? pattern.test(line) : line.includes(pattern)) {
           findings.push({ id, rule, file: relPath, line: idx + 1, text: line.trim() });
         }

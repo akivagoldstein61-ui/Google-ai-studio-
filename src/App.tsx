@@ -20,10 +20,12 @@ import { ProfileBuilder } from './components/onboarding/ProfileBuilder';
 import { MatchSheet } from './features/match/MatchSheet';
 import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
+import { PersonalityPrototypeScreen } from './features/prototype/PersonalityPrototypeScreen';
 import { SkillsRouter } from './features/skills';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
+import { isPrototypeDemoMode } from './lib/prototypeMode';
 
 // ---------------------------------------------------------------------------
 // Auth guard — redirects unauthenticated / onboarding users
@@ -55,13 +57,14 @@ const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Tab layout — wraps the 4 main tab screens with MainLayout + tab bar
 // ---------------------------------------------------------------------------
 
-const TAB_ROUTES = ['/daily', '/explore', '/inbox', '/settings'] as const;
+const TAB_ROUTES = ['/daily', '/explore', '/inbox', '/skills', '/settings'] as const;
 type TabPath = typeof TAB_ROUTES[number];
 
-const TAB_MAP: Record<TabPath, 'daily' | 'explore' | 'matches' | 'profile'> = {
+const TAB_MAP: Record<TabPath, 'daily' | 'explore' | 'matches' | 'skills' | 'profile'> = {
   '/daily': 'daily',
   '/explore': 'explore',
   '/inbox': 'matches',
+  '/skills': 'skills',
   '/settings': 'profile',
 };
 
@@ -71,10 +74,17 @@ const TabLayout: React.FC = () => {
 
   const currentPath = location.pathname as TabPath;
   const activeTab = TAB_MAP[currentPath] || 'daily';
+  const withDemoSearch = (path: string) => (
+    location.search.includes('demo=') && !path.includes('?') ? `${path}${location.search}` : path
+  );
 
-  const setActiveTab = (tab: 'daily' | 'explore' | 'matches' | 'profile') => {
+  const setActiveTab = (tab: 'daily' | 'explore' | 'matches' | 'profile' | 'skills') => {
+    if (tab === 'skills') {
+      navigate(withDemoSearch('/skills'));
+      return;
+    }
     const path = Object.entries(TAB_MAP).find(([, v]) => v === tab)?.[0];
-    if (path) navigate(path);
+    if (path) navigate(withDemoSearch(path));
   };
 
   return (
@@ -192,6 +202,31 @@ const ProfileDetailRoute: React.FC = () => {
   );
 };
 
+const ProfileEditRoute: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, setUser } = useApp();
+  if (!user) return <Navigate to="/daily" replace />;
+
+  return (
+    <div className="h-full overflow-y-auto bg-[#FDFCFB] px-6 py-8">
+      <ProfileBuilder
+        initialData={user}
+        onComplete={(data) => {
+          setUser({
+            ...user,
+            photos: data.photos.map((photo: any) => photo.url),
+            prompts: data.prompts,
+            bio: data.bio,
+            personalityScores: data.personalityScores,
+            isVerified: data.isVerified,
+          });
+          navigate('/settings');
+        }}
+      />
+    </div>
+  );
+};
+
 const ChatThreadRoute: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -207,7 +242,13 @@ const SafetyCenterRoute: React.FC = () => {
 
 const AITrustHubRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <AITrustHub onBack={() => navigate(-1)} onShowTasteProfile={() => navigate('/settings/taste-profile')} />;
+  return (
+    <AITrustHub
+      onBack={() => navigate(-1)}
+      onShowTasteProfile={() => navigate('/settings/taste-profile')}
+      onShowPersonalityVisibility={() => navigate('/settings/personality-visibility')}
+    />
+  );
 };
 
 const TasteProfileRoute: React.FC = () => {
@@ -217,7 +258,12 @@ const TasteProfileRoute: React.FC = () => {
 
 const SkillsRoute: React.FC = () => {
   const navigate = useNavigate();
-  return <SkillsRouter onBack={() => navigate(-1)} />;
+  return (
+    <SkillsRouter
+      onBack={() => navigate('/daily')}
+      onOpenFeature={(path) => navigate(path)}
+    />
+  );
 };
 
 const PersonalityProfileRoute: React.FC = () => {
@@ -245,8 +291,13 @@ const ExperimentsRoute: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const AppContent: React.FC = () => {
+  const demoMode = isPrototypeDemoMode();
+
   return (
-    <div className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]">
+    <div
+      className="h-screen w-full bg-[#FDFCFB] flex flex-col relative overflow-hidden font-sans text-[#2D2926]"
+      data-demo-mode={demoMode ? 'true' : undefined}
+    >
       <AuthGuard>
         <Routes>
           {/* Tab screens — wrapped in shared layout with bottom nav */}
@@ -254,11 +305,13 @@ const AppContent: React.FC = () => {
             <Route path="/daily" element={<DailyPicksRoute />} />
             <Route path="/explore" element={<ExploreRoute />} />
             <Route path="/inbox" element={<InboxRoute />} />
+            <Route path="/skills" element={<SkillsRoute />} />
             <Route path="/settings" element={<SettingsRoute />} />
           </Route>
 
           {/* Full-screen routes (no tab bar) */}
           <Route path="/profile/:profileId" element={<ProfileDetailRoute />} />
+          <Route path="/profile/edit" element={<ProfileEditRoute />} />
           <Route path="/inbox/:conversationId" element={<ChatThreadRoute />} />
           <Route path="/settings/safety" element={<SafetyCenterRoute />} />
           <Route path="/settings/ai-trust" element={<AITrustHubRoute />} />
@@ -267,7 +320,7 @@ const AppContent: React.FC = () => {
           <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
           <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
           <Route path="/admin/experiments" element={<ExperimentsRoute />} />
-          <Route path="/skills" element={<SkillsRoute />} />
+          <Route path="/demo" element={<Navigate to="/daily?demo=1" replace />} />
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/daily" replace />} />
@@ -283,8 +336,16 @@ export default function App() {
     if (pathname === '/prototype' || pathname === '/status') {
       return <PrototypeScreen />;
     }
+    if (pathname === '/prototype/personality') {
+      return <PersonalityPrototypeScreen />;
+    }
     if (pathname === '/skills-hub') {
-      return <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />;
+      // Wrap in AppProvider so deepened skill pages can use useApp() here too.
+      return (
+        <AppProvider>
+          <SkillsRouter onBack={() => { window.location.href = '/prototype'; }} />
+        </AppProvider>
+      );
     }
   }
   return (

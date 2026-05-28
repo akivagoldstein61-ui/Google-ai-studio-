@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Dark Pattern Audit"
+  short_description: "Consent UX dark-pattern review"
+  default_prompt: "Use $kesher-dark-pattern-audit to audit a Kesher consent or personality UI for coercive patterns."

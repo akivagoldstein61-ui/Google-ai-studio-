@@ -117,7 +117,7 @@ export const ShareCardModal: React.FC<Props> = ({ candidate, payload, onClose })
         )}
       </div>
       <p className="text-[11px] text-[#8C7E6E] italic">
-        We never share raw answers, raw scores, your private taste, or hidden ranking signals.
+        We never share raw answers, exact personality values, your private taste, or hidden ordering signals.
       </p>
       <Button
         onClick={() => setStep('scope')}

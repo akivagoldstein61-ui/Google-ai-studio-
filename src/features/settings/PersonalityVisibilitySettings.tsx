@@ -134,7 +134,7 @@ export const PersonalityVisibilitySettings: React.FC<{ onBack: () => void }> = (
         <section className="p-6 bg-[#2D2926] rounded-[32px] text-white space-y-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">How visibility works</p>
           <p className="text-sm text-white/80 leading-relaxed">
-            Personality data is private to you by default. Choose <span className="font-bold">Mutual consent</span> to allow it inside an approved share card with a specific match, or <span className="font-bold">Public</span> to display it on your profile to everyone you appear to. Raw answers and raw scores never leave your private storage.
+            Personality data is private to you by default. Choose <span className="font-bold">Mutual consent</span> to allow it inside an approved share card with a specific match, or <span className="font-bold">Public</span> to display it on your profile to everyone you appear to. Raw answers and exact personality values never leave your private storage.
           </p>
         </section>
 

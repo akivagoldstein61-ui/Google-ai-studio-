@@ -14,6 +14,7 @@ import {
 import { motion, Reorder, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { aiService } from "@/services/aiService";
+import { SkillContextPanel } from "@/features/skills/components/SkillContextPanel";
 
 import { PersonalityAssessment } from "./PersonalityAssessment";
 
@@ -144,6 +145,13 @@ export const ProfileBuilder: React.FC<{
 
   return (
     <div className="space-y-12 pb-20">
+      <SkillContextPanel
+        surface="profile-builder"
+        title="Profile-building skills"
+        description="Private coaching for personality, bio clarity, photo readiness, and consent."
+        skillIds={['personality-assessment', 'personality-profile', 'ai-feature-modules']}
+      />
+
       {/* AI Profile Health Section */}
       <section className="space-y-6">
         <div className="space-y-2">
@@ -184,6 +192,14 @@ export const ProfileBuilder: React.FC<{
           </div>
         )}
       </section>
+
+      <SkillContextPanel
+        surface="profile-builder"
+        title="Profile skills"
+        description="Coaching, completeness, personality, visibility, and photo readiness stay private by default."
+        skillIds={['personality-assessment', 'personality-profile', 'consent-ux', 'image-analysis']}
+        limit={4}
+      />
 
       <section className="space-y-6">
         <div className="p-8 bg-gradient-to-br from-[#2D2926] to-[#1A1816] rounded-[40px] text-white space-y-6 relative overflow-hidden shadow-xl shadow-black/20">
@@ -304,6 +320,14 @@ export const ProfileBuilder: React.FC<{
       </section>
 
       <section className="space-y-6">
+        <SkillContextPanel
+          surface="profile-builder"
+          title="Photo and privacy skills"
+          description="Review photo readiness without attractiveness scoring or protected-trait inference."
+          skillIds={['image-analysis', 'personality-visibility', 'consent-ux']}
+          compact
+        />
+
         <div className="flex justify-between items-end">
           <div className="space-y-2">
             <h3 className="text-2xl font-serif italic tracking-tight text-[#2D2926]">

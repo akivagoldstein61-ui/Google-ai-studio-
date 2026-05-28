@@ -1,0 +1,37 @@
+# Files Vercel does not need to upload.
+# Keep server/, api/, src/, scripts/, firebase-applet-config.json,
+# firestore.rules, package.json, vercel.json, tsconfig.json — those are
+# required at build or runtime.
+
+node_modules
+.git
+dist
+
+# Bulky governance source bundles — referenced for review but not needed by
+# the runtime. The runtime reads docs/ only via npm test, not at request time.
+#
+# IMPORTANT: these patterns MUST be anchored with a leading "/" so they match
+# ONLY the repo-root skill bundle dirs. An unanchored "skills" also matches
+# src/features/skills/ (and .claude/skills/), which Vercel then strips from the
+# upload — breaking `vite build` with: Could not resolve "./features/skills".
+kesher-personality-skills.zip
+/skills
+/skills 2
+/skills 3
+/skills 4
+/public/downloads
+/.claude/skills
+/.github/skills
+/kesher-app/skills
+
+# Ad-hoc dev scratch files at repo root.
+test_genai.js
+test_ping.js
+test_duplicate_keys.js
+patch.ts
+patch_service.ts
+patch_service2.ts
+patch_services.js
+
+# Plan / local-only state.
+.claude/settings.local.json

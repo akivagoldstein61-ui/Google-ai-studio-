@@ -3,8 +3,6 @@ import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Shield, Heart, Globe, Sparkles, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
-import { auth } from '@/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import {
   getPrototypeDemoUrl,
   isCurrentDomainFirebaseAuthorized,
@@ -12,7 +10,7 @@ import {
 } from '@/lib/prototypeMode';
 
 export const WelcomeScreen: React.FC = () => {
-  const { language, setLanguage } = useApp();
+  const { language, setLanguage, signIn } = useApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [domainWarning, setDomainWarning] = useState(false);
@@ -32,8 +30,7 @@ export const WelcomeScreen: React.FC = () => {
     setIsSigningIn(true);
     setSignInError(null);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signIn();
     } catch (error: any) {
       const code: string = error?.code ?? 'unknown';
       console.error('Sign in failed', code, error);

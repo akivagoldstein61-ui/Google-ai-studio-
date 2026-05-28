@@ -6,6 +6,7 @@ import { aiSafetyService } from '@/services/aiSafetyService';
 import { cn } from '@/lib/utils';
 import { ReportFlow } from '@/features/safety/ReportFlow';
 import { useApp } from '@/context/AppContext';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user } = useApp();
@@ -102,6 +103,14 @@ export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </AnimatePresence>
           </div>
         </section>
+
+        <SkillContextPanel
+          surface="safety"
+          title="Safety skills"
+          description="Use guidance without hiding direct report, block, support, or emergency actions."
+          skillIds={['grounded-search', 'image-analysis', 'israeli-privacy', 'dark-pattern-audit']}
+          limit={4}
+        />
 
         {/* Safety Explanations */}
         <section className="space-y-6">

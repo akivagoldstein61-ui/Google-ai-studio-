@@ -1,1533 +1,1258 @@
-# Kesher Skills - Full Shareable Markdown
+# Kesher Personality Skills Bundle
 
-This file combines every `SKILL.md` found in the bundle and app repo. Reference files remain in the extracted folders and installable zip.
+Generated: 2026-05-25T23:19:36.583Z
 
+This shareable bundle contains 43 implementable skills from the canonical `skills/` folder.
 
 ---
 
 # google-ai-studio-app-builder
 
-Source: `.claude/skills/google-ai-studio-app-builder/SKILL.md`
+Source: `skills/google-ai-studio-app-builder/SKILL.md`
 
 ---
 name: google-ai-studio-app-builder
-description: Build, deploy, and harden full-stack AI applications using Google AI Studio. Use when prototyping with Build mode, designing prompt-to-code apps, integrating Firebase AI Logic, deploying to Cloud Run, or following the 7-day hardening plan from prototype to MVP.
+description: "Build, deploy, and harden full-stack AI applications using Google AI Studio. Use when prototyping with Build mode, designing prompt-to-code apps, integrating Firebase AI Logic, deploying to Cloud Run, or following the 7-day hardening plan from prototype to MVP."
 ---
 
 # Google AI Studio App Builder
 
-Build AI-powered applications using Google AI Studio's **Build mode**, Gemini API, and Firebase ecosystem. From prototype to production.
+Use this skill as a compact implementation pointer for Google AI Studio sourced prototypes. Keep GitHub as the durable handoff, move secrets server-side, add CI gates before production, and verify exported code in the repo before shipping.
 
-## App Building Patterns
+---
 
-| Pattern | Description | Key Tools |
-|---------|-------------|-----------|
-| A: Prompt Experiment | Prompt playground to contract | AI Studio prompt editor |
-| B: Prompt-to-Code Demo | Build mode scaffold | AI Studio Build mode |
-| C: Grounded Answers | Search + URL Context app | Google Search grounding |
-| D: RAG App | File Search for retrieval | File Search API |
-| E: Voice/Multimodal Live | Real-time voice/video | Gemini Live API |
-| F: Mobile Client | Client-side model calls | Firebase AI Logic |
-| G: Open-Weight | Self-hosted models | Gemma 4 series |
+# kesher-ai-evaluation-observability
 
-## Build Mode Workflow
+Source: `skills/kesher-ai-evaluation-observability/SKILL.md`
 
-1. **Prompt** → Write system instructions and test in playground
-2. **Baseline scaffold** → Use Build mode to generate initial app
-3. **Lock contract** → Define input/output schemas, safety settings
-4. **Iterate** → Chat or annotate to refine
-5. **Integrate** → Add secrets, external APIs
-6. **Firebase provision** → Set up auth, database, hosting
-7. **Export** → Push to GitHub repo
+---
+name: kesher-ai-evaluation-observability
+description: Add Kesher AI evals, red-team prompts, latency budgets, output-quality dashboards, route health, and release-blocking model governance.
+---
 
-## Production Handoff
+# Kesher AI Evaluation & Observability
 
-### GitHub Export
+Use this skill for AI runtime hardening.
 
-```
-AI Studio Build mode → Export to GitHub → CI pipeline → Cloud Run
-```
+## Requirements
 
-### CI/CD Pipeline
+- Every AI route needs schema validation, fallback behavior, privacy exclusions, and unsafe-output tests.
+- Log feature id, route, model, fallback status, validator result, latency bucket, and prompt version.
+- Sensitive routes must fail closed when consent, provenance, or policy gates are missing.
+- Red-team prompts should cover private taste leakage, raw personality answers, hidden ranking weights, and unsafe message automation.
 
-```yaml
-# Recommended pipeline stages
-lint → test → build → deploy
-```
+## Acceptance
 
-### Cloud Run Deployment
-
-- Build mode's default Cloud Run deploy is NOT production-safe
-- Set up proper billing isolation
-- Configure abuse controls (rate limits, quotas)
-- Add observability (logging, monitoring, alerting)
-
-## 7-Day Hardening Plan
-
-| Day | Focus | Deliverable |
-|-----|-------|-------------|
-| 1 | Contract freeze | Locked schemas, system instructions, safety settings |
-| 2 | Repo setup | GitHub repo, CI pipeline, linting |
-| 3 | Observability | Logging, monitoring, dashboards |
-| 4 | Abuse controls | Rate limits, quotas, input validation |
-| 5 | Evaluation | Test harness, golden cases, regression tests |
-| 6 | Security | Auth, secrets management, prompt injection defense |
-| 7 | Production posture | Rollback plan, on-call, launch decision |
-
-## Key Technical Concepts
-
-### Structured Outputs
-
-```js
-generationConfig: {
-  responseMimeType: "application/json",
-  responseSchema: { /* JSON Schema */ }
-}
-```
-
-### Function Calling
-
-```js
-tools: [{
-  functionDeclarations: [{
-    name: "get_weather",
-    description: "Get current weather",
-    parameters: { type: "object", properties: { location: { type: "string" } } }
-  }]
-}]
-```
-
-### Thought Signatures
-
-Use `thought_signature` in responses for debugging and correctness verification.
-
-### Tool Incompatibilities
-
-- Structured outputs + File Search: **incompatible** in same request
-- Verify tool combinations before production
-
-## Firebase AI Logic
-
-For client-side model calls (mobile apps):
-
-- Use Firebase AI Logic SDK
-- Require Firebase App Check for abuse prevention
-- Implement per-user quotas
-- Use ephemeral tokens for Live API sessions
-
-## Models
-
-| Model | Best For | Notes |
-|-------|----------|-------|
-| Gemini 3 / 3.1 | Latest capabilities | Preview, may not be stable |
-| Gemini 2.5 Pro | Complex reasoning | Production-ready |
-| Gemini 2.5 Flash | Balanced speed/quality | Primary workhorse |
-| Gemini 2.5 Flash-Lite | Speed-critical tasks | Lowest latency |
-| Gemma 4 (31B) | Self-hosted, open-weight | Full control, no API dependency |
-
-## Best Practices
-
-- Prefer contracts over folklore — define schemas explicitly
-- Use thinking controls intentionally (not by default)
-- Grounding and RAG are different tools for different problems
-- Never embed API keys in client code
-- Use ephemeral tokens for production Live API
-- Revalidate model strings before production — prefer stable versions
-- Do not treat Build mode deploys as production-safe
-
-## References
-
-- **Prompting playbooks**: See `references/prompting_playbooks.md` for task-specific prompt templates
-- **Manus operator patterns**: See `references/manus_patterns.md` for Manus-specific app building workflows
-
+- AI Ops can see route health and launch blockers.
+- Golden tests cover every `/api/ai/*` route.
+- Release gates fail when high-risk AI features lack tests or provenance.
 
 ---
 
 # kesher-ai-feature-modules
 
-Source: `.claude/skills/kesher-ai-feature-modules/SKILL.md`
+Source: `skills/kesher-ai-feature-modules/SKILL.md`
 
 ---
 name: kesher-ai-feature-modules
-description: All 11 AI feature modules (F01-F11) for the Kesher dating app. Use when implementing, evaluating, or deploying any specific feature module — bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, or personality coaching.
+description: "All 11 AI feature modules for the Kesher dating app. Use when implementing, evaluating, or deploying a specific feature module such as bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, or personality coaching."
 ---
 
 # Kesher AI Feature Modules
 
-Eleven AI feature modules organized in three deployment waves. Gemini handles the **language layer only** — ranking, enforcement, and core logic are deterministic.
-
-## Module Inventory
-
-| ID | Module | Wave | Category |
-|----|--------|------|----------|
-| F01 | Hebrew-first Bio Coach | 1: Trust Foundation | Coaching |
-| F02 | Values / Observance Phrasing | 1: Trust Foundation | Coaching |
-| F10 | AI Disclosure + Human-in-Control Composer | 1: Trust Foundation | Trust |
-| F06 | Anti-Burnout Pacing Coach | 1: Trust Foundation | Wellbeing |
-| F04 | Daily Picks + "Why These" | 2: Matching Intelligence | Matching |
-| F05 | "Why This Match" Cards | 2: Matching Intelligence | Matching |
-| F03 | Private Editable Taste Profile | 2: Matching Intelligence | Personalization |
-| F07 | Harassment / Toxicity Classifier | 2: Matching Intelligence | Safety |
-| F09 | Report Intake Assistant | 2: Matching Intelligence | Safety |
-| F08 | Scam / Financial Solicitation Detector | 2: Matching Intelligence | Safety |
-| F11 | Personality / Communication Coach | 3: Reflection Layer | Coaching |
-
-## Deployment Waves
-
-### Wave 1: Trust Foundation
-
-Build user trust before adding intelligence features. Deploy F01, F02, F10, F06 first.
-
-### Wave 2: Matching Intelligence
-
-Add AI-powered matching and safety features. Deploy F04, F05, F03, F07, F09, F08.
-
-### Wave 3: Reflection Layer
-
-Add deeper coaching after trust and matching are established. Deploy F11.
-
-## Shared Contracts
-
-### Moderation Contract
-
-All safety modules (F07, F08, F09) share:
-- Deterministic rules run first, then LLM assessment
-- Human moderator reviews all punitive actions
-- Decision codes logged (not detailed descriptions)
-- Escalation paths to human support
-
-### Answer Contract
-
-Every module must specify:
-- Input schema and validation rules
-- Output schema (user-facing + internal reasoning)
-- Model and thinking level
-- Consent requirements
-- Approval boundary (what requires human approval)
-
-## Per-Module Quick Reference
-
-For detailed specs on each module, see the references directory:
-
-- **F01-F02 Coaching modules**: See `references/coaching_modules.md`
-- **F03-F06 Matching and wellbeing**: See `references/matching_modules.md`
-- **F07-F09 Safety modules**: See `references/safety_modules.md`
-- **F10-F11 Trust and reflection**: See `references/trust_modules.md`
-
-## Hebrew/RTL Requirements
-
-All modules must:
-- Generate Hebrew-first content with proper RTL handling
-- Follow Unicode Bidirectional Algorithm (UAX #9)
-- Follow W3C RTL Authoring Guidance
-- Pass Bidi stress testing before deployment
-- Support mixed Hebrew/English content gracefully
-
-## Guiding Principles
-
-- **Bounded AI, not maximal AI** — enhance clarity, calm, and safety
-- **Coaching over generation** — keep the user's voice central
-- **Provenance and auditability** — trace all AI claims to user data
-- **Human-in-control** — explicit user approval for all actions
-- **Sensitive data minimization** — minimize religious and personality data storage
-- **No secret ranking** — AI never secretly ranks or scores users
-- **No chatfishing** — clear authorship attribution, manual sending required
-
+Use this skill to keep Kesher AI surfaces bounded, labeled, user-controlled, and testable. Prefer micro-surfaces over a general chatbot, require human confirmation for consequential actions, and update the AI feature registry whenever capability behavior changes.
 
 ---
 
 # kesher-ai-governance
 
-Source: `.claude/skills/kesher-ai-governance/SKILL.md`
+Source: `skills/kesher-ai-governance/SKILL.md`
 
 ---
 name: kesher-ai-governance
-description: Implements AI feature allocation, system boundaries, and governance for the Kesher dating app. Use this skill to manage the AI feature registry, model routing logic, and enforce strict safety policies and human-in-the-loop triggers.
+description: "Implement Kesher AI feature allocation, system boundaries, registry governance, model routing, human-in-the-loop triggers, and safety policy enforcement. Use when changing AI feature registry entries, model route choices, trust hub copy, policy checks, or governance docs."
 ---
 
-# Kesher AI Governance & System Boundaries Skill
+# Kesher AI Governance
 
-This skill provides the framework for managing and governing all AI features within the Kesher app. It ensures that AI is deployed responsibly, safely, and transparently, adhering to strict red lines and operational boundaries.
+Use this skill when an AI feature changes what data is processed, which model route is used, or what a user can do with generated output. Keep generated assistance draft-only, structured, disclosed, and reversible where relevant.
 
-## Core Principles
+---
 
-1.  **Centralized Registry:** All AI features must be registered in a central catalog defining their purpose, required consent, data access, and fallback behavior.
-2.  **Model Routing by Task:** Use lightweight, fast models (e.g., Gemini Flash) for low-latency, deterministic tasks (like structured extraction). Reserve heavier models (e.g., Gemini Pro) for complex reasoning or creative generation (if permitted).
-3.  **Strict Red Lines:** Enforce absolute prohibitions on certain AI behaviors (e.g., photo-based trait inference, automated chatting).
-4.  **Human-in-the-Loop (HITL):** Define clear thresholds where AI systems must escalate to human moderators (e.g., high-confidence abuse detection).
+# kesher-bfas-assessment
 
-## Implementation Workflow
+Source: `skills/kesher-bfas-assessment/SKILL.md`
 
-### 1. The AI Feature Registry
+---
+name: kesher-bfas-assessment
+description: Implement and review Kesher's opt-in English IPIP-BFAS 100 / Big Five Aspects assessment prototype, deterministic scoring, answer handling, consent copy, reset/delete behavior, and non-clinical dating-style framing. Use when changing PersonalityAssessment, personality score types, onboarding assessment flows, prototype scoring, persistence for answers or bands, or tests for BFAS scoring and assessment privacy.
+---
 
-The registry is the source of truth for all AI capabilities in the app. Before any AI feature can be executed, it must be validated against its registry entry.
+# Kesher BFAS Assessment
 
-*See `/home/ubuntu/skills/kesher-ai-governance/references/feature_registry_schema.md` for the registry definition format.*
+Use this skill to implement personality measurement as a user-owned reflection tool, not a matchmaking oracle.
 
-**Key Registry Fields:**
--   `feature_id`: Unique identifier (e.g., `generate_explanation`, `extract_hobbies`).
--   `requires_consent`: Boolean indicating if explicit user opt-in is needed.
--   `allowed_data_scopes`: Which data domains the feature can access (e.g., `public_profile`, `private_taste`).
--   `prohibited_data`: Data that must be scrubbed before execution (e.g., `messages`, `exact_location`).
--   `fallback_action`: What to do if the AI service fails or is blocked by safety filters.
+## Workflow
 
-### 2. Model Routing Heuristics
+1. Locate the assessment surface before editing:
+   - `src/components/onboarding/PersonalityAssessment.tsx`
+   - `src/components/onboarding/ProfileBuilder.tsx`
+   - `src/features/onboarding/OnboardingFlow.tsx`
+   - `src/ai/types.ts`
+   - `src/types.ts`
+   - `src/services/trustService.ts`
+2. Keep scoring deterministic. Do not use Gemini or any LLM to score answers. LLMs may only interpret already-computed bands in downstream skills.
+3. For this prototype, use the official English IPIP-BFAS 100 item/key spine with stable IDs, reverse-key metadata, domain/aspect mapping, and `ipip_bfas_100` scoring-version output.
+4. Keep Hebrew scoring disabled until localization validation is complete. Hebrew UI may explain the status, but translated Hebrew items are not scored.
+5. Store raw answers and derived scores as private, user-owned data. Do not expose raw answers, exact BFAS/aspect values, or hidden weights in discovery, match explanations, or share cards.
+6. Make opt-in, reset, export, and delete controls visible wherever the user can view the profile. Reset clears answers/scores and regenerated summaries; delete removes personality data subject to legal/safety retention rules.
+7. Validate copy: no diagnosis, therapy framing, fixed identity labels, fit ratings, certainty claims, or personality-based gatekeeping.
 
-Kesher uses a multi-model strategy to balance cost, latency, and capability.
+## Scoring Contract
 
--   **Tier 1: Deterministic / Local:** Use on-device logic or simple server-side heuristics for tasks that don't require LLM reasoning (e.g., hard filter matching, basic dwell time calculation).
--   **Tier 2: Fast LLM (e.g., Gemini Flash):** Use for tasks requiring natural language understanding but low latency, such as extracting structured data from profile prompts or generating short, template-based explanations.
--   **Tier 3: Heavy LLM (e.g., Gemini Pro):** Use sparingly, only for complex, offline tasks (e.g., periodic batch analysis of anonymized system-wide trends, if approved by policy). Do not use for real-time ranking or chat generation.
+- Score each item from 1 to 5.
+- Reverse-key items with `6 - value`.
+- Aggregate by domain and aspect separately.
+- Convert averages to private display bands/tendencies only. Do not present exact values publicly.
+- Version the scoring algorithm and questionnaire. Persist the version with each completed session.
+- Never call approximate 0-100 values "validated percentiles" without a real norm table.
 
-### 3. Safety Policy Enforcement (The Red Lines)
+Read `references/assessment-contract.md` when changing questionnaire length, score storage, or the distinction between approximation and percentile.
 
-The governance layer must enforce the following absolute prohibitions programmatically:
+## Acceptance Checks
 
-1.  **No Automated Chatting:** The AI must never generate or send messages on behalf of a user.
-2.  **No Photo Inference of Sensitive Traits:** Computer vision models may only be used for basic moderation (e.g., detecting nudity or violence) or verifying that a photo contains a face. They must *never* be used to infer Jewish status, observance level, ethnicity, or attractiveness.
-3.  **No Hidden Manipulation:** Ranking algorithms must not use hidden weights to optimize for metrics that misalign with user intent (e.g., intentionally hiding good matches to prolong app usage).
+- Incomplete assessments cannot be submitted.
+- Reverse-keyed items change scores in the expected direction.
+- The UI says the assessment is private, reflective, editable/resettable, and non-clinical.
+- Reset/delete actions route through authenticated server or trust-service paths.
+- Downstream AI receives derived bands/summaries only, never raw answers.
+- `npm run check` or the narrowest TypeScript/test command passes.
 
-### 4. Human-in-the-Loop (HITL) Triggers
-
-AI systems are used to flag potential issues, but human moderators make the final decisions on severe actions.
-
-**HITL Escalation Scenarios:**
--   **High-Confidence Abuse Flag:** If the NLP model detects potential harassment or hate speech in a prompt or message (if message scanning is enabled for safety), the content is hidden, and the profile is queued for human review.
--   **Identity Verification Failure:** If the automated verification system flags a profile as highly suspicious (e.g., potential bot or impersonation), human review is required before the profile is banned.
--   **Model Degradation:** If the explanation generator repeatedly triggers safety filters or falls back to generic templates, an alert is sent to the engineering team for review.
-
-## Bundled Resources
-
--   **`references/feature_registry_schema.md`**: The JSON schema for defining AI features and their boundaries.
--   **`references/safety_policies.md`**: Detailed documentation of the red lines and HITL workflows.
-
+Use `$kesher-personality-delivery` for browser validation, GitHub/CI review, or deployment workflow after implementation.
 
 ---
 
 # kesher-calm-ux
 
-Source: `.claude/skills/kesher-calm-ux/SKILL.md`
+Source: `skills/kesher-calm-ux/SKILL.md`
 
 ---
 name: kesher-calm-ux
-description: Premium calm UX strategy for the Kesher dating app. Use when designing screens, user flows, onboarding, profile builders, matching interfaces, or safety tools. Covers Hebrew-first RTL design, calm aesthetic principles, accessibility standards, and competitive differentiation.
+description: "Design premium calm UX for the Kesher dating app. Use when designing screens, user flows, onboarding, profile builders, matching interfaces, safety tools, Hebrew-first RTL layouts, accessibility standards, and anti-casino dating mechanics."
 ---
 
 # Kesher Calm UX
 
-Design a **premium, calm, relationship-minded** dating experience. Low stimulation, high clarity, Hebrew-first.
+Use this skill to keep Kesher quiet, intentional, and trust-forward. Prefer clear controls, restrained density, calm pacing, RTL-aware layouts, and copy that helps users act without pressure or scarcity mechanics.
 
-## Design Principles
+---
 
-| Principle | Implementation |
-|-----------|---------------|
-| Calm over stimulation | Muted palette, generous whitespace, no gamification |
-| Clarity over cleverness | Plain language, obvious actions, no dark patterns |
-| Hebrew-first | RTL layout, Hebrew typography, mixed-language support |
-| Explanation over mystery | Show why matches were suggested, how AI helps |
-| Coached authenticity | Help users be themselves, not perform |
-| Premium = less noise | Premium reduces clutter, not adds social leverage |
+# kesher-compatibility-reflection
 
-## Core User Flows
+Source: `skills/kesher-compatibility-reflection/SKILL.md`
 
-### Onboarding
+---
+name: kesher-compatibility-reflection
+description: Implement and review Kesher's mutual-consent compatibility reflection engine, pair insight schemas, consent gates, whitelisted shared inputs, and no-score safety validation. Use when changing compatibility-reflection API routes, PairInsightReportSchema, compatibility prompts, match-sheet reflection UI, consent checks, or tests for forbidden compatibility language.
+---
 
-Multi-step process grouped by meaning:
-1. **Identity**: Name, age, photos
-2. **Goals**: Relationship intent, timeline
-3. **Values**: Observance, lifestyle, deal-breakers
-4. **Profile**: Bio (with coach rail), prompts
+# Kesher Compatibility Reflection
 
-Each step has a "coach rail" — optional AI assistance that suggests, never auto-fills.
+Use this skill to build pair reflection that helps two opted-in users talk better. It must never decide whether they should date.
 
-### Discovery
+## Workflow
 
-Two modes:
-- **Daily Picks**: Finite batch (e.g., 5-10) with "Why these" explanations
-- **Explore**: Broader browsing with filters
+1. Inspect these surfaces before editing:
+   - `server/aiRoutes.ts`
+   - `src/services/aiService.ts`
+   - `src/ai/schemas.ts`
+   - `src/ai/policies.ts`
+   - `src/ai/prompts.ts`
+   - `src/ai/outputValidators.ts`
+   - `src/features/match/MatchSheet.tsx`
+   - `docs/adr/0003-mutual-consent-compatibility-reflection.md`
+2. Enforce `mutualConsent === true` and `bothOptedIn === true` before any AI call. Prefer server-side rejection over UI-only gating.
+3. Build a minimized shared-input packet. Include only mutually visible or explicitly approved fields.
+4. Require `PairInsightReportSchema` and validate with `validateCompatibilityReflection`.
+5. Preserve the product promise: shared strengths, friction loops, question to explore, micro-habit, gentle boundary, and `signals_used`.
+6. Log provenance separately from prose when available, but do not leak provenance in user-facing copy.
 
-Daily Picks are the primary mode. Finite batches prevent swipe fatigue.
+## Forbidden Outputs
 
-### Matching
+Never produce compatibility scores, match percentages, soulmate/destiny claims, perfect-match claims, doomed/incompatible verdicts, attractiveness/desirability rankings, raw personality scores, hidden ranking logic, private taste, private messages, exact location, or protected-trait inferences.
 
-- Match explanations visible on every profile card
-- Post-match: Suggest grounded next actions (openers, voice notes)
-- No "super likes" or engagement-maximizing mechanics
+Read `references/reflection-contract.md` before changing prompt or schema language.
 
-### Safety
+## Acceptance Checks
 
-- Report and block accessible from profile and chat
-- Safety Centre with Q&A
-- AI Trust Hub for transparency
+- A request without mutual consent returns `403` and never calls Gemini.
+- `signals_used` contains only `COMPATIBILITY_ALLOWED_SIGNALS`.
+- Prohibited-language tests cover Hebrew and English examples.
+- UI language says reflection, not prediction.
+- Fallback behavior returns no invented compatibility report.
 
-## Hebrew-First Design
+Use `$kesher-personality-delivery` for browser and CI checks.
 
-### Typography
-- Primary: Hebrew typeface optimized for screen readability
-- Support mixed Hebrew/English content
-- Minimum body text size: 16px
+---
 
-### RTL Layout
-- Follow W3C RTL Authoring Guidance
-- Mirror all directional UI elements
-- Test with Bidi stress testing
-- Handle mixed-direction text (Hebrew + English names, URLs)
+# kesher-consent-ux
 
-### Cultural Considerations
-- Shabbat-aware notifications (optional quiet mode)
-- Jewish holiday awareness
-- Observance spectrum respect (secular to ultra-orthodox)
+Source: `skills/kesher-consent-ux/SKILL.md`
 
-## Accessibility
+---
+name: kesher-consent-ux
+description: "Design and review Kesher consent UX for personality, AI, sharing, private taste, and Trust Hub flows. Use when changing consent gates, sensitive toggles, grants/revocation copy, consent history, onboarding or settings consent surfaces, or anti-dark-pattern behavior."
+---
 
-Follow WCAG 2.2 AA minimum:
-- Color contrast ratios (4.5:1 for text)
-- Touch targets (minimum 44x44px)
-- Screen reader compatibility
-- Keyboard navigation support
-- Reduced motion option
-- Voice navigation support (see `kesher-voice-integration` skill)
+# Kesher Consent UX
 
-## Premium Feature Philosophy
+Use this skill when a Kesher flow asks for permission, exposes a sensitive toggle, or lets a user share personality or private preference data.
 
-Premium features should:
-- Reduce noise and save time
-- Provide deeper insights (not more matches)
-- Offer advanced planning tools
-- Never sell social leverage or unfair advantages
+## Workflow
 
-Premium should NOT:
-- Gate basic safety features
-- Create "pay-to-win" dynamics
-- Offer unlimited swipes or matches
-- Provide "who liked you" as primary value
+1. Inspect the surface before editing: `src/features/skills/ConsentUxSkill.tsx`, `src/features/settings/AITrustHub.tsx`, `src/features/settings/PrivateTasteProfile.tsx`, `src/features/settings/PersonalityVisibilitySettings.tsx`, and the relevant server route.
+2. Keep each sensitive action separately consented. Do not bundle personality assessment, AI interpretation, sharing, private taste, safety, or analytics into one broad approval.
+3. Include the required notice elements in user-facing copy: voluntary action, purpose, controller identity or app owner, recipients or audience, refusal consequence, rights path, and AI involvement if applicable.
+4. Default sensitive toggles to off. Require an explicit action to grant consent.
+5. Put revoke, reset, export, and delete controls near the feature configuration path.
+6. Make revocation no harder than granting. Avoid confirm-shaming, scarcity, countdowns, guilt copy, hidden opt-outs, or repeated prompts after refusal.
+7. Do not log consent text with prompts, messages, raw answers, exact locations, or other PII.
 
-## Competitive Differentiation
+## Acceptance Checks
 
-| Competitor Pattern | Kesher Alternative |
-|-------------------|-------------------|
-| Infinite swipe | Finite daily picks with explanations |
-| Gamification (streaks, coins) | Calm, purposeful interactions |
-| Premium = more matches | Premium = deeper tools |
-| Hidden algorithms | Transparent "why this match" |
-| AI chatbot companion | Bounded AI utilities |
-| English-first with translation | Hebrew-first with English support |
+- Consent copy says who can see or process the data.
+- The user can decline without losing core matching or safety access.
+- Revocation is visible and reachable in the same product area.
+- UI state after revocation cannot still show shared personality content.
+- Tests or manual QA cover grant, decline, revoke, and fallback states.
 
-## References
+---
 
-- **Apple HIG**: Follow for iOS design patterns
-- **Material Design**: Follow for Android design patterns
-- **SF Symbols**: Use for iconography on iOS
+# kesher-dark-pattern-audit
 
+Source: `skills/kesher-dark-pattern-audit/SKILL.md`
+
+---
+name: kesher-dark-pattern-audit
+description: "Audit Kesher consent, privacy, personality, premium, onboarding, and sharing UI for dark patterns and coercive mechanics. Use when reviewing sensitive toggles, consent flows, revocation, account deletion, premium boundaries, or discovery pacing."
+---
+
+# Kesher Dark Pattern Audit
+
+Use this skill before shipping any Kesher UI that could pressure a user into sharing, buying, continuing, disclosing, or accepting AI processing.
+
+## Workflow
+
+1. Inspect the proposed user path from entry point to exit, including the decline path, revoke path, reset/delete path, and fallback state.
+2. Check the six risk families: overloading, skipping, stirring, obstructing, fickle controls, and left-in-the-dark wording.
+3. Confirm that default states are neutral or off for sensitive choices.
+4. Keep decline, revoke, export, delete, and safety controls available without premium gating.
+5. Avoid shame, urgency, scarcity, social pressure, hidden friction, confusing toggles, repeated prompts after refusal, and optimistic copy that hides consequences.
+6. For discovery and pacing, prefer finite calm surfaces and dismissible nudges over infinite loops or forced pauses.
+
+## Acceptance Checks
+
+- The user can say no in one clear path without losing core matching or safety features.
+- Granting and revoking consent require comparable effort.
+- Copy is short enough to understand and names the data, purpose, and audience.
+- Premium flows do not imply compatibility scores or degrade core privacy/safety access.
+- QA covers default-off, decline, revoke, and repeated-entry behavior.
+
+---
+
+# kesher-data-rights-retention
+
+Source: `skills/kesher-data-rights-retention/SKILL.md`
+
+---
+name: kesher-data-rights-retention
+description: Implement Kesher export, correction, deletion, retention windows, evidence separation, and privacy-rights audit trails.
+---
+
+# Kesher Data Rights & Retention
+
+Use this skill for privacy-rights and retention work.
+
+## Requirements
+
+- Export, correction, deletion, reset, and revocation requests must be user-accessible and auditable.
+- Private taste, private personality, share cards, messages, safety records, and billing records need distinct retention rules.
+- Taste reset must not erase safety records.
+- Share revocation should cascade to recipient-visible copies.
+
+## Acceptance
+
+- Settings exposes data-rights actions with clear status.
+- Admin tooling can verify pending, completed, and failed rights requests.
+- Retention rules are documented before launch.
 
 ---
 
 # kesher-explainable-ai
 
-Source: `.claude/skills/kesher-explainable-ai/SKILL.md`
+Source: `skills/kesher-explainable-ai/SKILL.md`
 
 ---
 name: kesher-explainable-ai
-description: Implements "Why this match" explanations, trust language, and transparency for the Kesher dating app. Use this skill to generate safe, calm, and accurate explanations for AI recommendations using whitelisted signals and fallback templates.
+description: "Implement Kesher trust language, explanation provenance, and transparency for AI recommendations. Use when generating safe explanations, source chips, signal allowlists, fallback templates, or management controls for why-match and recommendation surfaces."
 ---
 
-# Kesher Explainable AI & Trust Language Skill
+# Kesher Explainable AI
 
-This skill governs how Kesher's AI communicates its reasoning to users. It ensures that explanations for matches ("Why this match") are safe, understandable, and build trust by adhering to strict guidelines on what can and cannot be said.
-
-## Core Principles
-
-1.  **AI as Assistant, Not Authority:** The language must frame the AI as a helpful tool suggesting possibilities, not an oracle dictating destiny. Avoid deterministic phrases like "perfect match" or "soulmate."
-2.  **Whitelisted Signals Only:** Explanations can *only* use signals from a pre-approved whitelist (e.g., shared hobbies, overlapping explicit filters). They must never reveal hidden weights or inferred traits.
-3.  **Protect the Other Person's Privacy:** An explanation must never reveal the other person's private preferences or swiping history. It can only reference what the other person has made public on their profile.
-4.  **Calm and Concrete Language:** Use natural, grounded language (in Hebrew) rather than overly technical or mystical terms.
-5.  **Graceful Degradation:** If the generative model fails safety checks or if the user has disabled personalization, the system must fall back to generic, deterministic templates.
-
-## Implementation Workflow
-
-### 1. The Explanation Pipeline
-
-The process of generating an explanation is distinct from the ranking process:
-
-1.  **Ranking Authority:** The ranking engine scores candidates and outputs an "evidence packet" containing only whitelisted reason codes.
-2.  **Explanation Generation:** The explanation service (using Gemini or deterministic templates) takes this evidence packet and renders it into human-readable text.
-3.  **Safety Validation:** The generated text is checked against safety policies before being displayed to the user.
-
-### 2. Whitelisted Signals
-
-The evidence packet provided to the explanation generator may only contain data from this whitelist:
-
--   Shared explicit interests/hobbies listed on public profiles.
--   Overlapping hard filters or soft preferences (e.g., both looking for a serious relationship).
--   Compatible observance self-descriptions (if explicitly user-facing).
--   Recent activity freshness (e.g., "Active recently").
-
-*See `/home/ubuntu/skills/kesher-explainable-ai/references/signal_whitelist.md` for the complete schema.*
-
-### 3. Generating the Explanation
-
-**Using Generative AI (Gemini):**
-
-When using a model like Gemini to generate natural language explanations, use a strict system prompt and require structured output (JSON) to ensure the model doesn't hallucinate reasons.
-
-*See `/home/ubuntu/skills/kesher-explainable-ai/references/explanation_prompts.md` for the specific prompt templates and JSON schemas.*
-
-**Deterministic Fallbacks:**
-
-If the generative model fails, or if the user has opted out of personalized taste learning, use pre-written templates.
-
-*Example Fallback:* "Shown because they match your current filters and are active in your area."
-
-### 4. Trust-Building Copy Guidelines
-
-All copy related to AI features must follow these guidelines:
-
--   **Do use:** "Based on what you both shared...", "It looks like...", "You might connect over..."
--   **Do not use:** "Our algorithm determined...", "You are a 98% match...", "We know what you want..."
--   **Always provide a way out:** Include clear UI controls (e.g., "Less like this", "Manage Taste Profile") alongside the explanation.
-
-## Bundled Resources
-
--   **`references/signal_whitelist.md`**: The definitive list of data points allowed in explanations.
--   **`references/explanation_prompts.md`**: System prompts and structured output schemas for generative explanations.
-
+Use this skill to explain visible signals without revealing private taste, hidden weights, raw personality data, or sensitive inferences. Prefer short provenance-labeled explanations and deterministic fallbacks when model output is unavailable.
 
 ---
 
 # kesher-filtering-marketplace
 
-Source: `.claude/skills/kesher-filtering-marketplace/SKILL.md`
+Source: `skills/kesher-filtering-marketplace/SKILL.md`
 
 ---
 name: kesher-filtering-marketplace
-description: Implements filtering grammar, marketplace mechanics, and reciprocal ranking for the Kesher dating app. Use this skill to manage hard vs. soft filters, structure Daily Picks vs. Explore surfaces, and enforce exposure fairness.
+description: "Implement Kesher filtering grammar, discovery marketplace mechanics, reciprocal recommendation ordering, Daily Picks versus Explore distinctions, hard and soft filters, exposure fairness, and anti-starvation safeguards."
 ---
 
-# Kesher Filtering Grammar & Marketplace Mechanics Skill
+# Kesher Filtering Marketplace
 
-This skill defines the operational specifications for Kesher's dating marketplace. It establishes the rules for what users can filter out, how the system ranks candidates reciprocally, and how different product surfaces (Daily Picks vs. Explore) behave to maintain a healthy, liquid marketplace.
-
-## Core Principles
-
-1.  **Reciprocal Recommendation:** Dating is a two-sided market. The system must score matches based on the likelihood of *mutual* interest, not just one-sided attraction.
-2.  **Hard Filters vs. Soft Preferences:** The system enforces a strict distinction between absolute dealbreakers (hard filters) and ranking signals (soft preferences).
-3.  **Surface Distinction:** "Daily Picks" is highly curated, AI-driven, and limited. "Explore" is user-directed, filter-driven, and exhaustive.
-4.  **Exposure Fairness:** The system must actively prevent "starvation" (where some users get zero visibility) by balancing relevance with equitable distribution of impressions.
-
-## Implementation Workflow
-
-### 1. Filtering Grammar
-
-Kesher uses a specific grammar to define how user preferences interact with the candidate pool.
-
--   **Hard Filters (Dealbreakers):** These are absolute exclusions. If a candidate violates a hard filter, they are removed from the candidate pool entirely (Score = 0).
-    *   *Examples:* Age range, maximum distance, specific observance red lines (e.g., must be Shomer Shabbat).
--   **Soft Preferences (Ranking Signals):** These influence the ranking score but do not exclude candidates. They are used to order the eligible pool.
-    *   *Examples:* Preferred communication style, specific hobbies, "more like this" behavioral signals.
--   **System Exclusions:** The system automatically excludes candidates based on trust and safety rules (e.g., blocked users, reported users, suspected bots).
-
-### 2. Reciprocal Scoring Formula
-
-To ensure mutual compatibility, the final ranking score for a pair (User A and User B) must incorporate both perspectives.
-
-`Final_Score(A, B) = f( Score(A likes B), Score(B likes A) )`
-
-A common heuristic is to use the harmonic mean, which penalizes pairs where one-sided interest is very low:
-
-`Final_Score = (2 * Score(A likes B) * Score(B likes A)) / (Score(A likes B) + Score(B likes A))`
-
-*See `/home/ubuntu/skills/kesher-filtering-marketplace/references/scoring_heuristics.md` for detailed scoring logic.*
-
-### 3. Marketplace Surfaces
-
-The app divides discovery into two distinct surfaces to balance AI curation with user agency.
-
-| Surface | Characteristics | AI Role | Goal |
-| :--- | :--- | :--- | :--- |
-| **Daily Picks** | Limited batch (e.g., 5-10 per day). High relevance threshold. | Heavy curation based on learned taste, reciprocal scoring, and exposure fairness. | Drive high-quality mutual matches and trust in the system. |
-| **Explore** | Uncapped browsing. Driven by explicit user filters. | Minimal curation. Primarily orders candidates matching hard/soft filters. | Provide user agency and exhaust the local liquidity pool. |
-
-### 4. Exposure Fairness & Anti-Starvation
-
-To maintain a healthy marketplace, the ranking system must not overly concentrate impressions on a small percentage of "highly attractive" users.
-
--   **Impression Caps:** Implement a soft cap on the number of times a highly popular profile is shown in a given period.
--   **Boost for New Users:** Artificially inflate the ranking score of new users for their first 48-72 hours to gather initial behavioral data and provide a welcoming experience.
--   **Starvation Prevention:** Monitor users who have received zero impressions in the last 7 days and apply a temporary ranking boost to ensure they are seen by compatible candidates.
-
-## Bundled Resources
-
--   **`references/scoring_heuristics.md`**: Detailed formulas and weights for reciprocal scoring and exposure fairness adjustments.
-
+Use this skill when changing discovery ordering, filters, candidate eligibility, or fairness controls. Keep user-facing explanations limited to visible signals and do not expose hidden weights or private personality/taste internals.
 
 ---
 
 # kesher-gemini-integration
 
-Source: `.claude/skills/kesher-gemini-integration/SKILL.md`
+Source: `skills/kesher-gemini-integration/SKILL.md`
 
 ---
 name: kesher-gemini-integration
-description: Core patterns for integrating Gemini AI into the Kesher dating app. Use when building, configuring, or debugging any Gemini-powered feature — structured outputs, function calling, grounding, system instructions, server-side proxy architecture, and trust-preserving interaction patterns.
+description: "Integrate Gemini AI into Kesher with structured outputs, function calling, grounding, system instructions, server-side proxy architecture, trust-preserving interaction patterns, and safe fallback behavior."
 ---
 
 # Kesher Gemini Integration
 
-Integrate Gemini as a **bounded assistive layer** across Kesher surfaces. Gemini is a tool, not a companion.
+Use this skill when adding or changing Gemini-backed features. Keep API keys server-side, validate structured outputs, avoid sensitive inference, and fall back to deterministic copy when model output is missing or unsafe.
 
-## Core Architecture
+---
 
-All Gemini calls go through a **server-side proxy** (`/api/ai/*`). Never expose API keys to the client.
+# kesher-grounded-search
 
-```
-Client → Express route → Policy gate → Gemini API → Structured JSON → Client
-```
+Source: `skills/kesher-grounded-search/SKILL.md`
 
-### Model Selection
+---
+name: kesher-grounded-search
+description: "Use Google Search grounding in Kesher for cited safety Q&A, event discovery, curated URL context, source rendering, and freshness-sensitive prototype flows without turning search into people-finding or background-check tooling."
+---
 
-| Model | Use Case | Notes |
-|-------|----------|-------|
-| Gemini 2.5 Flash-Lite | Silent tasks (safety scan, classification) | Lowest latency |
-| Gemini 2.5 Flash | User-visible generation (rephrase, coaching) | Balanced |
-| Gemini 2.5 Pro / 3 | Multi-constraint planning, deep help | Higher cost, use selectively |
+# Kesher Grounded Search
 
-### Structured Outputs
+Use this skill when adding search-grounded features to the Kesher prototype or delivery plan.
 
-Always use JSON mode for predictable results:
+## Workflow
 
-```js
-const result = await model.generateContent({
-  contents: [{ role: "user", parts: [{ text: prompt }] }],
-  generationConfig: {
-    responseMimeType: "application/json",
-    responseSchema: { /* JSON Schema */ }
-  }
-});
-```
+1. Confirm the use case needs freshness, citation, or URL context.
+2. Prefer deterministic sources for stable domains such as Jewish calendar rules; use search grounding for time-sensitive safety, event, and policy lookup.
+3. Render citations and source chips with every grounded answer.
+4. Keep search out of people search, background checks, social stalking, broad discovery, and user ranking.
+5. Route date-venue details through Maps when place metadata is required.
+6. Log only operational metadata; do not store search result content as profile data.
 
-Separate output schema into **user-facing text** and **internal reasoning** fields.
+## Prototype Surface
 
-### Thinking Controls
+The Vercel prototype page should show the route map, allowed use cases, citation requirements, and blocked use cases.
 
-- Gemini 3: use `thinkingLevel` (e.g., `"medium"`, `"high"`)
-- Gemini 2.5: use `thinkingBudget` (token count)
-- Access reasoning via `includeThoughts: true`
+## Stop Points
 
-## Surface-by-Surface Feature Map
-
-| Surface | Feature | Model Tier |
-|---------|---------|------------|
-| OnboardingFlow | Bio coaching, field explanation | Flash |
-| ProfileBuilder | Draft generation, clarity audit | Flash |
-| DailyPicksScreen | "Why these" explanations | Flash |
-| ExploreScreen | Match explanations | Flash |
-| ChatThread | Rephrase, safety scan, opener suggestions | Flash-Lite (scan), Flash (rephrase) |
-| SafetyCentre | Q&A with Search grounding | Flash + Search |
-| DatePlanner | Venue suggestions with Maps grounding | Pro + Maps |
-| ReportFlow | Report drafting assistance | Flash |
-| AITrustHub | Disclosures, settings explanation | Deterministic + Flash |
-
-## Tooling Integration
-
-### Google Search Grounding
-
-```js
-tools: [{ googleSearch: {} }]
-```
-
-Use for: Safety Centre Q&A, event discovery, freshness-dependent answers. Always render `groundingMetadata` citations.
-
-### Google Maps Grounding
-
-```js
-tools: [{ googleMaps: {} }]
-```
-
-Use for: Date planning, venue suggestions. Render `googleMapsWidgetContextToken` for interactive maps.
-
-### URL Context
-
-```js
-tools: [{ urlContext: {} }]
-```
-
-Use for: Internal policy lookups, curated resource pages.
-
-## Trust Principles
-
-1. **User authorship** — All AI output is a draft; user must explicitly confirm/send
-2. **No impersonation** — AI never acts as or speaks for the user
-3. **No auto-send** — Messages require manual sending
-4. **Transparency** — Mark AI-generated content; disclose data handling in AI Trust Hub
-5. **Safety is free** — Never paywall dignity, safety, or basic self-expression
-6. **Bounded scope** — Stateless by default; session-only context; no companion behavior
-
-## Security Checklist
-
-- Auth gating on all `/api/ai/*` routes
-- Rate limits and per-user quotas
-- Input sanitization against prompt injection
-- Feature registry with allowlisted capabilities
-- Feature flags and experiments as ship gates
-- 55-day data retention for abuse monitoring (Google policy)
-- `store: false` with Interactions API unless state explicitly required
-
-## Banned Uses
-
-- AI impersonation of users
-- Attractiveness scoring
-- Deceptive profile enhancement
-- Auto-messaging or auto-booking
-- Background checks on matches
-- Emotional companion framing
-
-## References
-
-- **Surface details**: See `references/surfaces.md` for per-surface implementation specs
-- **Schema examples**: See `references/schemas.md` for JSON Schema templates
-
+Stop before enabling background user lookup, caching third-party search results, removing source attribution, or sending sensitive personality data to a non-approved search workflow.
 
 ---
 
 # kesher-high-thinking-routing
 
-Source: `.claude/skills/kesher-high-thinking-routing/SKILL.md`
+Source: `skills/kesher-high-thinking-routing/SKILL.md`
 
 ---
 name: kesher-high-thinking-routing
-description: Routing strategy for Gemini "high thinking" mode in the Kesher dating app. Use when deciding when to enable thinking controls, configuring thinkingLevel/thinkingBudget, designing hybrid fast+thinking patterns, or planning A/B tests for thinking-enabled features.
+description: "Route Kesher Gemini thinking-mode work. Use when deciding when to enable high-thinking controls, configuring thinking budgets, designing fast-plus-thinking patterns, or planning A/B tests for reasoning-heavy AI features."
 ---
 
 # Kesher High Thinking Routing
 
-Use Gemini's **thinking capability** selectively for tasks requiring judgment under ambiguity. Not for speed-dominant tasks.
+Use this skill only for features that genuinely need deeper reasoning. Keep low-risk and latency-sensitive surfaces on faster routes, and reserve higher-thinking paths for safety, reflection, planning, or complex grounded synthesis.
 
-## When to Use High Thinking
+---
 
-| Use Case | Thinking? | Rationale |
-|----------|-----------|-----------|
-| Multi-constraint date planning | Yes | Location + budget + time + observance + safety |
-| Trust-preserving phrasing | Yes | Nuanced language that avoids harm |
-| Compatibility report synthesis | Yes | Multi-signal personality analysis |
-| Report severity classification | Yes | Judgment under ambiguity |
-| Appeal draft support | Yes | Complex context evaluation |
-| Chat rephrase | No | Speed-dominant, simple task |
-| Safety scan (pre-send) | No | Must be fast and silent |
-| Simple content generation | No | Low complexity, high volume |
-| Bio draft generation | No | Flash is sufficient |
+# kesher-identity-verification
 
-## Configuration
+Source: `skills/kesher-identity-verification/SKILL.md`
 
-### Gemini 3 Series
+---
+name: kesher-identity-verification
+description: Implement Kesher production auth, profile verification signals, anti-impersonation review, pause/reactivation, and account rights flows.
+---
 
-```js
-generationConfig: {
-  thinkingConfig: {
-    thinkingLevel: "medium" // "none" | "low" | "medium" | "high"
-  }
-}
-```
+# Kesher Identity Verification
 
-### Gemini 2.5 Series
+Use this skill when turning Kesher from demo auth into a production identity surface.
 
-```js
-generationConfig: {
-  thinkingConfig: {
-    thinkingBudget: 2048 // token count for thinking
-  }
-}
-```
+## Requirements
 
-### Accessing Thoughts
+- Keep Firebase Auth as the primary identity boundary unless a migration is approved.
+- Store verification status as a user-visible signal, not raw document evidence.
+- Separate identity evidence from discovery, private taste, personality, and match explanations.
+- Support pause, reactivation, account export, correction, and deletion request states.
+- Require human review for impersonation, suspicious identity reuse, and verification appeals.
 
-```js
-generationConfig: {
-  thinkingConfig: {
-    includeThoughts: true // returns reasoning in response
-  }
-}
-```
+## Acceptance
 
-Use `includeThoughts` for debugging and observability, not for user display.
+- Onboarding cannot enter discovery until required profile and terms gates are complete.
+- Verification status is recoverable and auditable.
+- Account deletion preserves only legally required safety/evidence records.
 
-## Hybrid Pattern
+---
 
-For complex tasks, use a **two-stage hybrid**:
+# kesher-image-analysis
 
-1. **Stage 1**: Fast model (Flash-Lite) performs structured extraction or grounding
-2. **Stage 2**: High-thinking model synthesizes the extracted data
+Source: `skills/kesher-image-analysis/SKILL.md`
 
-```
-User request → Flash-Lite (extract/ground) → Structured data → Pro+Thinking (synthesize) → Response
-```
+---
+name: kesher-image-analysis
+description: "Implement trust-forward image analysis for Kesher photo readiness, accessibility alt text, moderation assistance, appeal support, tiered human review, and protected-trait/attractiveness safety boundaries."
+---
 
-This reduces cost and latency while preserving quality for the synthesis step.
+# Kesher Image Analysis
 
-## Cost-Benefit Framework
+Use this skill when changing photo upload checks, visual moderation, accessibility alt text, or moderator review tooling.
 
-| Factor | Low Thinking | High Thinking |
-|--------|-------------|---------------|
-| Latency | ~200-500ms | ~2-8s |
-| Cost per request | Low | 3-10x higher |
-| Quality for simple tasks | Sufficient | Overkill |
-| Quality for ambiguous tasks | May miss nuance | Significantly better |
-| User expectation | Instant response | Willing to wait for "deep help" |
+## Workflow
 
-## User-Visible "Deep Help" Mode
+1. Split member-facing coaching from moderator-facing decision support.
+2. Run deterministic checks first: format, resolution, metadata stripping, duplicate detection, and policy prefilters.
+3. Use model output only as assistive evidence; punitive actions require human review.
+4. Keep member-facing copy constructive, specific, and non-judgmental.
+5. Never infer attractiveness, race, ethnicity, religion, body type, emotional state, or personality from appearance.
+6. Store minimal decision codes and delete derived image data when the user deletes the photo/account.
 
-When high thinking is engaged for user-facing features:
-- Show a **"Thinking deeply..."** indicator
-- Clearly disclose that the AI is taking more time for a better answer
-- Frame as a premium feature where appropriate
-- Never use high thinking silently on free-tier features that should be fast
+## Prototype Surface
 
-## A/B Testing Plan
+The Vercel prototype page should show tiered decisioning, member/moderator schemas, privacy controls, and review queues.
 
-| Experiment | Control | Treatment | Metric |
-|-----------|---------|-----------|--------|
-| Date planning quality | Flash only | Flash + Pro thinking | User satisfaction, plan acceptance rate |
-| Match explanation depth | Flash | Flash + thinking | Engagement with explanation cards |
-| Report classification | Flash | Flash + thinking | Moderator agreement rate |
-| Appeal support | Flash | Pro + high thinking | Appeal resolution time |
+## Stop Points
 
-## Observability Metrics
+Stop before adding biometric identification, attractiveness ranking, protected-trait inference, automated punitive action, or long-lived visual descriptors.
 
-- Token count (input + output + thinking tokens)
-- Latency (P50, P95, P99)
-- Thinking token ratio (thinking tokens / total tokens)
-- User satisfaction per feature
-- Cost per request by feature and thinking level
+---
 
-## Red Lines
+# kesher-israeli-privacy
 
-- Never use high thinking to create "compatibility certainty theater"
-- Frame outputs as "signals + questions + caveats"
-- Route safety/mental-health crises to real support, not deeper AI thinking
-- Do not use thinking to generate pseudo-therapeutic content
+Source: `skills/kesher-israeli-privacy/SKILL.md`
 
+---
+name: kesher-israeli-privacy
+description: "Review Kesher implementation choices against Israeli privacy-sensitive data guardrails for personality, observance, relationship intent, compatibility reflection, AI inference, export, correction, deletion, and transfer-abroad risk. Use for implementation review only, not legal advice."
+---
+
+# Kesher Israeli Privacy
+
+Use this skill when product or code changes affect sensitive Kesher data. This is implementation guidance, not legal advice; escalate counsel questions instead of inventing legal certainty.
+
+## Workflow
+
+1. Classify the data involved before editing: personality answers/scores, observance, relationship intent, orientation-adjacent profile data, compatibility reflections, precise location, reports, safety records, and private taste are high-risk.
+2. Check the relevant visibility layer using `$kesher-personality-visibility`: public browse, private owner, mutual consent, or system-only.
+3. Require explicit, separate consent for personality interpretation, permissioned sharing, mutual reflection, and private taste learning.
+4. Preserve access, correction, deletion, export, reset, and revoke paths in settings or Trust Hub.
+5. Keep raw answers, raw scores, private taste, private messages, exact locations, prompts, generated sensitive prose, tokens, and secrets out of logs, analytics, browser storage exports, static bundles, and public APIs.
+6. Treat cross-border processing, Vertex/Gemini runtime choices, and production auth changes as stop points that need explicit approval.
+
+## Acceptance Checks
+
+- Sensitive fields do not appear in `dist/`, browser logs, AI metadata logs, or public skill exports.
+- Server routes enforce the owner or mutual-consent boundary for protected reads/writes.
+- User-facing copy uses uncertainty and rights language, not fixed labels or legal overclaims.
+- Firebase rules, production auth mode, deployment settings, billing, and credentials are unchanged unless explicitly requested.
 
 ---
 
 # kesher-learned-taste
 
-Source: `.claude/skills/kesher-learned-taste/SKILL.md`
+Source: `skills/kesher-learned-taste/SKILL.md`
 
 ---
 name: kesher-learned-taste
-description: Implements implicit and explicit preference learning, taste profiles, and ranking authority for the Kesher dating app. Use this skill to manage event capture, calculate taste weights, and structure hybrid (on-device/server) recommendation architectures.
+description: "Implement Kesher implicit and explicit preference learning, taste profiles, event capture, taste weights, and hybrid on-device/server recommendation architecture while preserving privacy and user controls."
 ---
 
-# Kesher Learned Taste & Preference Learning Skill
+# Kesher Learned Taste
 
-This skill defines the architecture and algorithms for Kesher's learned taste system. It transforms explicit user controls and implicit behavioral traces into a persistent preference state used during ranking, ensuring auditable ranking authority and safe, explainable recommendations.
-
-## Core Principles
-
-1.  **Explicit Over Implicit:** Explicit controls (e.g., hard filters, "more like this") always outrank implicit behavioral hints (e.g., dwell time, passive swiping).
-2.  **Behavior as Observation, Not Truth:** Implicit events are treated as noisy observations with variable confidence, not as direct negatives or stable ground truth.
-3.  **Temporal Dynamics (Dual Memory):** Recency is modeled with both short-term (fast) and long-term (slow) memory states to react to current moods without discarding durable preferences.
-4.  **Hybrid Architecture:** Event capture, buffering, and local cache live on the device. Canonical ranking, cross-user learning, and audit controls live on the server.
-5.  **Strict Bounding:** The ranking authority decides what is eligible and scored. The explanation layer only verbalizes whitelisted reasons emitted by the ranking authority.
-
-## Implementation Workflow
-
-### 1. Event Capture Taxonomy
-
-The system must capture four classes of events to build the taste profile. Crucially, message text, photos, and precise locations are excluded from taste learning for privacy reasons.
-
-| Event Class | Description | Examples |
-| :--- | :--- | :--- |
-| **Policy & Consent** | High-level user decisions regarding their data and experience. | Onboarding completion, hard filter edits, taste-profile consent, taste reset. |
-| **Explicit Preference** | Direct, intentional signals of attraction or aversion. | Like, pass, "more like this," "less like this," hide, block, direct tag edits. |
-| **High-Signal Implicit** | Behavioral traces that strongly suggest interest or engagement. | Profile open, photo carousel depth, prompt expansion, long dwell time, reply received. |
-| **Context** | Environmental factors that may influence current preferences. | Surface (Daily Picks vs. Explore), time of day, session stage, device class. |
-
-*See `/home/ubuntu/skills/kesher-learned-taste/references/event_schemas.md` for detailed JSON schemas.*
-
-### 2. Weighting Policy (The Update Rule)
-
-The system calculates preference updates using a signed update rule:
-
-`Update = Authority × Confidence × Recency × Eligibility`
-
-**Authority Hierarchy:**
-1.  **Absolute Controls:** Block, report, hard filters.
-2.  **Highest Preference Controls:** "More like this," "less like this," direct tag edits, reset.
-3.  **Strong Supervised Outcomes:** Like, mutual match, message sent, reply received.
-4.  **Medium Implicit Cues:** Profile open, long dwell, prompt expansion.
-5.  **Weak Implicit Cues:** Impression only (Note: Missing impressions are never interpreted as dislike).
-
-### 3. Temporal Dynamics (Dual Memory)
-
-To balance immediate mood with long-term compatibility, maintain two simultaneous memory states:
-
--   **Fast Taste State:** Half-life of 1-2 weeks. Used to adapt the Daily Picks algorithm to recent activity.
--   **Slow Taste State:** Half-life of 2-3 months. Used to stabilize the user embedding and prevent mood swings from causing long-term distortion.
-
-### 4. Taste Reset Semantics
-
-When a user triggers a "Taste Reset," the system must clear the learned taste vector, explicit anchors, explanation history cache, and on-device summaries. It must **not** clear abuse, consent, or legal-retention records.
-
-## Bundled Resources
-
--   **`references/event_schemas.md`**: JSON schemas for capturing the four classes of events (Policy, Explicit, Implicit, Context).
--   **`references/hybrid_architecture.md`**: Detailed breakdown of responsibilities between the client (on-device) and the server.
-
+Use this skill when changing taste events, preference weights, or recommendation inputs. Explicit controls outrank implicit observations, private messages/photos/protected traits are excluded, and explanation layers must not reveal hidden taste internals.
 
 ---
 
 # kesher-low-latency-ai
 
-Source: `.claude/skills/kesher-low-latency-ai/SKILL.md`
+Source: `skills/kesher-low-latency-ai/SKILL.md`
 
 ---
 name: kesher-low-latency-ai
-description: Server-side AI proxy architecture for low-latency responses in the Kesher dating app. Use when implementing the model routing matrix, latency targets, streaming patterns, feature registry, or policy-aware AI request handling.
+description: "Design server-side AI proxy architecture for low-latency Kesher responses. Use when implementing model routing matrices, latency targets, streaming patterns, feature registry routing, and policy-aware AI request handling."
 ---
 
-# Kesher Low-Latency AI
+# Kesher Low Latency AI
 
-Move from Google AI Studio prototype to a **production-ready, server-side routing architecture** that matches the right model to each user moment.
-
-## Architecture Components
-
-```
-Client → Express API → Feature Registry → Policy Layer → Model Router → Gemini API → Schema Validator → Client
-```
-
-### Feature Registry
-
-Allowlist of registered AI capabilities with metadata:
-
-```js
-const featureRegistry = {
-  safety_scan: { model: 'flash-lite', policy: 'silent', streaming: false },
-  rephrase_message: { model: 'flash', policy: 'visible', streaming: true },
-  bio_coaching: { model: 'flash', policy: 'visible', streaming: true },
-  date_planner: { model: 'pro', policy: 'grounded', streaming: false },
-  match_explanation: { model: 'flash', policy: 'visible', streaming: false },
-  deep_help: { model: 'pro', policy: 'thinking', streaming: true }
-};
-```
-
-### Policy Layer
-
-Enforces rules before any model call:
-- Auth verification
-- Rate limiting (per-user, per-feature)
-- Input sanitization
-- Feature flag check
-- Consent verification (for personality/location features)
-
-### Model Router
-
-Maps features to routing lanes:
-
-| Lane | Model | Streaming | Use Cases |
-|------|-------|-----------|-----------|
-| Fast | Flash-Lite | No | Safety scan, classification, silent tasks |
-| Fast Visible | Flash | SSE | Rephrase, openers, coaching tips |
-| Balanced | Flash | SSE | Bio coaching, match explanations |
-| Grounded Planning | Pro + Maps/Search | No (buffer until validated) | Date planner, safety Q&A |
-| Deep Planning | Pro + Thinking | SSE | Multi-constraint plans, deep help |
-
-## Latency Targets
-
-| Surface | P50 Target | P95 Target | Strategy |
-|---------|-----------|-----------|----------|
-| Messaging (safety scan) | <200ms | <500ms | Flash-Lite, no streaming |
-| Messaging (rephrase) | <800ms | <1.5s | Flash, SSE streaming |
-| Onboarding (bio coach) | <1s | <2s | Flash, SSE streaming |
-| Planning (date planner) | <3s | <6s | Pro, buffer then render |
-| Deep help | <5s | <10s | Pro + thinking, SSE with indicator |
-
-## Streaming Strategy
-
-### Server-Sent Events (SSE)
-
-Use SSE for user-visible text generation:
-
-```js
-app.get('/api/ai/stream/:feature', authMiddleware, async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  const stream = await model.generateContentStream(/* ... */);
-  for await (const chunk of stream) {
-    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-  }
-  res.end();
-});
-```
-
-### Buffered Responses
-
-Use buffered responses for structured data that must be validated before display:
-
-```js
-app.post('/api/ai/:feature', authMiddleware, async (req, res) => {
-  const result = await model.generateContent(/* ... */);
-  const validated = validateSchema(result, featureRegistry[req.params.feature].schema);
-  res.json(validated);
-});
-```
-
-## Monetization Boundaries
-
-- **Free**: Core safety features, basic rephrase, simple coaching
-- **Premium**: Deep help, concierge planning, advanced coaching
-- **Never paywalled**: Safety scans, report assistance, basic self-expression
-
-Do not sell "premium speed" for core/safety features. Monetize depth and advanced planning.
-
-## MVP Experiment
-
-Validate the routing stack on three features before full rollout:
-
-1. `safety_scan` — Fast lane validation
-2. `rephrase_message` — Streaming validation
-3. `date_planner` — Grounded planning validation
-
-Measure: latency (P50/P95), error rate, user satisfaction, cost per request.
-
-## Observability Dashboard
-
-Track per-feature:
-- Request volume and error rates
-- Latency distribution (P50, P95, P99)
-- Model token usage and cost
-- Cache hit rates
-- Feature flag activation rates
-
+Use this skill to keep AI surfaces fast without weakening trust controls. Prefer deterministic fallbacks, minimal payloads, schema validation, and feature-specific model routing over broad generic chat calls.
 
 ---
 
 # kesher-maps-date-planner
 
-Source: `.claude/skills/kesher-maps-date-planner/SKILL.md`
+Source: `skills/kesher-maps-date-planner/SKILL.md`
 
 ---
 name: kesher-maps-date-planner
-description: Google Maps-grounded date planning for the Kesher dating app. Use when building date suggestion features, venue recommendations, fairness previews, observance-aware scheduling, or accessibility-conscious date planning with the Gemini API and Google Maps Platform.
+description: "Build Google Maps-grounded Kesher date planning with venue suggestions, fairness previews, observance-aware scheduling, safe-venue defaults, accessibility-conscious planning, citation UI, and user-reviewed sending."
 ---
 
 # Kesher Maps Date Planner
 
-Plan dates using **Google Maps grounding** as an evidence layer for facts. Deterministic guardrails handle fairness, safety, and consent.
+Use this skill when changing grounded date suggestions or venue planning. Keep locations coarse unless the user explicitly narrows them, show citations/provenance, and require user review before any plan is sent.
 
-## Core Features
+---
 
-| Feature | Tier | Description |
-|---------|------|-------------|
-| Midpoint Plan Card | Free | 3-5 venue options near geographic midpoint |
-| Fairness Preview | Free | Travel time comparison before sending |
-| Safe-First Defaults | Free | Public, well-reviewed venues only |
-| Plan Message Draft | Free | Editable message for user to send manually |
-| One-Tap Open in Maps | Free | Direct link to Google Maps |
-| Concierge Plan with Backups | Premium | Multi-stop itinerary with backup venues |
-| Observance-Aware Scheduling | Premium | Shabbat, kashrut, holiday awareness |
-| Accessibility Concierge | Premium | Wheelchair access, sensory considerations |
-| Travel-Time Fairness Optimizer | Premium | Route optimization for equitable travel |
+# kesher-match-lifecycle
+
+Source: `skills/kesher-match-lifecycle/SKILL.md`
+
+---
+name: kesher-match-lifecycle
+description: Implement Kesher like/pass/match/chat lifecycle state machines, history, and safe transitions across block, report, unmatch, pause, and delete.
+---
+
+# Kesher Match Lifecycle
+
+Use this skill for discovery-to-chat product behavior.
+
+## Requirements
+
+- Treat like, pass, match, message, unmatch, block, report, and delete as explicit state transitions.
+- Persist user-visible history so members understand what happened after any safety or privacy action.
+- Keep AI outputs draft-only; no opener, rephrase, reflection, or date plan may auto-send.
+- Preserve safety records after unmatch, block, and account deletion according to retention policy.
+
+## Acceptance
+
+- Mutual matches create one conversation and one match record.
+- Block/report/unmatch remove unsafe access without erasing operator evidence.
+- The UI has empty states for no picks, no matches, no conversations, and paused profiles.
+
+---
+
+# kesher-notifications
+
+Source: `skills/kesher-notifications/SKILL.md`
+
+---
+name: kesher-notifications
+description: Implement Kesher notification preferences and delivery for matches, messages, safety events, date reminders, and consent/share changes.
+---
+
+# Kesher Notifications
+
+Use this skill when adding email, push, or SMS delivery.
+
+## Requirements
+
+- Notification categories must be preference-managed and revocable.
+- Safety, consent, and account-rights notifications take priority over engagement nudges.
+- Never disclose sensitive match, personality, report, or safety details in notification previews.
+- Record delivery attempts, failures, unsubscribes, and provider callbacks.
+
+## Acceptance
+
+- Members can change notification categories from settings.
+- Delivery providers are called server-side only.
+- Notification copy is calm, non-pressuring, and compatible with Hebrew-first localization.
+
+---
+
+# kesher-pacing-coach
+
+Source: `skills/kesher-pacing-coach/SKILL.md`
+
+---
+name: kesher-pacing-coach
+description: Implement and review Kesher's anti-burnout pacing coach, including swipe/session signals, gentle dismissible interventions, PacingInterventionSchema, prompt safety, and non-manipulative UX. Use when changing pacing_coach registry entries, pacing-intervention routes, discovery session tracking, or break/reflection UI.
+---
+
+# Kesher Pacing Coach
+
+Use this skill to create gentle pacing interventions that protect user attention without manipulating them.
 
 ## Workflow
 
-1. **Consent**: Both matched users agree to plan a date
-2. **Input**: Requesting user provides constraints (area, budget, time, preferences)
-3. **Generate**: Gemini + Maps grounding produces venue suggestions
-4. **Fairness Preview**: Show travel times for both users before sending
-5. **User Review**: User edits the plan message draft
-6. **Manual Send**: User sends the plan to their match (never auto-sent)
+1. Inspect these surfaces before editing:
+   - `server/aiRoutes.ts`
+   - `src/services/aiService.ts`
+   - `src/ai/schemas.ts`
+   - `src/ai/policies.ts`
+   - `src/ai/prompts.ts`
+   - `src/ai/featureRegistry.ts`
+   - `src/features/discovery/DailyPicksScreen.tsx`
+   - `src/features/discovery/ExploreScreen.tsx`
+2. Use only coarse session metrics such as session length, swipe velocity, repeated passes, or user-dismissed nudges. Do not use private messages, personality raw answers, or sensitive traits.
+3. Keep the intervention easily dismissible. Never block access, shame the user, or create scarcity pressure.
+4. Return `message_he` and `reflection_prompt_he` via `PacingInterventionSchema`.
+5. Rate-limit nudges so they feel supportive rather than nagging.
 
-## Technical Implementation
+Read `references/pacing-contract.md` before changing triggers or prompt copy.
 
-### Model Configuration
+## Copy Standard
 
-```js
-const result = await model.generateContent({
-  contents: [{ role: "user", parts: [{ text: planRequest }] }],
-  tools: [{ googleMaps: {} }],
-  generationConfig: {
-    responseMimeType: "application/json",
-    responseSchema: datePlanSchema
-  }
-});
-```
+Use a calm prompt to pause, breathe, or reflect on what felt energizing or draining. Do not imply the user is addicted, broken, desperate, or making bad decisions.
 
-**Models**: Gemini 2.5 Pro (complex plans), Gemini 2.5 Flash (simple suggestions)
+## Acceptance Checks
 
-### Maps Platform APIs
+- Pacing feature can be disabled or dismissed.
+- Trigger thresholds are deterministic and testable.
+- Gemini failure produces no intrusive modal.
+- Output validator blocks diagnosis, fixed identity, and manipulation language.
+- UI does not shift layout or obscure critical discovery controls.
 
-- **Places API**: Venue search, details, reviews, photos
-- **Routes API**: Travel time calculations between locations
+Use `$kesher-personality-delivery` for browser checks across mobile and desktop.
 
-### Privacy Constraints
+---
 
-- Use **coarse locations** only (neighborhood/area, never exact address)
-- Cache **Place IDs** only — not other Places content (per API terms)
-- Never store or transmit precise user home locations
+# kesher-permissioned-sharing
 
-## Venue Safety Criteria
+Source: `skills/kesher-permissioned-sharing/SKILL.md`
 
-Default to venues that are:
-- Public and well-lit
-- Have Google reviews (minimum threshold)
-- Open during planned time
-- Accessible by public transport or have parking
-- Not isolated locations
+---
+name: kesher-permissioned-sharing
+description: "Implement and review Kesher's permissioned personality sharing flows: previewable share cards, recipient/scope selection, expiry, revoke, audit copy, and mutual-consent disclosure. Use when building personality share-card UI, share/revoke APIs, privacy settings, trust hub controls, or data models for temporary personality access."
+---
 
-Expand venue types gradually based on moderation learning.
+# Kesher Permissioned Sharing
 
-## Observance-Aware Features
+Use this skill when personality insights move from owner-only to another person by explicit user action.
 
-- Use `@hebcal/core` for Shabbat times and Jewish holidays (deterministic, not AI)
-- Filter venues for kashrut certification when user preference is set
-- Avoid suggesting activities during Shabbat for observant users
-- Include eruv-aware walking suggestions where relevant
+## Required Flow
 
-## Output Schema
+1. Preview: show exactly what will be shared before any recipient can access it.
+2. Scope: let the owner choose summary-only, strengths/watch-outs, communication notes, or a specific compatibility reflection. Never include raw answers, raw scores, hidden negatives, or private taste.
+3. Recipient: require a specific match/user or approved context. Avoid broad public links.
+4. Duration: default to temporary access with a clear expiry.
+5. Confirm: restate recipient, scope, expiry, and revoke behavior.
+6. Revoke: provide a visible revoke path and explain that revocation stops future in-app access but cannot erase screenshots or memory.
+7. Audit: record share, view, expiry, and revoke events without storing unnecessary sensitive prose in analytics.
 
-```json
-{
-  "venues": [{
-    "name": "string",
-    "type": "string",
-    "area": "string",
-    "travel_time_a": "string",
-    "travel_time_b": "string",
-    "maps_link": "string",
-    "place_id": "string",
-    "accessibility_notes": "string|null"
-  }],
-  "fairness_note": "string",
-  "observance_note": "string|null",
-  "plan_message_draft": "string",
-  "backup_venues": [{ "...same structure..." }]
-}
-```
+Read `references/share-card-contract.md` before implementing persistence, schemas, or UI.
 
-## Best Practices
+## Guardrails
 
-- Maps grounding is an evidence layer — not an arbiter of fairness or safety
-- Always show source attribution for Maps-grounded data
-- Start conservative with venue types; expand based on feedback
-- Never auto-send plan messages
-- Render `googleMapsWidgetContextToken` for interactive map embeds
+- Stop before changing auth, Firebase rules, database schema, migrations, production config, or share/revoke persistence without explicit approval.
+- Use server-side authorization for every share-card read.
+- Do not allow share cards to become raw psychometric dossiers.
+- Keep generated language non-clinical and non-deterministic.
 
+## Acceptance Checks
+
+- A user cannot share without preview and explicit confirmation.
+- A non-recipient cannot fetch the shared card.
+- Expired or revoked cards are inaccessible.
+- The shared card names its limits: summary-only, reflective, not a score.
+- Analytics excludes raw answers, private taste, and private messages.
+
+Use `$kesher-personality-visibility` for surface policy and `$kesher-personality-delivery` for release checks.
+
+---
+
+# kesher-personality-delivery
+
+Source: `skills/kesher-personality-delivery/SKILL.md`
+
+---
+name: kesher-personality-delivery
+description: Coordinate implementation, verification, review, CI, deployment, and platform parity for Kesher personality features using the appropriate repo, browser, CI, review, deploy, database, and native-app plugins. Use after or during personality feature work when planning tasks, running checks, opening browser flows, preparing GitHub/CircleCI/CodeRabbit review, or considering Netlify/Vercel/Cloudflare/Neon/Expo/iOS/macOS delivery.
+---
+
+# Kesher Personality Delivery
+
+Use this skill to ship personality work carefully after a feature-specific skill has identified the product contract.
+
+## Workflow
+
+1. Start from `AGENTS.md` and the relevant feature skill.
+2. Read `references/plugin-map.md` to choose platform tools. Do not invoke deploy, production config, billing, database migrations, GitHub pushes, PR creation, or external automations without explicit approval.
+3. Run the narrowest useful local verification:
+   - targeted tests
+   - `npm run check`
+   - `npm run build` when shared routes or schemas changed
+   - browser flow checks for UI work
+4. Use Browser Use for localhost visual/interaction checks when a frontend flow changes.
+5. Use GitHub, CircleCI, and CodeRabbit only for repo, CI, or review tasks the user has asked for or approved.
+6. Use deploy/platform plugins only when the requested work touches that platform.
+7. Report exactly what ran, what passed, and what could not run.
+
+## Platform Selection
+
+Read `references/plugin-map.md` for when to use Netlify, Vercel, Cloudflare, Neon Postgres, Expo, iOS, macOS, Quicknode, YepCode, Superpowers, GitHub, CircleCI, CodeRabbit, and Browser Use.
+
+Read `references/verification-matrix.md` before finalizing a personality feature branch.
+
+## Stop Points
+
+Stop and request explicit approval before changing auth, roles, Firebase rules, database schema, migrations, production config, secrets, billing, deploy settings, external automation tools, dependency versions, share/revoke persistence, or personality-based ranking/gating.
+
+## Acceptance Checks
+
+- Feature-specific safety contracts are preserved.
+- `docs/adr` and `src/ai/featureRegistry.ts` are updated when behavior or governance changes.
+- Validation output is recorded in the final response.
+- Browser screenshots or in-app browser checks are used for meaningful UI changes.
+- CI/review/deploy plugins are used only when appropriate and approved.
 
 ---
 
 # kesher-personality-engine
 
-Source: `.claude/skills/kesher-personality-engine/SKILL.md`
+Source: `skills/kesher-personality-engine/SKILL.md`
 
 ---
 name: kesher-personality-engine
-description: BFAS personality assessment system for the Kesher dating app. Use when implementing personality tests, scoring, reflection reports, compatibility comparisons, or personality-aware match explanations using Big Five Aspect Scales and Gemini structured outputs.
+description: "Implement Kesher personality measurement, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five or BFAS-style structures without deterministic fit claims."
 ---
 
 # Kesher Personality Engine
 
-Implement a **trust-forward personality assessment** using the Big Five Aspect Scales (BFAS). Frame insights as tendencies, not predictions.
-
-## BFAS Framework
-
-### Five Domains and Ten Aspects
-
-| Domain | Aspect 1 | Aspect 2 |
-|--------|----------|----------|
-| Extraversion | Enthusiasm | Assertiveness |
-| Neuroticism | Withdrawal | Volatility |
-| Agreeableness | Compassion | Politeness |
-| Conscientiousness | Industriousness | Orderliness |
-| Openness/Intellect | Openness | Intellect |
-
-### Assessment
-
-- 100-item BFAS questionnaire (based on Peterson framework)
-- **Scoring is deterministic** — no AI involved in scoring
-- Results expressed as percentile rankings for 5 domains and 10 aspects
-- Store raw scores server-side; derive percentiles from normative data
-
-## Core Experiences
-
-### 1. Personality Reflection Report
-
-Generate a personal insight report from BFAS scores using Gemini.
-
-**Model**: Gemini 2.5 Flash
-
-**System instruction**: Frame all insights as tendencies. Never use clinical language. Use "you tend to..." not "you are..."
-
-**Output schema**:
-```json
-{
-  "domain_insights": [{ "domain": "string", "percentile": "number", "reflection": "string" }],
-  "aspect_highlights": [{ "aspect": "string", "insight": "string" }],
-  "growth_areas": ["string"],
-  "framing_note": "string"
-}
-```
-
-### 2. Compatibility Comparison
-
-Compare two users' BFAS profiles after **mutual consent**.
-
-**Prerequisite**: Both users must opt in to share personality data.
-
-**Output schema**:
-```json
-{
-  "shared_strengths": ["string"],
-  "potential_friction": ["string"],
-  "conversation_starters": ["string"],
-  "framing_note": "string"
-}
-```
-
-**Constraints**: Never output "soulmate" claims, compatibility percentages, or deterministic predictions.
-
-### 3. "Why This Match" with Personality
-
-Enrich match explanations with personality signals (when user has opted in).
-
-**Whitelisted signals**: Shared high/low aspects, complementary patterns, stated preferences alignment.
-
-### 4. Personality-Aware Bio Coach
-
-Optionally incorporate personality insights into bio drafting suggestions via user toggle.
-
-## Ethical Boundaries
-
-- No attractiveness scoring from personality data
-- No clinical diagnoses or mental health assessments
-- No deterministic compatibility scores — always probabilistic framing
-- User owns their data — view, edit, reset, delete at any time
-- Opt-in only — personality features require explicit consent
-- No sharing without mutual consent
-- TTL policies for automatic data expiration
-- Provenance ledger — track which data was used in which AI output
-
-## Technical Integration
-
-- Store raw BFAS scores in Firestore with user-controlled access
-- Use Firebase Auth for consent management
-- Structured outputs with JSON Schema for all personality features
-- System instructions must include ethical framing constraints
-
-## References
-
-- **BFAS scoring**: See `references/bfas_scoring.md` for item mapping and normative data
-- **Compatibility matrix**: See `references/compatibility_matrix.md` for aspect-pair interaction patterns
-
+Use this skill for the end-to-end personality pipeline. Keep scoring deterministic and gated, keep interpretation private by default, and use `$kesher-personality-research` before changing measurement, licensing, Hebrew, or validation assumptions.
 
 ---
 
 # kesher-personality-ocean
 
-Source: `.claude/skills/kesher-personality-ocean/SKILL.md`
+Source: `skills/kesher-personality-ocean/SKILL.md`
 
 ---
 name: kesher-personality-ocean
-description: Implements personality assessment for the Kesher dating app using the OCEAN model, integrated with Jewish observance layers and Hebrew-first localization. Use this skill to generate compatibility reports, power personality-based filtering, and provide nuanced, culturally-aware matching.
+description: "Implement Kesher OCEAN/Big Five personality reflection with Jewish observance context and Hebrew-first localization. Use when generating culturally aware reflection cards, consent-scoped discovery experiments, or non-deterministic personality interpretation."
 ---
 
-# Kesher Personality & OCEAN Modeling Skill
+# Kesher Personality OCEAN
 
-This skill provides the complete implementation for assessing user personality within the Kesher dating app. It combines the five-factor (OCEAN) personality model with a nuanced, three-layer model of Jewish observance and identity, designed specifically for a Hebrew-first user base.
+Use this skill when working with broad Big Five/OCEAN language. Keep observance separate from personality, avoid protected-trait inference, and do not use personality as a hidden public ranking or compatibility verdict.
 
-## Core Principles
+---
 
-1.  **Trait-Based, Not Typological:** The model is based on continuous OCEAN traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism), not rigid personality "types."
-2.  **Culturally Nuanced:** It integrates a three-layer observance model (self-description, practice bundles, private compatibility) to capture the complexity of Israeli Jewish identity.
-3.  **Hebrew-First:** All user-facing language, from assessment questions to compatibility explanations, is designed to be locally credible and natural in Hebrew.
-4.  **Transparent & Controllable:** Users have visibility into their assessed traits and control over how they are used in matching.
+# kesher-personality-profile
 
-## Implementation Workflow
+Source: `skills/kesher-personality-profile/SKILL.md`
 
-### 1. Personality Assessment
+---
+name: kesher-personality-profile
+description: Implement and review Kesher's private personality profile interpreter, including Gemini structured output, Hebrew-first insight cards, fallback rendering, provenance, and user controls. Use when changing personality-profile routes, PersonalityProfileScreen, PersonalitySummarySchema, personality prompts, output validators, or AI Trust Hub copy for personality insights.
+---
 
-To assess a user's personality, present them with a questionnaire based on the IPIP-NEO-120. For a shorter, mobile-friendly experience, a validated short-form version such as the IPIP-NEO-30 can be used.
+# Kesher Personality Profile
 
--   **Reference:** For detailed descriptions of each OCEAN trait and its facets, see `/home/ubuntu/skills/kesher-personality-ocean/references/ocean_traits.md`.
+Use this skill to translate deterministic BFAS outputs into warm, private, user-visible reflection.
 
-### 2. Observance & Identity Layering
+## Workflow
 
-After the core personality assessment, collect information on Jewish observance and identity using the following three-layer model:
+1. Inspect these surfaces before editing:
+   - `src/features/settings/PersonalityProfileScreen.tsx`
+   - `src/services/aiService.ts`
+   - `server/aiRoutes.ts`
+   - `src/ai/schemas.ts`
+   - `src/ai/policies.ts`
+   - `src/ai/prompts.ts`
+   - `src/ai/outputValidators.ts`
+   - `src/ai/featureRegistry.ts`
+2. Ensure the AI receives derived domain/aspect percentiles only. Do not send raw answers, private messages, hidden ranking state, exact location, photos, or private taste details.
+3. Keep `SYSTEM_INSTRUCTIONS.PERSONALITY_INTERPRETER` non-clinical and probabilistic. Preferred framing: "you tend to", "you may notice", "a helpful watch-out".
+4. Require structured JSON that matches `PersonalitySummarySchema`; update validator coverage when schema fields change.
+5. Render a deterministic fallback when Gemini is unavailable. The fallback must not invent a profile from missing data.
+6. Keep export, reset, and delete controls available near the profile.
 
-| Layer | Description | Implementation | Reference |
-| :--- | :--- | :--- | :--- |
-| **1. Self-Description** | A user-chosen public label in natural Hebrew. | Present a list of common Israeli Jewish identity labels. | See `/home/ubuntu/skills/kesher-personality-ocean/references/hebrew_localization.md` for the canonical list. |
-| **2. Practice Bundles** | Concrete practices related to Shabbat, kashrut, community, and family life. | A multi-select or checklist interface for specific practices. | See `/home/ubuntu/skills/kesher-personality-ocean/references/hebrew_localization.md` for practice bundle items. |
-| **3. Private Compatibility** | A private layer that learns preferences from explicit user feedback. | This is handled by the `kesher-learned-taste` skill. |
+## Output Contract
 
-### 3. Generating Compatibility Reports
+Read `references/output-contract.md` before changing schemas, prompts, or UI cards.
 
-When comparing two users, generate a compatibility report that highlights both shared traits and complementary differences. The language should be warm, encouraging, and avoid deterministic or judgmental statements.
+The profile may include private summary, domain cards, aspect highlights, dating superpower, growth area, communication notes, and repair suggestions.
 
-**Prompt Template for Generating a Compatibility Report:**
+The profile must not include diagnosis or treatment language, fixed identity labels, match scores, desirability claims, raw BFAS answers, raw score dumps, hidden weights, private taste, or private messages.
 
-```
-Given the following OCEAN personality profiles for User A and User B, and their Jewish observance practices, generate a brief, encouraging compatibility summary in Hebrew. Focus on potential areas of harmony and growth. Do not mention Neuroticism directly; instead, frame it as 'Emotional Style.'
+## Acceptance Checks
 
-User A Profile:
-- Openness: [Score or Percentile]
-- Conscientiousness: [Score or Percentile]
-- Extraversion: [Score or Percentile]
-- Agreeableness: [Score or Percentile]
-- Neuroticism: [Score or Percentile]
-- Observance Self-Description: [Label]
-- Observance Practices: [List of practices]
+- Validator rejects prohibited language using `outputValidators.validatePersonalityProfile`.
+- UI does not expose generated insight cards to other users by default.
+- Loading, unavailable-AI, reset, delete, and export states remain reachable.
+- Analytics events do not include raw answers or generated sensitive text.
+- `npm run check` or a targeted TypeScript/test command passes.
 
-User B Profile:
-- Openness: [Score or Percentile]
-- Conscientiousness: [Score or Percentile]
-- Extraversion: [Score or Percentile]
-- Agreeableness: [Score or Percentile]
-- Neuroticism: [Score or Percentile]
-- Observance Self-Description: [Label]
-- Observance Practices: [List of practices]
-
-Compatibility Summary (Hebrew):
-```
-
-## Bundled Resources
-
--   **`references/ocean_traits.md`**: Detailed descriptions of the five OCEAN personality traits and their facets.
--   **`references/hebrew_localization.md`**: Canonical lists of Hebrew self-description labels and practice bundle items for the observance layers.
-
+Use `$kesher-personality-delivery` for browser validation and release workflow.
 
 ---
 
 # kesher-personality-research
 
-Source: `kesher-app/skills/kesher-personality-research/SKILL.md`
+Source: `skills/kesher-personality-research/SKILL.md`
 
 ---
 name: kesher-personality-research
-description: Authoritative evidence base for Kesher's personality, compatibility, sharing, and trust features. Use when writing or reviewing user-facing copy about traits or compatibility, choosing between BFAS forms, designing share cards or "why this match" outputs, debating similarity vs complementarity, defending a privacy/visibility default, or grounding a claim with VERIFIED/INFERRED/HEURISTIC/UNKNOWN labels. Pair with the implementation skills below.
+description: "Convert Kesher personality PDF dossiers and research findings into implementable, evidence-labeled product and engineering guidance. Use when grounding Kesher BFAS/Big Five measurement, instrument licensing, Hebrew feasibility, Israeli privacy, consent, visibility, permissioned sharing, Gemini/Vertex runtime governance, validation gates, repository delivery, or trust-forward personality feature decisions from the PDF corpus."
 ---
 
 # Kesher Personality Research
 
-This skill is the canonical, evidence-tagged grounding layer for every Kesher feature that touches personality, compatibility, taste, sharing, or AI-mediated reflection. It does not implement features — it tells you what the evidence does and does not support, so you can keep prompts, copy, schemas, and product defaults defensible.
+Use this skill before implementing or reviewing personality features that depend on the local PDF corpus. Treat the PDFs as grounding material for product contracts, not as permission to ship sensitive scoring.
 
-## When to use
+## Evidence Labels
 
-- Writing or auditing a personality report, compatibility card, "why this match" string, or share-card preview.
-- Choosing between full BFAS (100 items), short forms (e.g., BFAS-40, BFI-2), or no instrument at all.
-- Defending privacy defaults: private-by-default vs mutual-unlock vs public personality display.
-- Resolving an internal disagreement about similarity, complementarity, "opposites attract", or "soulmate" framing.
-- Reviewing a Gemini structured output for false precision, clinical drift, destiny language, or covert ranking.
+- `VERIFIED`: directly supported by the PDF corpus, official docs already captured in repo docs, or deterministic code inspection.
+- `INFERRED`: a product or engineering conclusion derived from verified material.
+- `HEURISTIC`: an operator rule of thumb that still needs review before production use.
+- `UNKNOWN`: unresolved, missing evidence, or not yet inspected.
+- `BLOCKED`: not implementable for production until a named gate is closed.
 
 ## Workflow
 
-1. Open `references/dossier-index.md` and find the dossier(s) closest to the question. Each entry lists the deliverable, the strongest claims, and where to look in `canonical-evidence.md`.
-2. Open `references/canonical-evidence.md` and locate the relevant section. Every claim carries an evidence label — keep that label if you propagate the claim into prompts, schemas, or UI copy.
-3. Use `references/effect-sizes.md` for the small set of numbers you can quote without overclaiming (actor ≈ 6%, partner ≈ 1–3%, trait similarity < 0.5% of relationship-satisfaction variance after actor/partner controls, etc.).
-4. Before shipping user-facing language, run it through `references/copy-do-dont.md`. The safe / risky / unsupported lists are derived from the dossiers and from the existing `docs/personality/prohibited-output-rules.md`.
-5. For each architectural choice, cross-check against `references/product-defaults.md` (private-by-default, reflection over prediction, summarized-only sharing, mutual-consent for deeper layers, no paywalled privacy).
+1. Start with `references/source-map.md` and choose the capability reference that matches the task.
+2. Keep the product stance stable: personality is optional, private by default, deterministic when measured, and reflective rather than predictive.
+3. Do not activate production personality scoring unless commercial instrument rights, Hebrew adaptation, privacy counsel review, and data-governance gates are closed.
+4. Do not let an LLM score personality. LLMs may only interpret deterministic scores or user-approved summaries through bounded schemas.
+5. Convert research into concrete implementation contracts: allowed inputs, blocked inputs, output schema, consent surface, visibility layer, tests, and release gate.
+6. Use probabilistic copy: "may", "can", "often", "worth exploring", and "possible friction/strength".
+7. Update the relevant feature skill when a PDF finding changes implementation behavior.
 
-## Evidence labels (reused everywhere)
+## Capability References
 
-- **VERIFIED** — supported by peer-reviewed research or official platform docs cited in the dossier.
-- **INFERRED** — synthesized from multiple verified findings; not directly tested as stated.
-- **HEURISTIC** — pragmatic product guidance under uncertainty.
-- **UNKNOWN** — not enough public evidence to support the claim.
+- `references/measurement-licensing-hebrew.md`: instrument choice, BFAS/BFI/IPIP rights, Hebrew feasibility, and scoring gates.
+- `references/compatibility-reflection-science.md`: relationship-science boundaries and safe reflection language.
+- `references/privacy-consent-visibility-sharing.md`: Israeli privacy readiness, consent UX, visibility layers, and permissioned sharing.
+- `references/gemini-vertex-runtime-governance.md`: Gemini, Vertex AI, Firebase AI Logic, and sensitive-runtime boundaries.
+- `references/validation-release-gates.md`: launch blockers, psychometric validation, invariance, and release checklist.
+- `references/tooling-deployment-delivery.md`: GitHub, Vercel, CI, preview verification, and delivery tooling.
 
-If a feature relies on an UNKNOWN claim, gate it behind an experiment, not a launch.
+## Stop Points
 
-## Hard non-negotiables (reaffirmed from dossiers + repo policies)
+Stop for human approval before changing production auth, Firebase rules, database schema, secrets, billing, deployment settings, instrument item text, commercial instrument activation, personality-driven ordering, or cross-user personality disclosure.
 
-- No compatibility scores, match percentages, soulmate / bashert / destiny verdicts.
-- No raw personality scores, hidden weights, or private-taste exposure to other users.
-- No clinical / diagnostic language; trait labels are tendencies, not identity.
-- No covert ranking or paywalled privacy controls.
-- No protected-trait inference from photos or writing style.
-- LLMs may *interpret* deterministic scores; LLMs must not *score* BFAS items.
-- See `docs/personality/prohibited-output-rules.md` for the executable language allowlist/blocklist.
+Use `$kesher-personality-delivery` after this skill when implementation, browser verification, CI, or Vercel prototype updates are required.
 
-## Related implementation skills
+---
 
-- `$kesher-bfas-assessment` — deterministic scoring + opt-in flow.
-- `$kesher-personality-profile` — private reflection cards.
-- `$kesher-personality-why-match` — explanation outputs with provenance.
-- `$kesher-compatibility-reflection` — mutual-consent shared reflection cards.
-- `$kesher-personality-visibility` — public/private/mutual surface decisions.
-- `$kesher-permissioned-sharing` — share-card grants, revocation, audit ledger.
-- `$kesher-private-taste` — private learned-preference store.
-- `$kesher-personality-delivery` — browser validation + release workflow.
+# kesher-personality-visibility
 
-## Acceptance checks
+Source: `skills/kesher-personality-visibility/SKILL.md`
 
-- Any new product claim about personality, compatibility, or matching cites a dossier section and carries an evidence label.
-- Any prompt change preserves probabilistic framing ("you tend to", "may", "one thing to explore").
-- Any new schema field is justified by a dossier passage or marked HEURISTIC with a follow-up experiment.
-- Reviewers can trace a user-visible string back to a verified or inferred source within two clicks.
+---
+name: kesher-personality-visibility
+description: Design and implement Kesher's personality visibility model across browse, profile, match, settings, and chat surfaces. Use when deciding what personality-derived data can appear publicly, privately, or after mutual consent; when changing profile cards, ProfileDetail, DailyPicks, AITrustHub, PrivateTasteProfile, Settings, or visibility copy.
+---
 
+# Kesher Personality Visibility
+
+Use this skill when a personality-related insight might become visible outside the owner-only profile.
+
+## Visibility Layers
+
+1. Public browse layer: self-declared values, intent, observance labels, lifestyle, interests, prompts, and profile fields only.
+2. Private owner layer: inferred personality summaries, private taste, generated recommendations, data controls, and explanation history.
+3. Mutual-consent layer: short share-card summaries or compatibility reflections after explicit opt-in from the required parties.
+4. System-only layer: raw answers, raw scores, hidden ranking features, audit logs, moderation signals, and safety retention records.
+
+Read `references/visibility-rules.md` when changing any UI surface that displays personality-derived data.
+
+## Workflow
+
+1. Identify the surface: browse card, profile detail, match sheet, chat, settings, trust hub, admin, or API.
+2. Classify every displayed field into a visibility layer.
+3. Remove or mask raw/inferred fields that are not allowed for that surface.
+4. Add direct controls when the user can change visibility, including preview, scope, and revoke paths.
+5. Keep explanations concrete and calm. Do not say the app is revealing "who they really are" or hidden compatibility.
+6. Update docs/ADR if the visibility policy changes.
+
+## Acceptance Checks
+
+- Discovery surfaces never show model-derived trait labels by default.
+- "Why This Match" explanations use whitelisted visible signals only.
+- Owner-only screens clearly say private/editable/resettable.
+- Mutual-consent screens clearly name who can see what and for how long.
+- Admin views do not become backdoor profile-dossier views.
+
+Use `$kesher-permissioned-sharing` for share-card implementation and `$kesher-personality-delivery` for browser validation.
+
+---
+
+# kesher-personality-why-match
+
+Source: `skills/kesher-personality-why-match/SKILL.md`
+
+---
+name: kesher-personality-why-match
+description: Implement and review personality-safe "Why This Match" explanations for Kesher using whitelisted visible signals, structured Gemini output, uncertainty notes, and leakage prevention. Use when changing explain-match routes, WhyThisMatchPayloadSchema, output validators, DailyPicks/ProfileCard explanation UI, or reason-code generation for personality-aware recommendations.
+---
+
+# Kesher Personality Why Match
+
+Use this skill when explaining a recommendation that may have been influenced by personality, values, or private preference systems.
+
+## Workflow
+
+1. Inspect these surfaces before editing:
+   - `server/aiRoutes.ts`
+   - `src/services/aiService.ts`
+   - `src/ai/outputValidators.ts`
+   - `src/ai/schemas.ts`
+   - `src/ai/policies.ts`
+   - `src/ai/prompts.ts`
+   - `src/features/discovery/DailyPicksScreen.tsx`
+   - `src/components/discovery/ProfileCard.tsx`
+   - `src/components/discovery/ProfileDetail.tsx`
+2. Ensure the route sanitizes inputs with visible-profile pickers and whitelisted signals before calling Gemini.
+3. Preserve `signals_used`, `signals_not_used`, and `uncertainty_he` in every generated output.
+4. Use only allowed reason codes from `WHY_MATCH_ALLOWED_SIGNALS`.
+5. Include forbidden signals in `signals_not_used`: private taste, hidden dealbreakers, hidden ranking, raw personality scores, private messages, exact location, and protected-trait inference.
+6. Fall back to deterministic templates when the model fails validation.
+
+Read `references/explanation-contract.md` before changing allowed signals, prompts, or templates.
+
+## Copy Standard
+
+Say "you might connect over", "based on what is visible", or "one thing to explore". Do not say "the algorithm knows", "you are compatible", "98% match", or "your personality proves".
+
+## Acceptance Checks
+
+- Validator rejects forbidden signals and prohibited language.
+- Explanations show 2-3 short reasons, a first question, and an uncertainty note.
+- Explanations never reveal private taste or raw scores.
+- UI provides a path to manage taste/profile controls.
+- Tests include at least one leakage attempt.
+
+Use `$kesher-private-taste` for recommender inputs and `$kesher-personality-delivery` for verification.
+
+---
+
+# kesher-privacy-preserving-recommendation
+
+Source: `skills/kesher-privacy-preserving-recommendation/SKILL.md`
+
+---
+name: kesher-privacy-preserving-recommendation
+description: "Implement Kesher recommendation architecture with silent personalization, safe explanations, permissioned personality boundaries, anti-leakage controls, and release gates before any personality-informed ordering."
+---
+
+# Kesher Privacy-Preserving Recommendation
+
+Use this skill when modifying recommendations, Daily Picks, Explore ordering, safe explanations, or personality-informed discovery experiments.
+
+## Workflow
+
+1. Separate the recommendation stack into silent personalization, safe explanation, and permissioned personality layers.
+2. Use explicit user preferences and profile logistics before inferred or behavioral signals.
+3. Keep private taste and hidden ordering signals owner-only.
+4. Do not use personality in ranking until validation, consent, privacy, and release gates are complete.
+5. Explain matches only with whitelisted, user-visible, provenance-labeled reasons.
+6. Test for leakage: explanations must not reveal private taste, exact values, hidden ordering, or non-shared personality signals.
+
+## Prototype Surface
+
+The Vercel prototype page should show the layer diagram, signal table, blocked release gates, and no-leakage checks.
+
+## Stop Points
+
+Stop before exposing hidden ordering, using personality without consent, adding public fit meters, or changing production ranking behavior.
 
 ---
 
 # kesher-private-recommendations
 
-Source: `.claude/skills/kesher-private-recommendations/SKILL.md`
+Source: `skills/kesher-private-recommendations/SKILL.md`
 
 ---
 name: kesher-private-recommendations
-description: Implements permissioned sharing, private taste profiles, and privacy-preserving recommendations for the Kesher dating app. Use this skill to manage consent flows, staged disclosure patterns, and sensitive data exclusion schemas.
+description: "Implement Kesher permissioned sharing, private taste profiles, privacy-preserving recommendations, staged disclosure, consent flows, and sensitive-data exclusion schemas without leaking private recommender state."
 ---
 
-# Kesher Private Recommendations & Permissioned Sharing Skill
+# Kesher Private Recommendations
 
-This skill defines the privacy and consent architecture for Kesher's recommendation engine. It ensures that the "Private Taste Profile" remains strictly private, implements "staged disclosure" to protect users in small communities, and enforces strict red lines against inferring sensitive traits.
+Use this skill when private personalization affects discovery or explanations. Keep recommender internals owner-only, sanitize explanation packets, and provide reset, disable, and consent controls.
 
-## Core Principles
+---
 
-1.  **Strictly Private Taste:** The learned taste profile is never shared with other users. It is an internal tool used solely for generating recommendations and explanations.
-2.  **Consent-Gated:** AI features, particularly the creation and use of the Private Taste Profile, require explicit, informed user consent.
-3.  **Staged Disclosure:** Sensitive information (e.g., exact location, specific synagogue, mutual friends) is not revealed upfront. It is disclosed progressively as mutual interest and trust are established.
-4.  **No Sensitive Inference:** The system must never infer protected traits (e.g., Jewish status, halachic validity, exact observance level, ethnicity, attractiveness) from photos, text, or location data.
+# kesher-private-taste
 
-## Implementation Workflow
+Source: `skills/kesher-private-taste/SKILL.md`
 
-### 1. Consent Flow & Privacy Policy
+---
+name: kesher-private-taste
+description: Implement and review Kesher's owner-only private taste learning for personality-aware recommendations, including consent, event minimization, editable/resettable taste profile UI, recommender inputs, and no-leak explanations. Use when changing taste_profile routes, PrivateTasteProfile, recommendation feedback, more/less-like-this controls, taste schemas, or private recommendation copy.
+---
 
-Before activating the learned taste features, users must complete a clear consent flow.
+# Kesher Private Taste
 
--   **Overt Data Collection:** The UI must clearly state what data is collected (explicit actions, implicit behavior), how it is used (to improve recommendations), and what is *not* used (private messages, hidden attractiveness scores).
--   **Opt-In/Opt-Out:** Users must have the ability to opt-out of personalized recommendations, falling back to basic filter-driven discovery (Explore).
+Use this skill to keep learned preference modeling useful, editable, and strictly private.
 
-*See `/home/ubuntu/skills/kesher-private-recommendations/references/privacy_policy_templates.md` for recommended copy and consent UI flows.*
+## Workflow
 
-### 2. Staged Disclosure Pattern
+1. Inspect these surfaces before editing:
+   - `src/features/settings/PrivateTasteProfile.tsx`
+   - `src/services/aiService.ts`
+   - `server/aiRoutes.ts`
+   - `src/ai/featureRegistry.ts`
+   - `src/ai/policies.ts`
+   - `src/ai/schemas.ts`
+   - `src/features/discovery/DailyPicksScreen.tsx`
+   - `src/features/discovery/ExploreScreen.tsx`
+2. Require consent before creating or updating a private taste profile.
+3. Treat implicit behavior as noisy observation, not truth. Explicit controls outrank implicit events.
+4. Exclude private messages, exact location, photos, protected traits, attractiveness/desirability, and raw personality answers from taste learning.
+5. Give users owner-visible controls: view, edit where possible, reset, disable personalization, and understand why an update happened.
+6. Ensure explanation layers verbalize only whitelisted visible reasons, never hidden weights or private taste internals.
 
-To protect privacy in small, overlapping communities (a key concern in Israeli/Jewish dating), Kesher implements a staged disclosure model:
+Read `references/taste-contract.md` when adding event types, weights, reset semantics, or recommender inputs.
 
-| Stage | Trigger | Disclosed Information |
-| :--- | :--- | :--- |
-| **1. Public Profile** | Default view in Daily Picks/Explore | First name, age, coarse location (city/region), chosen self-description label, public photos, basic prompts. |
-| **2. Mutual Match** | Both users "Like" each other | Full name (if opted-in), more detailed prompts, ability to message. |
-| **3. Trust Check (Opt-In)** | Explicit request by either user | Shared mutual friends (via contact list hashing), specific community affiliations, detailed observance practices. |
+## Ranking Boundary
 
-### 3. Data Exclusion Schema (The Red Lines)
+The recommender may use private taste internally only after consent. Public-facing explanations must receive a sanitized evidence packet and must not say "your private taste profile prefers X" about another person.
 
-The AI models (both ranking and explanation) must be strictly prevented from accessing or inferring certain data points.
+## Acceptance Checks
 
-**Never Inferred or Used for Ranking:**
--   Jewish status (e.g., Cohen, Levi, convert).
--   Halachic validity for marriage.
--   Ethnicity or origin (e.g., Ashkenazi, Sephardi).
--   Socioeconomic status.
--   Attractiveness (no internal ELO scoring based on facial features).
--   Political affiliation.
--   Exact address or real-time location.
+- Consent off means no private taste generation/update.
+- Reset clears learned taste and cached explanations but keeps legal/safety records as required.
+- Output validator and copy checks block attractiveness, hidden ranking, and protected-trait inference.
+- "More like this" and "less like this" are explainable and reversible.
+- Private taste never appears in another user's UI.
 
-*See `/home/ubuntu/skills/kesher-private-recommendations/references/exclusion_schemas.md` for the technical implementation of these boundaries.*
+Use `$kesher-personality-why-match` for explanation-layer work and `$kesher-personality-delivery` for verification.
 
-## Bundled Resources
+---
 
--   **`references/privacy_policy_templates.md`**: Recommended copy for the AI Trust Hub, consent flows, and privacy policy.
--   **`references/exclusion_schemas.md`**: JSON schemas defining the data fields that must be masked or excluded before being passed to any AI model.
+# kesher-psychometric-validation
 
+Source: `skills/kesher-psychometric-validation/SKILL.md`
+
+---
+name: kesher-psychometric-validation
+description: "Gate Kesher personality assessment, scoring, interpretation, ranking, and compatibility claims through psychometric validation requirements. Use when changing assessment items, scoring, Hebrew/English adaptation, reliability claims, invariance, ranking use, or release readiness."
+---
+
+# Kesher Psychometric Validation
+
+Use this skill to decide whether a personality-related feature is prototype-only, blocked, or ready for a validation step.
+
+## Workflow
+
+1. Inspect `src/components/onboarding/PersonalityAssessment.tsx`, `src/personality/personalityService.ts`, `src/personality/types.ts`, `scripts/test-personality-scoring.mjs`, and `docs/personality/*` before changing measurement behavior.
+2. Confirm item provenance and commercial-use rights before adding or changing item text.
+3. Keep scoring deterministic and testable. LLMs may interpret bounded bands, but must not score answers, infer traits from behavior, photos, messages, or bios, or generate norm claims.
+4. Treat Hebrew translation as adaptation work. Do not claim Hebrew validity from translation alone.
+5. Block personality-driven ranking, compatibility scores, cross-user trait comparison, and population norm claims until reliability, response quality, test-retest, measurement invariance, incremental validity, and harm gates are documented.
+6. Use bands and reflective language for prototypes: "may", "tends to", "possible", "worth discussing". Avoid clinical, destiny, fixed-label, or fit-verdict language.
+
+## Validation Gates
+
+- Instrument rights and item provenance are documented.
+- Domain reliability and facet reliability have approved thresholds.
+- Response-quality checks can mark reflection unavailable.
+- Test-retest and invariance plans exist before cross-language or cross-user comparison.
+- Harm testing and privacy review are complete before production use.
+
+## Acceptance Checks
+
+- Tests cover reverse scoring, missing answers, quality flags, reset/delete behavior, and forbidden output language.
+- Docs mark production personality ranking as blocked unless all named gates are closed.
+- User-visible copy frames personality as optional private reflection, not scientific matchmaking certainty.
+
+---
+
+# kesher-release-readiness
+
+Source: `skills/kesher-release-readiness/SKILL.md`
+
+---
+name: kesher-release-readiness
+description: Implement Kesher CI, smoke tests, deployment checklist, rollback, preview verification, monitoring, and launch blocker tracking.
+---
+
+# Kesher Release Readiness
+
+Use this skill to decide whether Kesher can ship.
+
+## Requirements
+
+- Track launch gates for auth, discovery, match lifecycle, safety ops, AI runtime, payments, notifications, data rights, and observability.
+- CI must run typecheck, unit tests, AI contract tests, privacy scans, and build checks.
+- Preview verification should cover public, demo, and authenticated routes.
+- Rollback and incident response steps must be documented before production promotion.
+
+## Acceptance
+
+- AI Ops or release dashboards show blocker status.
+- Required checks are linked from PR/release documentation.
+- Production promotion is blocked when P0 gates are missing.
+
+---
+
+# kesher-subscription-entitlements
+
+Source: `skills/kesher-subscription-entitlements/SKILL.md`
+
+---
+name: kesher-subscription-entitlements
+description: Implement Kesher subscriptions, premium gates, quotas, billing webhooks, refunds, and abuse-resistant trials.
+---
+
+# Kesher Subscription Entitlements
+
+Use this skill for commercial readiness.
+
+## Requirements
+
+- Entitlement checks must run server-side and be reflected in client state.
+- Premium access cannot bypass safety, identity, privacy, or consent gates.
+- Webhook handlers must be idempotent and auditable.
+- Refunds, cancellations, trials, and charge disputes must update entitlements predictably.
+
+## Acceptance
+
+- Premium UI reads from canonical entitlement state.
+- Trial abuse controls are documented and tested.
+- Billing records avoid storing unnecessary sensitive dating data.
 
 ---
 
 # kesher-system-prompt
 
-Source: `.claude/skills/kesher-system-prompt/SKILL.md`
+Source: `skills/kesher-system-prompt/SKILL.md`
 
 ---
 name: kesher-system-prompt
-description: Kesher OS master prompt and strategic framework. Use when performing deep research, strategic evaluation, architecture design, or execution planning for the Kesher dating app. Covers run modes, evaluation rubrics, product principles, platform role assignments, and connector design.
+description: "Use the Kesher OS strategic framework for deep research, product evaluation, architecture design, execution planning, run modes, evaluation rubrics, product principles, platform role assignments, and connector design."
 ---
 
 # Kesher System Prompt
 
-Operate as the **KESHER OS** — master strategist, evaluator, and architect for the Kesher trust-forward dating app.
+Use this skill for high-level Kesher operating-system work. Keep outputs evidence-labeled, trust-forward, implementation-ready, and routed to the appropriate specialist skill before code changes.
 
-## Run Modes
+---
 
-Select the appropriate mode based on the task:
+# kesher-trust-safety-ops
 
-| Mode | When to Use | Output |
-|------|------------|--------|
-| DEEP RESEARCH | Market analysis, competitor evaluation, technology assessment | Research dossier with citations |
-| STRATEGIC EVALUATION | Feature prioritization, build/skip decisions, risk assessment | Scorecard with classification |
-| ARCHITECTURE + INTEGRATION DESIGN | System design, API integration, data flow planning | Architecture document with diagrams |
-| AGENTIC EXECUTION PLANNING | Implementation planning, sprint breakdown, task assignment | Execution plan with milestones |
+Source: `skills/kesher-trust-safety-ops/SKILL.md`
 
-For complex requests spanning multiple modes, execute sequentially in the order listed.
+---
+name: kesher-trust-safety-ops
+description: Build Kesher trust and safety operations, including report queue, moderation summaries, scam triage, photo checks, appeals, escalation, and audit logs.
+---
 
-## Product Principles
+# Kesher Trust & Safety Ops
 
-All decisions must align with these core principles:
+Use this skill for member protection and operator workflows.
 
-1. **Hebrew-first** — Primary language and cultural context
-2. **Serious and respectful** — Not casual or gamified
-3. **Verified users** — Trust through identity verification
-4. **Intent-focused** — Designed for people seeking relationships
-5. **Finite discovery** — Curated, not infinite
-6. **Private personalization** — User-controlled, transparent
-7. **Assistive AI** — Tool, not companion
-8. **Premium and calm** — Low stimulation, high quality
-9. **Trust-forward** — Transparent, auditable, honest
-10. **Culturally fluent** — Respects the full spectrum of Jewish life
+## Requirements
 
-## Feature Evaluation Framework
+- Reports, blocks, unmatches, appeals, moderation summaries, and support contacts must create auditable records.
+- AI moderation may summarize and classify but never make final enforcement decisions.
+- Separate claims, evidence, AI summaries, human notes, actions, and appeal outcomes.
+- Keep safety evidence isolated from recommendation, private taste, and match explanation systems.
 
-Evaluate every AI feature using this rubric:
+## Acceptance
 
-| Criterion | Weight | Scale |
-|-----------|--------|-------|
-| User value | High | Does it solve a real user problem? |
-| Trust impact | High | Does it build or erode trust? |
-| Risk level | High | What could go wrong? |
-| Technical feasibility | Medium | Can we build it reliably? |
-| Cost efficiency | Medium | Is the cost justified? |
-| Differentiation | Medium | Does it set Kesher apart? |
+- Operators can see status, severity, assignment, last action, and evidence retention state.
+- Scam/payment requests and coercive messages can be escalated.
+- Appeal and review decisions are idempotent and logged.
 
-### Classification Output
+---
 
-- **MUST BUILD NOW** — High value, low risk, trust-building
-- **BUILD NEXT** — High value, moderate complexity
-- **EXPERIMENT FIRST** — Promising but needs validation
-- **DEFER** — Low priority or high risk
-- **DO NOT BUILD** — Violates principles or trust
+# kesher-voice-integration
 
-## Platform Role Assignments
+Source: `skills/kesher-voice-integration/SKILL.md`
 
-| Platform | Role | Scope |
-|----------|------|-------|
-| Google AI Studio | Prototyping | Prompt experiments, model testing |
-| GitHub | Source of truth | Code, reviews, CI/CD |
-| Claude Code | Deep refactoring | Terminal-based code transformation |
-| VS Code + Copilot | Daily engineering | Primary development environment |
-| Replit | Disposable experiments | Quick prototypes, throwaway code |
-| Lovable | UI exploration | Front-end and workflow spikes |
-| Antigravity | Large missions | Multi-file, multi-step engineering |
-| Manus | Research and operations | Dossiers, automation, analysis |
-| Firebase | Infrastructure | Auth, database, hosting, feature flags |
-| Cloud Run | Deployment | Container hosting for backend |
+---
+name: kesher-voice-integration
+description: "Implement Kesher voice features with push-to-talk Gemini Live sessions, ephemeral token authentication, transcript visibility, accessibility support, and no emotional companion or auto-send behavior."
+---
 
-## Connector Design
+# Kesher Voice Integration
 
-Design all connectors with **least-privilege** principle:
+Use this skill when adding or reviewing voice AI flows.
 
-```
-Connector: [Name]
-Capabilities: [Read/Write/Execute]
-Scope: [Specific resources]
-Approval: [Auto/Manual/Admin]
-Secrets: [Server-side only]
-```
+## Workflow
 
-## Architecture Principles
+1. Keep voice utility-focused: safety guidance, accessibility navigation, date-planning support, or rehearsal with explicit user control.
+2. Use short-lived ephemeral tokens issued by the authenticated backend.
+3. Require microphone consent, a listening indicator, live transcript, mute, and end controls.
+4. Do not create persistent voice memory or parallel conversation archives.
+5. Confirm every app action before execution; never auto-send messages.
+6. Run Hebrew voice QA and accessibility checks before broad rollout.
 
-- Conventional, auditable production architecture over "agent magic"
-- Clear separation of concerns
-- Defined canonical sources-of-truth for all system components
-- Secrets remain server-side — never in client code
-- Prompts treated as formal contracts with explicit definitions
+## Prototype Surface
 
-## References
+The Vercel prototype page should show the token route, session lifecycle, consent checklist, feature tiers, and forbidden behaviors.
 
-- **Evaluation rubrics**: See `references/evaluation_rubrics.md` for detailed scoring criteria
-- **Implementation workflow**: See `references/implementation_workflow.md` for Claude Code process
+## Stop Points
+
+Stop before enabling always-listening mode, voice cloning, emotional companion framing, unconfirmed app actions, or production voice tokens without security review.
+
+---
+
+# sparkmatch-dating-app-skill
+
+Source: `skills/sparkmatch-dating-app-skill/SKILL.md`
+
+---
+name: sparkmatch-dating-app-skill
+description: "Reference dating-app architecture skill for comparing Kesher prototype decisions against swipe-flow, real-time chat, matching, moderation, and subscription patterns without importing hot-or-not mechanics."
+---
+
+# SparkMatch Dating App Skill
+
+Use this skill only as comparative product and engineering reference material for Kesher.
+
+## Workflow
+
+1. Identify the reference pattern: matching, chat, moderation, onboarding, monetization, or app shell behavior.
+2. Extract the engineering lesson without copying trust-eroding dating mechanics.
+3. Reject swipe velocity loops, public desirability cues, scarcity pressure, and paywalled safety/privacy controls.
+4. Translate any useful pattern into Kesher's serious-intent, privacy-first, consent-forward UX.
+5. Mark uncertain source claims as `UNKNOWN` until the original implementation is inspected.
+
+## Prototype Surface
+
+The Vercel prototype page should show which reference patterns are useful, which are rejected, and how Kesher's safer counterpart is verified.
+
+## Stop Points
+
+Stop before importing casino-style discovery, hidden desirability ranking, public attractiveness mechanics, or monetization that weakens safety.
+
+---
+
+# video-generator
+
+Source: `skills/video-generator/SKILL.md`
+
+---
+name: video-generator
+description: "Create shareable Kesher prototype walkthrough videos, stakeholder demos, cinematic explainers, and review assets while preserving privacy, consent, and no-impersonation boundaries."
+---
+
+# Video Generator
+
+Use this skill when producing video assets for Kesher prototype review, investor walkthroughs, user-testing scripts, or launch-readiness demos.
+
+## Workflow
+
+1. Define the audience, purpose, duration, language, aspect ratio, and required review surfaces.
+2. Use fictional demo data only; do not include real users, real profile photos, private messages, secrets, or production records.
+3. Storyboard the flow before generating visuals: opening state, user action, safety/consent state, and outcome.
+4. Keep narration precise: reflection, tendencies, possible strengths/friction, not predictions.
+5. Verify captions, RTL/Hebrew rendering when used, and accessibility contrast.
+6. Export a review-ready asset plus the prompt/source notes needed to reproduce it.
+
+## Prototype Surface
+
+The Vercel prototype page should show the delivery checklist, demo script, privacy checklist, and artifact status.
+
+## Stop Points
+
+Stop before using real member data, implying AI impersonation, showing private scoring, or publishing a demo that suggests production activation.
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kesher Low Latency AI"
+  short_description: "Fast AI proxy architecture"
+  default_prompt: "Use $kesher-low-latency-ai to design a fast but policy-safe Kesher AI route."
