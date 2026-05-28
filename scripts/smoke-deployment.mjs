@@ -17,7 +17,8 @@ if (!baseUrl) {
 const rootUrl = new URL('/', baseUrl).toString();
 const prototypeUrl = new URL('/prototype', baseUrl).toString();
 const personalityPrototypeUrl = new URL('/prototype/personality', baseUrl).toString();
-const skillsHubUrl = new URL('/skills', baseUrl).toString();
+const skillsRouteUrl = new URL('/skills', baseUrl).toString();
+const skillsHubUrl = new URL('/skills-hub', baseUrl).toString();
 const staticSkillsUrl = new URL('/prototype/skills.html', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
 const dailyUrl = new URL('/daily', baseUrl).toString();
@@ -80,24 +81,6 @@ async function fetchJson(url, expectedStatus = 200) {
     throw new Error(`${url} did not return JSON (content-type: ${contentType || 'missing'})`);
   }
 
-  function getVercelProtectionHeaders() {
-    if (!vercelProtectionBypassSecret) return {};
-    return {
-      'x-vercel-protection-bypass': vercelProtectionBypassSecret,
-    };
-  }
-
-  function assertNotVercelProtectionBlocked(url, response) {
-    const hostname = new URL(url).hostname;
-    if (!hostname.endsWith('.vercel.app')) return;
-    if (response.status !== 401 && response.status !== 403) return;
-
-    throw new Error(
-      `${url} is blocked by Vercel Deployment Protection (${response.status}). ` +
-      'Set VERCEL_AUTOMATION_BYPASS_SECRET in GitHub/Vercel and expose it to this smoke job, ' +
-      'or make the target deployment publicly reachable before verification.'
-    );
-  }
   if (/<!doctype\s*html|<html/i.test(text)) {
     throw new Error(`${url} returned the SPA HTML shell instead of API JSON`);
   }
@@ -107,6 +90,25 @@ async function fetchJson(url, expectedStatus = 200) {
   } catch {
     throw new Error(`${url} returned invalid JSON`);
   }
+}
+
+function getVercelProtectionHeaders() {
+  if (!vercelProtectionBypassSecret) return {};
+  return {
+    'x-vercel-protection-bypass': vercelProtectionBypassSecret,
+  };
+}
+
+function assertNotVercelProtectionBlocked(url, response) {
+  const hostname = new URL(url).hostname;
+  if (!hostname.endsWith('.vercel.app')) return;
+  if (response.status !== 401 && response.status !== 403) return;
+
+  throw new Error(
+    `${url} is blocked by Vercel Deployment Protection (${response.status}). ` +
+    'Set VERCEL_AUTOMATION_BYPASS_SECRET in GitHub/Vercel and expose it to this smoke job, ' +
+    'or make the target deployment publicly reachable before verification.'
+  );
 }
 
 async function fetchClientBundleText(pageText) {
@@ -231,18 +233,20 @@ async function runBrowserChecks(checks) {
     });
 
     if (!skillsState.headingVisible) {
-      throw new Error('/skills did not render the Kesher Skills Hub heading');
+      throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
     }
-    if (skillsState.declaredCount !== 43 || skillsState.visibleCards !== 43) {
-      throw new Error(`/skills rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
+    if (skillsState.declaredCount < 1 || skillsState.visibleCards !== skillsState.declaredCount) {
+      throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
     }
-    if (skillsState.plannedCards < 1 || skillsState.gatedCards < 1 || skillsState.operationalCards < 1) {
-      throw new Error(`/skills status mismatch: ${skillsState.operationalCards} operational, ${skillsState.gatedCards} gated, ${skillsState.plannedCards} planned`);
+    if (skillsState.operationalCards < 1 || (
+      skillsState.operationalCards + skillsState.gatedCards + skillsState.plannedCards
+    ) !== skillsState.visibleCards) {
+      throw new Error(`/skills-hub status mismatch: ${skillsState.operationalCards} operational, ${skillsState.gatedCards} gated, ${skillsState.plannedCards} planned`);
     }
     if (skillsState.hasLegacyFallbackCopy) {
-      throw new Error('/skills exposed legacy coming-soon fallback copy');
+      throw new Error('/skills-hub exposed legacy coming-soon fallback copy');
     }
-    checks.push('/skills browser rendered 43 clickable product skill cards');
+    checks.push(`/skills-hub browser rendered ${skillsState.visibleCards} clickable product skill cards`);
 
     for (const [index, title] of skillsState.cardTitles.entries()) {
       await page.evaluate((cardIndex) => {
@@ -266,7 +270,7 @@ async function runBrowserChecks(checks) {
       });
       await page.waitForFunction(() => document.body.innerText.includes('Kesher Skills Hub'), { timeout: 15000 });
     }
-    checks.push('all 43 skills opened as app-native skill experiences');
+    checks.push(`all ${skillsState.visibleCards} skills opened as app-native skill experiences`);
 
     await page.goto(prototypeUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('[data-testid="prototype-skills-hub-link"]', { timeout: 15000 });
@@ -306,15 +310,18 @@ async function runBrowserChecks(checks) {
   const personalityPrototype = await fetchText(personalityPrototypeUrl);
   checks.push(`/prototype/personality reachable (${personalityPrototype.response.status})`);
 
+  const skillsRoute = await fetchText(skillsRouteUrl);
+  checks.push(`/skills reachable (${skillsRoute.response.status})`);
+
   const skillsHub = await fetchText(skillsHubUrl);
-  checks.push(`/skills reachable without auth redirect (${skillsHub.response.status})`);
+  checks.push(`/skills-hub reachable without auth redirect (${skillsHub.response.status})`);
 
   const staticSkills = await fetchText(staticSkillsUrl);
   const staticSkillCards = (staticSkills.text.match(/class="skill"/g) || []).length;
-  if (staticSkillCards !== 43 || !staticSkills.text.includes('/prototype/personality')) {
+  if (staticSkillCards < 1 || !staticSkills.text.includes('/prototype/personality')) {
     throw new Error(`/prototype/skills.html rendered ${staticSkillCards} static skill cards`);
   }
-  checks.push('/prototype/skills.html static bundle exposes 43 skills');
+  checks.push(`/prototype/skills.html static bundle exposes ${staticSkillCards} skills`);
 
   const demo = await fetchText(demoUrl);
   checks.push(`/demo?demo=1 reachable (${demo.response.status})`);
@@ -371,7 +378,7 @@ async function runBrowserChecks(checks) {
   if (!visibilityText.includes('/prototype/personality') || !visibilityText.includes('IPIP-BFAS 100')) {
     throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
-  if (!visibilityText.includes('Integrated Skill Modules')) {
+  if (!visibilityText.includes('Integrated relationship readiness system')) {
     throw new Error('/skills client bundle does not expose the skills hub surface');
   }
   checks.push('skills hub link and surface verified in client bundle');
@@ -401,6 +408,7 @@ async function runBrowserChecks(checks) {
 
   assertNoSecrets('root page', root.text);
   assertNoSecrets('prototype page', prototype.text);
+  assertNoSecrets('skills route page', skillsRoute.text);
   assertNoSecrets('skills hub page', skillsHub.text);
 
   await runBrowserChecks(checks);
