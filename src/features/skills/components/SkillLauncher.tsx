@@ -1,10 +1,9 @@
 import React from 'react';
-import { ArrowRight, Check, ExternalLink, Lock, X } from 'lucide-react';
+import { ArrowRight, Check, ExternalLink } from 'lucide-react';
 import { getSkillEntryPoint } from '../skillRegistry';
 import type { SkillDefinition, SkillSurface } from '../types';
 import { SkillProgressPill } from './SkillProgressPill';
-import { SkillConsentPanel } from './SkillConsentPanel';
-import { useSkillState } from '../useSkillState';
+import { useSkillState } from '../hooks/useSkillState';
 
 export const SkillLauncher: React.FC<{
   skill: SkillDefinition;
@@ -13,12 +12,10 @@ export const SkillLauncher: React.FC<{
   onOpenSkill?: (skillId: string) => void;
   onOpenRoute?: (path: string) => void;
 }> = ({ skill, surface, compact, onOpenSkill, onOpenRoute }) => {
-  const { getSkillState, startSkill, completeSkill, applySkill, dismissSkill, gateSkill } = useSkillState();
+  const { getSkillState, startSkill, completeSkill } = useSkillState();
   const state = getSkillState(skill.id);
   const point = getSkillEntryPoint(skill, surface);
   const Icon = skill.icon;
-  const isGated = skill.operationalStatus === 'gated_dependency' || skill.status === 'gated';
-  const displayedStatus = isGated && state.status === 'available' ? 'gated' : state.status;
 
   const route = point?.route;
   const getPreservedRoute = (path: string) => {
@@ -31,18 +28,13 @@ export const SkillLauncher: React.FC<{
   };
 
   const handleLaunch = () => {
-    if (isGated) {
-      gateSkill(skill.id, surface);
-      onOpenSkill?.(skill.id);
-      return;
-    }
     startSkill(skill.id, surface);
     if (route) {
       const preservedRoute = getPreservedRoute(route);
       if (onOpenRoute) {
         onOpenRoute(preservedRoute);
       } else if (typeof window !== 'undefined') {
-        window.location.assign(preservedRoute);
+        window.location.href = preservedRoute;
       }
     } else {
       onOpenSkill?.(skill.id);
@@ -53,17 +45,7 @@ export const SkillLauncher: React.FC<{
     completeSkill(skill.id, {
       id: `${skill.id}-${Date.now()}`,
       type: skill.outputType,
-      summary: `${skill.shortTitle} output saved from ${surface}.`,
-      createdAt: new Date().toISOString(),
-      sourceSurface: surface,
-    }, surface);
-  };
-
-  const handleApply = () => {
-    applySkill(skill.id, {
-      id: `${skill.id}-applied-${Date.now()}`,
-      type: skill.outputType,
-      summary: `${skill.shortTitle} applied from ${surface}.`,
+      summary: skill.demoModeBehavior,
       createdAt: new Date().toISOString(),
       sourceSurface: surface,
     }, surface);
@@ -82,24 +64,12 @@ export const SkillLauncher: React.FC<{
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-sm font-bold text-[#2D2926] leading-tight">{skill.shortTitle}</h4>
-            <SkillProgressPill status={displayedStatus} progress={state.progress} />
+            <SkillProgressPill status={state.status} progress={state.progress} />
           </div>
           <p className="text-xs leading-relaxed text-[#6B5E52]">{point?.description ?? skill.summary}</p>
         </div>
       </div>
-      {!compact && (
-        <SkillConsentPanel skill={skill} compact />
-      )}
-      {!compact && isGated && (
-        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-[11px] leading-relaxed text-blue-900">
-          <div className="flex items-center gap-2 font-bold uppercase tracking-widest text-[9px] text-blue-700">
-            <Lock size={12} />
-            <span>Gated dependency</span>
-          </div>
-          <p className="mt-1">{skill.demoModeBehavior}</p>
-        </div>
-      )}
-      {!compact && state.status !== 'available' && !isGated && (
+      {!compact && state.status !== 'available' && (
         <p className="text-[11px] leading-relaxed text-[#8C7E6E] bg-[#F7F2EE] rounded-xl px-3 py-2">
           {state.status === 'completed' || state.status === 'applied'
             ? 'Saved privately to your skill history.'
@@ -113,36 +83,16 @@ export const SkillLauncher: React.FC<{
           data-testid={`skill-launch-${skill.id}`}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#2D2926] text-white text-[9px] font-bold uppercase tracking-widest"
         >
-          {isGated ? 'View fallback' : point?.label ?? 'Start'} {route && !isGated ? <ExternalLink size={11} /> : <ArrowRight size={11} />}
+          {point?.label ?? 'Start'} {route ? <ExternalLink size={11} /> : <ArrowRight size={11} />}
         </button>
         {state.status === 'started' && (
-          <>
-            <button
-              type="button"
-              onClick={handleSaveInsight}
-              data-testid={`skill-complete-${skill.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#F7F2EE] text-[#2D2926] text-[9px] font-bold uppercase tracking-widest"
-            >
-              Save <Check size={11} />
-            </button>
-            <button
-              type="button"
-              onClick={handleApply}
-              data-testid={`skill-apply-${skill.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold uppercase tracking-widest"
-            >
-              Apply <Check size={11} />
-            </button>
-          </>
-        )}
-        {state.status !== 'dismissed' && (
           <button
             type="button"
-            onClick={() => dismissSkill(skill.id, surface)}
-            data-testid={`skill-dismiss-${skill.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-[#F3EFEA] text-[#8C7E6E] text-[9px] font-bold uppercase tracking-widest"
+            onClick={handleSaveInsight}
+            data-testid={`skill-complete-${skill.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#F7F2EE] text-[#2D2926] text-[9px] font-bold uppercase tracking-widest"
           >
-            Dismiss <X size={11} />
+            Save <Check size={11} />
           </button>
         )}
       </div>

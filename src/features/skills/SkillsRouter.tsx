@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SkillsHub } from './SkillsHub';
-import { getSkillById } from './skillRegistry';
+import { SKILLS } from './skillRegistry';
 import { PersonalityAssessmentSkill } from './PersonalityAssessmentSkill';
 import { ConsentUxSkill } from './ConsentUxSkill';
 import { IsraeliPrivacySkill } from './IsraeliPrivacySkill';
@@ -19,7 +19,9 @@ import { PersonalityOceanSkill } from './PersonalityOceanSkill';
 import { LearnedTasteSkill } from './LearnedTasteSkill';
 import { FilteringMarketplaceSkill } from './FilteringMarketplaceSkill';
 import { PlannedSkillPage } from './PlannedSkillPage';
-import { useSkillState } from './useSkillState';
+import { useSkillState } from './hooks/useSkillState';
+import { useApp } from '@/context/AppContext';
+import { emitSkillEvent } from './skillEvents';
 
 export const SkillsRouter: React.FC<{
   onBack: () => void;
@@ -27,14 +29,16 @@ export const SkillsRouter: React.FC<{
 }> = ({ onBack, onOpenFeature }) => {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const { startSkill } = useSkillState();
+  const { trackEvent } = useApp();
 
-  const openSkill = (skillId: string) => {
-    startSkill(skillId, 'skills');
+  const handleSelectSkill = (skillId: string) => {
+    emitSkillEvent(trackEvent, 'skill_viewed', { skillId, surface: 'skills-hub' });
+    startSkill(skillId, 'skills-hub');
     setActiveSkill(skillId);
   };
 
   if (!activeSkill) {
-    return <SkillsHub onBack={onBack} onSelect={openSkill} onOpenFeature={onOpenFeature} />;
+    return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
   }
 
   const skillProps = { onBack: () => setActiveSkill(null) };
@@ -75,18 +79,11 @@ export const SkillsRouter: React.FC<{
     case 'filtering-marketplace':
       return <FilteringMarketplaceSkill {...skillProps} />;
     default: {
-      const meta = getSkillById(activeSkill);
+      const meta = SKILLS.find(s => s.id === activeSkill);
       if (meta) {
-        return (
-          <PlannedSkillPage
-            skill={meta}
-            onBack={() => setActiveSkill(null)}
-            onOpenFeature={onOpenFeature}
-            onOpenSkill={openSkill}
-          />
-        );
+        return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
       }
-      return <SkillsHub onBack={onBack} onSelect={openSkill} onOpenFeature={onOpenFeature} />;
+      return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
     }
   }
 };

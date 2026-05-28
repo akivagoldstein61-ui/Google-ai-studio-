@@ -18,9 +18,8 @@ import { trustService } from '@/services/trustService';
 
 export const ChatThread: React.FC<{ 
   conversation: Conversation, 
-  onBack: () => void,
-  onOpenRoute?: (path: string) => void
-}> = ({ conversation, onBack, onOpenRoute }) => {
+  onBack: () => void 
+}> = ({ conversation, onBack }) => {
   const { user, sendMessage } = useApp();
   const [inputText, setInputText] = useState('');
   const [isRephrasing, setIsRephrasing] = useState(false);
@@ -251,11 +250,11 @@ export const ChatThread: React.FC<{
 
           <SkillContextPanel
             surface="chat"
-            title="Chat skills"
-            description="Everything here drafts or checks. You choose what, if anything, gets sent."
-            skillIds={['maps-date-planner', 'pacing-coach', 'permissioned-sharing', 'compatibility-reflection']}
+            title="Communication skills"
+            description="Draft openers, rephrase gently, scan safety, and plan dates. Kesher never sends for you."
+            skillIds={['ai-feature-modules', 'pacing-coach', 'maps-date-planner', 'voice-integration']}
+            limit={4}
             compact
-            onOpenRoute={onOpenRoute}
           />
 
           {conversation.messages.length === 0 && openerSuggestions.length === 0 && !isGeneratingOpeners && (

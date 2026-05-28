@@ -2,13 +2,7 @@ import type React from 'react';
 
 export type SkillCategory = 'personality' | 'privacy' | 'governance' | 'ux' | 'platform';
 
-export type SkillStatus = 'live' | 'prototype' | 'gated' | 'planned';
-
-export type SkillOperationalStatus =
-  | 'operational'
-  | 'partially_operational'
-  | 'gated_dependency'
-  | 'reference_only';
+export type SkillStatus = 'live' | 'prototype' | 'planned';
 
 export type SkillSurface =
   | 'skills-hub'
@@ -50,7 +44,6 @@ export type SkillConsentType =
   | 'admin_only';
 
 export type UserSkillStatus = 'locked' | 'available' | 'started' | 'completed' | 'applied' | 'dismissed';
-export type SkillStateStatus = UserSkillStatus | 'gated';
 
 export type SkillEventName =
   | 'skill_viewed'
@@ -77,14 +70,10 @@ export interface SkillDefinition {
   slug: string;
   /** Matches the directory name in skills/ when one exists. */
   skillId?: string;
-  canonicalCodexSkill: string;
-  aliases: string[];
   title: string;
   shortTitle: string;
   subtitle: string;
   category: SkillCategory;
-  status: SkillStatus;
-  operationalStatus: SkillOperationalStatus;
   summary: string;
   fullDescription: string;
   featured: boolean;
@@ -97,14 +86,9 @@ export interface SkillDefinition {
   privacyNotes: string[];
   safetyLevel: SkillSafetyLevel;
   aiFeatureKey?: string;
-  serverRoute?: string;
   outputType: SkillOutputType;
+  status: SkillStatus;
   prerequisites: string[];
-  dataInputs: string[];
-  dataExclusions: string[];
-  userActions: string[];
-  adminActions: string[];
-  testsRequired: string[];
   recommendedNextActions: string[];
   demoModeBehavior: string;
   description: string;
@@ -129,7 +113,7 @@ export interface SkillConsentSnapshot {
 export interface UserSkillState {
   userId: string;
   skillId: string;
-  status: SkillStateStatus;
+  status: UserSkillStatus;
   progress: number;
   lastUsedAt?: string;
   completedAt?: string;

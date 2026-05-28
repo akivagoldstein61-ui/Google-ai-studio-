@@ -51,7 +51,7 @@ const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABL
 // visible module, not only entries with a skillId, so /prototype mirrors
 // everything reviewers can open in /skills.
 const SKILL_MODULE_COUNT = SKILLS.length;
-const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.operationalStatus !== 'reference_only').length;
+const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.status !== 'planned').length;
 const PRODUCT_GATE_COUNT = PRODUCT_COMPLETION_GATES.length;
 const LAUNCH_BLOCKER_COUNT = getLaunchBlockingGates().length;
 const PRODUCT_GATE_COUNTS = getCompletionStatusCounts();

@@ -8,7 +8,7 @@ import { ReportFlow } from '@/features/safety/ReportFlow';
 import { useApp } from '@/context/AppContext';
 import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
-export const SafetyCenter: React.FC<{ onBack: () => void; onOpenRoute?: (path: string) => void }> = ({ onBack, onOpenRoute }) => {
+export const SafetyCenter: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user } = useApp();
   const [safetyQuestion, setSafetyQuestion] = useState('');
   const [safetyAdvice, setSafetyAdvice] = useState<string | null>(null);
@@ -107,10 +107,9 @@ export const SafetyCenter: React.FC<{ onBack: () => void; onOpenRoute?: (path: s
         <SkillContextPanel
           surface="safety"
           title="Safety skills"
-          description="Resource grounding, reporting, privacy rights, and anti-dark-pattern checks stay visible here."
-          skillIds={['grounded-search', 'israeli-privacy', 'dark-pattern-audit', 'image-analysis']}
+          description="Use guidance without hiding direct report, block, support, or emergency actions."
+          skillIds={['grounded-search', 'image-analysis', 'israeli-privacy', 'dark-pattern-audit']}
           limit={4}
-          onOpenRoute={onOpenRoute}
         />
 
         {/* Safety Explanations */}

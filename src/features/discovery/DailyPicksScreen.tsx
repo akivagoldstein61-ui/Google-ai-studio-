@@ -10,9 +10,8 @@ import { SkillRecommendationRail } from '@/features/skills/components/SkillRecom
 
 export const DailyPicksScreen: React.FC<{ 
   onSelect: (profile: Profile) => void,
-  onMatch: (profile: Profile) => void,
-  onOpenRoute?: (path: string) => void
-}> = ({ onSelect, onMatch, onOpenRoute }) => {
+  onMatch: (profile: Profile) => void
+}> = ({ onSelect, onMatch }) => {
   const { dailyPicks, likeProfile, passProfile, moreLikeThis, lessLikeThis, user, trackEvent } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -164,6 +163,11 @@ export const DailyPicksScreen: React.FC<{
           )}
         </div>
         <div className="space-y-3 w-full max-w-sm">
+          <SkillRecommendationRail
+            surface="daily"
+            skillIds={['why-this-match', 'private-taste', 'pacing-coach']}
+            limit={3}
+          />
           <Button 
             onClick={() => setShowIntro(false)}
             className="w-full h-14 text-sm font-bold rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all uppercase tracking-widest"
@@ -208,6 +212,15 @@ export const DailyPicksScreen: React.FC<{
             </motion.div>
           )}
         </AnimatePresence>
+        <div className="w-full max-w-sm">
+          <SkillRecommendationRail
+            surface="daily"
+            title="Reflect on today"
+            subtitle="Save what felt useful and keep tomorrow's picks intentional."
+            skillIds={['pacing-coach', 'learned-taste', 'calm-ux']}
+            limit={3}
+          />
+        </div>
 
         <div className="h-px w-16 bg-[#2D2926] opacity-10" />
         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8C7E6E]">Intentional • Finite • Calm</p>
@@ -232,11 +245,8 @@ export const DailyPicksScreen: React.FC<{
 
       <SkillRecommendationRail
         surface="daily"
-        title="Skills for today"
-        subtitle="Understand matches, tune taste privately, and keep discovery calm."
-        skillIds={['why-this-match', 'private-taste', 'pacing-coach', 'explainable-ai']}
-        limit={4}
-        onOpenRoute={onOpenRoute}
+        skillIds={['why-this-match', 'filtering-marketplace', 'learned-taste']}
+        limit={3}
       />
 
       <div className="flex-1 relative">

@@ -145,6 +145,13 @@ export const ProfileBuilder: React.FC<{
 
   return (
     <div className="space-y-12 pb-20">
+      <SkillContextPanel
+        surface="profile-builder"
+        title="Profile-building skills"
+        description="Private coaching for personality, bio clarity, photo readiness, and consent."
+        skillIds={['personality-assessment', 'personality-profile', 'ai-feature-modules']}
+      />
+
       {/* AI Profile Health Section */}
       <section className="space-y-6">
         <div className="space-y-2">
@@ -313,6 +320,14 @@ export const ProfileBuilder: React.FC<{
       </section>
 
       <section className="space-y-6">
+        <SkillContextPanel
+          surface="profile-builder"
+          title="Photo and privacy skills"
+          description="Review photo readiness without attractiveness scoring or protected-trait inference."
+          skillIds={['image-analysis', 'personality-visibility', 'consent-ux']}
+          compact
+        />
+
         <div className="flex justify-between items-end">
           <div className="space-y-2">
             <h3 className="text-2xl font-serif italic tracking-tight text-[#2D2926]">

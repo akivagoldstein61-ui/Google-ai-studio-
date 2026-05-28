@@ -1,8 +1,8 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
-import type { SkillConsentType, SkillDefinition } from '../types';
+import type { SkillDefinition } from '../types';
 
-const CONSENT_LABELS: Record<SkillConsentType, string> = {
+const CONSENT_LABELS: Record<string, string> = {
   none: 'No extra consent',
   ai_assist: 'AI assistance',
   profile_data: 'Profile data',

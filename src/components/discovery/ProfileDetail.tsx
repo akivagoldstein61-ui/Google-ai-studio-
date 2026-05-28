@@ -16,9 +16,8 @@ export const ProfileDetail: React.FC<{
   profile: Profile, 
   onBack: () => void,
   onLike: () => void,
-  onPass: () => void,
-  onOpenRoute?: (path: string) => void
-}> = ({ profile, onBack, onLike, onPass, onOpenRoute }) => {
+  onPass: () => void
+}> = ({ profile, onBack, onLike, onPass }) => {
   const [openers, setOpeners] = useState<any[]>([]);
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
@@ -209,9 +208,8 @@ export const ProfileDetail: React.FC<{
           <SkillContextPanel
             surface="profile"
             title="Understand this profile"
-            description="Visible explanations only. Private taste, raw scores, and hidden ranking stay out of profile detail."
-            skillIds={['why-this-match', 'permissioned-sharing', 'compatibility-reflection']}
-            onOpenRoute={onOpenRoute}
+            description="Use visible context only. Hidden ranking signals, private answers, and safety flags stay out of match explanations."
+            skillIds={['why-this-match', 'private-taste', 'permissioned-sharing']}
           />
 
           {/* Bio */}

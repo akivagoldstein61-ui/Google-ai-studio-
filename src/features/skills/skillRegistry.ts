@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bell,
   BookOpen,
   Brain,
   Coffee,
@@ -33,7 +32,6 @@ import type {
   SkillConsentType,
   SkillDefinition,
   SkillEntryPoint,
-  SkillOperationalStatus,
   SkillOutputType,
   SkillSafetyLevel,
   SkillStatus,
@@ -45,15 +43,12 @@ export type SkillMeta = SkillDefinition;
 type SkillInput = {
   id: string;
   skillId?: string;
-  canonicalCodexSkill?: string;
-  aliases?: string[];
   title: string;
   shortTitle?: string;
   subtitle: string;
   icon: SkillDefinition['icon'];
   color: string;
   status: SkillStatus;
-  operationalStatus?: SkillOperationalStatus;
   category: SkillCategory;
   description: string;
   keyFeatures: string[];
@@ -63,14 +58,8 @@ type SkillInput = {
   privacyNotes?: string[];
   safetyLevel?: SkillSafetyLevel;
   aiFeatureKey?: string;
-  serverRoute?: string;
   outputType?: SkillOutputType;
   prerequisites?: string[];
-  dataInputs?: string[];
-  dataExclusions?: string[];
-  userActions?: string[];
-  adminActions?: string[];
-  testsRequired?: string[];
   recommendedNextActions?: string[];
   demoModeBehavior?: string;
   featured?: boolean;
@@ -90,48 +79,18 @@ const DEFAULT_PRIVACY_NOTES = [
   'AI output is assistive only; the member stays in control.',
 ];
 
-const AI_FEATURE_ROUTES: Record<string, string> = {
-  bio_coach: '/api/ai/coach-bio',
-  profile_completeness: '/api/ai/profile-completeness',
-  taste_profile: '/api/ai/taste-profile',
-  why_match: '/api/ai/explain-match',
-  safety_scan: '/api/ai/message-safety',
-  date_planner: '/api/ai/plan-date',
-  safety_advice: '/api/ai/safety-advice',
-  rephrase_message: '/api/ai/rephrase',
-  generate_openers: '/api/ai/openers',
-  personality_profile: '/api/ai/personality-profile',
-  compatibility_reflection: '/api/ai/compatibility-reflection',
-  pacing_coach: '/api/ai/pacing-intervention',
-  mod_summarizer: '/api/ai/moderation-summary',
-  visual_icebreaker: '/api/ai/analyze-photos',
-};
-
-const defaultOperationalStatus = (input: SkillInput): SkillOperationalStatus => {
-  if (input.operationalStatus) return input.operationalStatus;
-  if (input.status === 'gated') return 'gated_dependency';
-  if (input.safetyLevel === 'internal' || input.outputType === 'reference') return 'partially_operational';
-  return 'operational';
-};
-
 const defineSkill = (input: SkillInput): SkillDefinition => {
   const surfaces = new Set<SkillSurface>(['skills-hub', 'skills', input.primarySurface]);
   input.entryPoints.forEach((point) => surfaces.add(point.surface));
-  const canonicalCodexSkill = input.canonicalCodexSkill ?? input.skillId ?? input.id;
-  const recommendedActions = input.recommendedNextActions ?? input.entryPoints.map((point) => point.label);
 
   return {
     id: input.id,
     slug: input.id,
     skillId: input.skillId,
-    canonicalCodexSkill,
-    aliases: Array.from(new Set([canonicalCodexSkill, input.id, input.shortTitle ?? input.title, ...(input.aliases ?? [])])),
     title: input.title,
     shortTitle: input.shortTitle ?? input.title,
     subtitle: input.subtitle,
     category: input.category,
-    status: input.status,
-    operationalStatus: defaultOperationalStatus(input),
     summary: input.description,
     fullDescription: `${input.description} ${input.keyFeatures.join(' ')}`,
     featured: input.featured ?? true,
@@ -144,21 +103,10 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
     privacyNotes: input.privacyNotes ?? DEFAULT_PRIVACY_NOTES,
     safetyLevel: input.safetyLevel ?? 'low',
     aiFeatureKey: input.aiFeatureKey,
-    serverRoute: input.serverRoute ?? (input.aiFeatureKey ? AI_FEATURE_ROUTES[input.aiFeatureKey] : undefined),
     outputType: input.outputType ?? 'reference',
+    status: input.status,
     prerequisites: input.prerequisites ?? ['Member is signed into the Kesher prototype.'],
-    dataInputs: input.dataInputs ?? ['surface context', 'member-controlled settings'],
-    dataExclusions: input.dataExclusions ?? [
-      'raw personality answers',
-      'hidden ranking weights',
-      'protected-trait inference',
-      'exact addresses',
-      'private messages unless explicitly drafted by the member',
-    ],
-    userActions: input.userActions ?? recommendedActions,
-    adminActions: input.adminActions ?? (input.safetyLevel === 'internal' ? ['Review in admin/ops only'] : []),
-    testsRequired: input.testsRequired ?? ['registry_render', 'launcher_state_transition', 'privacy_guardrail'],
-    recommendedNextActions: recommendedActions,
+    recommendedNextActions: input.recommendedNextActions ?? input.entryPoints.map((point) => point.label),
     demoModeBehavior: input.demoModeBehavior ?? 'Starts a demo-safe skill state and opens the related prototype surface when available.',
     description: input.description,
     keyFeatures: input.keyFeatures,
@@ -669,14 +617,12 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'grounded-search',
-    skillId: 'kesher-grounded-search',
     title: 'Grounded Search',
     shortTitle: 'Search Grounding',
     subtitle: 'Google Search Integration',
     icon: Search,
     color: 'bg-teal-100 text-teal-700 border-teal-200',
-    status: 'gated',
-    operationalStatus: 'gated_dependency',
+    status: 'prototype',
     category: 'platform',
     description: 'Search grounding for Q&A, event discovery, safety resources, citation rendering, and URL-context features through server-side AI routes.',
     keyFeatures: ['Search-grounded Q&A with citations', 'Event discovery for date planning', 'Safety center resource grounding', 'Citation UI with source chips'],
@@ -688,20 +634,15 @@ export const SKILLS: SkillDefinition[] = [
     requiredConsent: ['none'],
     aiFeatureKey: 'safety_advice',
     outputType: 'insight',
-    demoModeBehavior: 'Runs as a cited safety/date-resource fixture unless server-side search grounding is available.',
-    dataInputs: ['safety question', 'coarse date-planning context'],
-    dataExclusions: ['private messages', 'exact addresses', 'raw reports', 'hidden ranking weights'],
   }),
   defineSkill({
     id: 'image-analysis',
-    skillId: 'kesher-image-analysis',
     title: 'Image Analysis',
     shortTitle: 'Photo Checks',
     subtitle: 'Trust-Forward Photo Checks',
     icon: Image,
     color: 'bg-rose-100 text-rose-700 border-rose-200',
-    status: 'gated',
-    operationalStatus: 'gated_dependency',
+    status: 'prototype',
     category: 'governance',
     description: 'Trust-forward image analysis for photo readiness checks, content moderation assistance, accessibility alt text, and moderation appeal support.',
     keyFeatures: ['Photo readiness checks, not attractiveness scoring', 'Content moderation assistance for human review', 'Accessibility alt-text generation', 'No attractiveness, race, or protected-trait inference'],
@@ -712,23 +653,16 @@ export const SKILLS: SkillDefinition[] = [
     ],
     requiredConsent: ['photo_analysis'],
     safetyLevel: 'medium',
-    aiFeatureKey: 'visual_icebreaker',
     outputType: 'insight',
-    demoModeBehavior: 'Shows photo-readiness and alt-text guidance only. It never scores attractiveness or infers protected traits.',
-    dataInputs: ['member-selected profile photo'],
-    dataExclusions: ['appearance_ranking', 'romantic_appeal_inference', 'protected_trait_inference', 'face recognition', 'raw moderation evidence'],
-    testsRequired: ['image_analysis_no_attractiveness', 'protected_trait_inference_blocked', 'launcher_gated_fallback'],
   }),
   defineSkill({
     id: 'voice-integration',
-    skillId: 'kesher-voice-integration',
     title: 'Voice Integration',
     shortTitle: 'Voice',
     subtitle: 'Gemini Live API',
     icon: Mic,
     color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
-    status: 'gated',
-    operationalStatus: 'gated_dependency',
+    status: 'prototype',
     category: 'platform',
     description: 'Voice AI integration using Gemini Live API patterns for ephemeral authentication, push-to-talk interfaces, and accessibility-focused voice features.',
     keyFeatures: ['Gemini Live API WebSocket session patterns', 'Ephemeral token auth only', 'Push-to-talk UI with accessibility labels', 'Graceful fallback when voice is unavailable'],
@@ -765,14 +699,12 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'sparkmatch-dating-app-skill',
-    skillId: 'sparkmatch-dating-app-skill',
     title: 'SparkMatch Dating App',
     shortTitle: 'Reference App',
     subtitle: 'Reference App Patterns',
     icon: Heart,
     color: 'bg-pink-100 text-pink-700 border-pink-200',
     status: 'prototype',
-    operationalStatus: 'partially_operational',
     category: 'platform',
     description: 'Reference skill package for dating-app flow patterns used as a comparative blueprint for feature-level UX and product decisions.',
     keyFeatures: ['Dating flow reference patterns', 'Feature-level UX blueprinting', 'Prototype parity checks', 'Decision-support examples'],
@@ -784,18 +716,15 @@ export const SKILLS: SkillDefinition[] = [
     requiredConsent: ['admin_only'],
     safetyLevel: 'internal',
     outputType: 'reference',
-    demoModeBehavior: 'Runs as a Kesher-safe pattern checker. It does not import hookup-first, scoring, or casino mechanics.',
   }),
   defineSkill({
     id: 'video-generator',
-    skillId: 'video-generator',
     title: 'Video Generator',
     shortTitle: 'Video',
     subtitle: 'Multimodal Prototype Utility',
     icon: Image,
     color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
-    status: 'gated',
-    operationalStatus: 'gated_dependency',
+    status: 'prototype',
     category: 'platform',
     description: 'Prototype utility for video-generation workflows where multimodal outputs are needed for demos, storytelling, and concept validation.',
     keyFeatures: ['Video generation workflow reference', 'Multimodal demo support', 'Concept storytelling assets', 'Prototype-ready output guidance'],
@@ -912,202 +841,6 @@ export const SKILLS: SkillDefinition[] = [
     safetyLevel: 'internal',
     outputType: 'reference',
   }),
-  defineSkill({
-    id: 'identity-verification',
-    skillId: 'kesher-identity-verification',
-    title: 'Identity Verification',
-    shortTitle: 'Identity',
-    subtitle: 'Auth & Verified Profile Signals',
-    icon: Fingerprint,
-    color: 'bg-blue-100 text-blue-700 border-blue-200',
-    status: 'gated',
-    category: 'governance',
-    description: 'Production auth, profile verification, anti-impersonation review, pause/reactivation, account deletion, and privacy-rights entry points.',
-    keyFeatures: ['Firebase Auth boundary', 'Verified profile signals without raw evidence disclosure', 'Pause, reactivate, export, correction, and deletion states', 'Manual review for impersonation and verification appeals'],
-    primarySurface: 'onboarding',
-    entryPoints: [
-      entry('onboarding', 'Complete identity gates', 'Require profile, terms, and verification status before discovery.', '/profile/edit', true),
-      entry('settings', 'Manage account rights', 'Expose pause, reactivation, export, correction, and deletion requests.', '/settings'),
-      entry('safety', 'Review impersonation', 'Route suspicious identity issues into safety review.', '/settings/safety'),
-    ],
-    requiredConsent: ['profile_data'],
-    safetyLevel: 'high',
-    outputType: 'settings',
-    prerequisites: ['Firebase Auth is configured for the production domain.', 'Identity evidence storage is isolated from profile display data.'],
-    dataInputs: ['auth uid', 'profile completion state', 'verification status', 'account rights requests'],
-    dataExclusions: ['raw identity documents', 'private taste state', 'raw personality answers', 'hidden ranking weights'],
-    testsRequired: ['auth_required_for_discovery', 'verification_signal_no_raw_evidence', 'account_deletion_retention_split'],
-  }),
-  defineSkill({
-    id: 'match-lifecycle',
-    skillId: 'kesher-match-lifecycle',
-    title: 'Match Lifecycle',
-    shortTitle: 'Lifecycle',
-    subtitle: 'Like, Match, Chat & History State',
-    icon: Heart,
-    color: 'bg-rose-100 text-rose-700 border-rose-200',
-    status: 'prototype',
-    category: 'ux',
-    description: 'Like/pass/mutual-match/chat state machine with user-visible history and safe transitions across block, report, unmatch, pause, and delete.',
-    keyFeatures: ['Explicit like, pass, match, message, block, report, and unmatch transitions', 'One conversation per mutual match', 'Draft-only AI openers and rephrases', 'Empty states for no picks, no matches, paused profiles, and blocked access'],
-    primarySurface: 'daily',
-    entryPoints: [
-      entry('daily', 'Use Daily Picks lifecycle', 'Exercise like, pass, and match creation from Daily Picks.', '/daily', true),
-      entry('explore', 'Use Explore lifecycle', 'Keep browse-driven actions consistent with Daily Picks.', '/explore'),
-      entry('chat', 'Inspect chat transition', 'Verify conversations remain manual-send only.', '/inbox'),
-    ],
-    requiredConsent: ['match_context'],
-    outputType: 'insight',
-    dataInputs: ['profile id', 'interaction state', 'match status', 'conversation id'],
-    dataExclusions: ['raw personality answers', 'hidden ranking weights', 'AI generated messages sent automatically'],
-    testsRequired: ['like_pass_match_state_machine', 'block_report_unmatch_visibility', 'chat_draft_manual_send_only'],
-  }),
-  defineSkill({
-    id: 'trust-safety-ops',
-    skillId: 'kesher-trust-safety-ops',
-    title: 'Trust & Safety Ops',
-    shortTitle: 'Safety Ops',
-    subtitle: 'Report Queue, Appeals & Audit Logs',
-    icon: Shield,
-    color: 'bg-red-100 text-red-700 border-red-200',
-    status: 'prototype',
-    category: 'governance',
-    description: 'Report queue, moderation summaries, scam triage, photo checks, appeals, escalation, evidence retention, and operator audit logs.',
-    keyFeatures: ['Report, block, unmatch, appeal, and escalation states', 'AI summaries that separate claims from evidence', 'Operator assignment and immutable action logs', 'Safety evidence isolated from recommendations and explanations'],
-    primarySurface: 'admin',
-    entryPoints: [
-      entry('safety', 'File or review a report', 'Open member-facing safety actions.', '/settings/safety', true),
-      entry('admin', 'Open safety queue', 'Inspect operator queue readiness from AI Ops.', '/admin/ai-ops'),
-    ],
-    requiredConsent: ['admin_only'],
-    safetyLevel: 'internal',
-    outputType: 'admin_summary',
-    dataInputs: ['report reason', 'member-selected evidence', 'moderation summary', 'operator actions'],
-    dataExclusions: ['private taste weights', 'unrelated private messages', 'raw identity documents outside evidence store'],
-    testsRequired: ['report_queue_state_machine', 'ai_summary_claims_vs_evidence', 'audit_log_append_only'],
-  }),
-  defineSkill({
-    id: 'notifications',
-    skillId: 'kesher-notifications',
-    title: 'Notifications',
-    shortTitle: 'Notify',
-    subtitle: 'Preference-Managed Delivery',
-    icon: Bell,
-    color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    status: 'planned',
-    operationalStatus: 'reference_only',
-    category: 'platform',
-    description: 'Preference-managed email, push, and SMS notifications for matches, messages, safety events, date reminders, and consent/share changes.',
-    keyFeatures: ['Category-level opt in and opt out', 'Safety and consent notices outrank engagement nudges', 'Sensitive detail redaction in previews', 'Provider callback, failure, and unsubscribe audit trail'],
-    primarySurface: 'settings',
-    entryPoints: [
-      entry('settings', 'Configure notification preferences', 'Add category-level delivery controls.', '/settings', true),
-      entry('admin', 'Review delivery health', 'Track delivery failures and provider callbacks.', '/admin/ai-ops'),
-    ],
-    requiredConsent: ['none'],
-    outputType: 'settings',
-    dataInputs: ['notification preference class', 'delivery channel', 'event type', 'provider callback status'],
-    dataExclusions: ['sensitive match details in previews', 'report evidence in notifications', 'raw personality cards'],
-    testsRequired: ['notification_preference_matrix', 'safety_notice_priority', 'preview_redaction'],
-  }),
-  defineSkill({
-    id: 'subscription-entitlements',
-    skillId: 'kesher-subscription-entitlements',
-    title: 'Subscription Entitlements',
-    shortTitle: 'Entitlements',
-    subtitle: 'Premium Gates, Quotas & Billing',
-    icon: ShoppingBag,
-    color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    status: 'planned',
-    operationalStatus: 'reference_only',
-    category: 'platform',
-    description: 'Pricing, premium gates, quotas, invoices, refunds, billing webhooks, and abuse-resistant trial entitlement checks.',
-    keyFeatures: ['Server-side entitlement checks', 'Idempotent billing webhook handling', 'Trial abuse controls', 'Refund and cancellation state reconciliation'],
-    primarySurface: 'settings',
-    entryPoints: [
-      entry('settings', 'Review premium state', 'Surface canonical entitlement state in settings.', '/settings', true),
-      entry('admin', 'Audit entitlement gates', 'Inspect launch blockers and billing dependencies.', '/admin/ai-ops'),
-    ],
-    requiredConsent: ['none'],
-    outputType: 'settings',
-    dataInputs: ['subscription status', 'entitlement key', 'quota usage', 'billing webhook event'],
-    dataExclusions: ['private dating content in billing records', 'safety evidence in payment metadata', 'identity documents'],
-    testsRequired: ['server_entitlement_required', 'billing_webhook_idempotent', 'trial_cannot_bypass_safety_gates'],
-  }),
-  defineSkill({
-    id: 'ai-evaluation-observability',
-    skillId: 'kesher-ai-evaluation-observability',
-    title: 'AI Evaluation & Observability',
-    shortTitle: 'AI Evals',
-    subtitle: 'Golden Tests, Red Teams & Route Health',
-    icon: Activity,
-    color: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    status: 'prototype',
-    category: 'governance',
-    description: 'Golden tests, red-team prompts, latency budgets, output-quality dashboards, route health, and release-blocking model governance.',
-    keyFeatures: ['Schema and privacy-exclusion tests for every AI route', 'Latency, fallback, validator, and prompt-version telemetry', 'Red-team prompts for leakage and unsafe automation', 'Release blockers for high-risk routes without provenance'],
-    primarySurface: 'admin',
-    entryPoints: [
-      entry('admin', 'Open AI route health', 'View AI Ops status and product readiness gates.', '/admin/ai-ops', true),
-      entry('ai-trust', 'Review user-facing AI controls', 'Connect route health to user controls.', '/settings/ai-trust'),
-    ],
-    requiredConsent: ['admin_only'],
-    safetyLevel: 'internal',
-    outputType: 'admin_summary',
-    dataInputs: ['feature id', 'route id', 'model route', 'fallback status', 'validator result'],
-    dataExclusions: ['raw user secrets', 'private messages outside tested payload fixtures', 'hidden ranking weights'],
-    testsRequired: ['api_ai_contract_tests', 'redteam_private_signal_leakage', 'ai_latency_budget_smoke'],
-  }),
-  defineSkill({
-    id: 'data-rights-retention',
-    skillId: 'kesher-data-rights-retention',
-    title: 'Data Rights & Retention',
-    shortTitle: 'Data Rights',
-    subtitle: 'Export, Delete, Retain & Revoke',
-    icon: FileCheck,
-    color: 'bg-stone-100 text-stone-700 border-stone-200',
-    status: 'prototype',
-    category: 'privacy',
-    description: 'Export, correction, deletion, retention windows, evidence separation, privacy-rights audit trails, and share revocation cascades.',
-    keyFeatures: ['Export, correction, deletion, reset, and revocation request states', 'Separate retention rules for taste, personality, messages, safety, and billing', 'Taste reset that preserves required safety evidence', 'Recipient-visible share revocation cascades'],
-    primarySurface: 'settings',
-    entryPoints: [
-      entry('settings', 'Manage data rights', 'Expose rights requests from account settings.', '/settings', true),
-      entry('ai-trust', 'Review AI data controls', 'Connect taste and personality reset/delete controls.', '/settings/ai-trust'),
-      entry('admin', 'Audit retention status', 'Verify completion and failure states in operator views.', '/admin/ai-ops'),
-    ],
-    requiredConsent: ['profile_data', 'private_taste'],
-    safetyLevel: 'high',
-    outputType: 'settings',
-    dataInputs: ['rights request type', 'data domain', 'retention class', 'request status'],
-    dataExclusions: ['safety evidence erased by taste reset', 'billing records mixed with dating content', 'raw personality answers in exports without explicit owner request'],
-    testsRequired: ['export_delete_request_status', 'retention_policy_domain_split', 'share_revocation_cascade'],
-  }),
-  defineSkill({
-    id: 'release-readiness',
-    skillId: 'kesher-release-readiness',
-    title: 'Release Readiness',
-    shortTitle: 'Release',
-    subtitle: 'CI, Smoke Tests, Rollback & Monitoring',
-    icon: GitBranch,
-    color: 'bg-slate-100 text-slate-700 border-slate-200',
-    status: 'prototype',
-    category: 'governance',
-    description: 'CI, smoke tests, deployment checklist, rollback, preview verification, monitoring, and launch-blocker tracking for the full Kesher product.',
-    keyFeatures: ['Launch gates for auth, discovery, safety, AI, payments, notifications, data rights, and observability', 'Preview and production smoke checks', 'Rollback and incident response steps', 'Release blockers shown in operator dashboards'],
-    primarySurface: 'admin',
-    entryPoints: [
-      entry('admin', 'Open release gates', 'View launch blockers in AI Ops.', '/admin/ai-ops', true),
-      entry('skills', 'Review product readiness', 'Inspect product completion gates from the Skills Hub.', '/skills'),
-      entry('settings', 'Review trust readiness', 'Connect release gates to member-facing controls.', '/settings/ai-trust'),
-    ],
-    requiredConsent: ['admin_only'],
-    safetyLevel: 'internal',
-    outputType: 'reference',
-    dataInputs: ['CI result', 'smoke result', 'deployment metadata', 'launch gate status'],
-    dataExclusions: ['secrets in logs', 'raw production user data in release reports', 'private message payloads'],
-    testsRequired: ['ci_required_checks', 'prototype_smoke_routes', 'rollback_runbook_present'],
-  }),
 ];
 
 export const SKILL_DEFINITIONS = SKILLS;
@@ -1115,7 +848,6 @@ export const SKILL_DEFINITIONS = SKILLS;
 export const SKILL_COUNTS = {
   live: SKILLS.filter((skill) => skill.status === 'live').length,
   prototype: SKILLS.filter((skill) => skill.status === 'prototype').length,
-  gated: SKILLS.filter((skill) => skill.status === 'gated').length,
   planned: SKILLS.filter((skill) => skill.status === 'planned').length,
 };
 

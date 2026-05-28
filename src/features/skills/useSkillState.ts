@@ -5,9 +5,9 @@ import { useApp } from '@/context/AppContext';
 import type {
   SavedSkillOutputRef,
   SkillConsentSnapshot,
-  SkillStateStatus,
   SkillSurface,
   SkillTransitionOptions,
+  UserSkillStatus,
   UserSkillState,
 } from './types';
 import { emitSkillEvent } from './skillEvents';
@@ -46,12 +46,12 @@ export const createDefaultSkillState = (
   userId: string,
   skillId: string,
   now = new Date().toISOString(),
-  status: SkillStateStatus = 'available',
+  status: UserSkillStatus = 'available',
 ): UserSkillState => ({
   userId,
   skillId,
   status,
-  progress: status === 'gated' ? 0 : 0,
+  progress: 0,
   savedOutputRefs: [],
   updatedAt: now,
 });
@@ -104,7 +104,7 @@ export const transitionSkillState = (
     case 'gate':
       return {
         ...next,
-        status: 'gated',
+        status: 'locked',
         progress: 0,
       };
     case 'reset':

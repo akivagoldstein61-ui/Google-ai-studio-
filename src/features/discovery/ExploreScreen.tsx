@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SlidersHorizontal, Grid, LayoutList, Check, X, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
+import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
-export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void; onOpenRoute?: (path: string) => void }> = ({ onSelect, onOpenRoute }) => {
+export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
   const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -39,16 +39,16 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void; onO
         </div>
       </header>
 
-      <SkillRecommendationRail
-        surface="explore"
-        title="Explore controls"
-        subtitle="Tune filters and preference learning without hidden scores."
-        skillIds={['filtering-marketplace', 'learned-taste', 'private-recommendations']}
-        limit={3}
-        onOpenRoute={onOpenRoute}
-      />
-
       <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
+        <div className="mb-5">
+          <SkillContextPanel
+            surface="explore"
+            title="Explore skills"
+            description="Tune discovery privately without exposing taste internals or turning people into scores."
+            skillIds={['filtering-marketplace', 'private-taste', 'learned-taste']}
+            compact
+          />
+        </div>
         <div className={cn(
           "grid gap-4",
           viewMode === 'grid' ? "grid-cols-2" : "grid-cols-1"
@@ -219,6 +219,14 @@ const FilterDrawer: React.FC<{
             ))}
           </div>
         </section>
+
+        <SkillContextPanel
+          surface="explore"
+          title="Preference skills"
+          description="Use filters and learned taste as private controls. Other members never see your taste profile."
+          skillIds={['filtering-marketplace', 'learned-taste', 'privacy-recommendation']}
+          compact
+        />
 
         <section className="space-y-6">
           <div className="flex items-center justify-between">

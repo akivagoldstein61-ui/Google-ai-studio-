@@ -49,19 +49,9 @@ export const SkillRecommendationRail: React.FC<{
           </div>
           <p className="text-xs text-[#8C7E6E] leading-relaxed">{subtitle}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (onOpenRoute) {
-              onOpenRoute(allSkillsHref);
-            } else if (typeof window !== 'undefined') {
-              window.location.assign(allSkillsHref);
-            }
-          }}
-          className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E] hover:text-[#D4AF37]"
-        >
+        <a href={allSkillsHref} className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E] hover:text-[#D4AF37]">
           All skills
-        </button>
+        </a>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x">
         {skills.map((skill) => (

@@ -15,13 +15,9 @@ import { db, auth } from '@/firebase';
 
 import { useApp } from '@/context/AppContext';
 import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
+import { SKILLS } from '@/features/skills/skillRegistry';
 
-export const AITrustHub: React.FC<{
-  onBack: () => void,
-  onShowTasteProfile?: () => void,
-  onShowPersonalityVisibility?: () => void,
-  onOpenRoute?: (path: string) => void,
-}> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility, onOpenRoute }) => {
+export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void, onShowPersonalityVisibility?: () => void }> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility }) => {
   const { resetTasteProfile, user } = useApp();
   const [enabledFeatures, setEnabledFeatures] = useState<string[]>(
     AI_FEATURE_REGISTRY.filter(f => f.default_enabled).map(f => f.id)
@@ -121,6 +117,14 @@ export const AITrustHub: React.FC<{
           </div>
         </section>
 
+        <SkillContextPanel
+          surface="ai-trust"
+          title="Skill controls"
+          description="See which skills use AI, what data they may use, and where consent or reset controls live."
+          skillIds={['ai-runtime-governance', 'gemini-integration', 'system-prompt', 'private-taste']}
+          includeInternal
+        />
+
         {/* Feature Controls */}
         <section className="space-y-6">
           <div className="flex items-center justify-between px-2">
@@ -175,24 +179,20 @@ export const AITrustHub: React.FC<{
           </div>
         </section>
 
-        <SkillContextPanel
-          surface="ai-trust"
-          title="AI trust skills"
-          description="Inspect consent, AI feature boundaries, disclosure, and privacy controls."
-          skillIds={['consent-ux', 'explainable-ai', 'ai-feature-modules', 'ai-runtime-governance']}
-          limit={4}
-          onOpenRoute={(path) => {
-            if (path === '/settings/taste-profile') {
-              onShowTasteProfile?.();
-              return;
-            }
-            if (path === '/settings/personality-visibility') {
-              onShowPersonalityVisibility?.();
-              return;
-            }
-            onOpenRoute?.(path);
-          }}
-        />
+        <section className="space-y-6">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">AI-backed skills</h4>
+          <div className="bg-white border border-[#F3EFEA] rounded-[32px] overflow-hidden shadow-sm">
+            {SKILLS.filter((skill) => skill.aiFeatureKey && skill.safetyLevel !== 'internal').map((skill) => (
+              <div key={skill.id} className="p-5 border-b border-[#F3EFEA] last:border-none space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-[#2D2926]">{skill.title}</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#D4AF37]">{skill.aiFeatureKey}</span>
+                </div>
+                <p className="text-xs text-[#8C7E6E] leading-relaxed italic">{skill.privacyNotes[0]}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Data & Privacy */}
         <section className="space-y-6">
