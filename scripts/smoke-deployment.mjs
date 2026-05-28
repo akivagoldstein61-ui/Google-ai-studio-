@@ -375,7 +375,7 @@ async function runBrowserChecks(checks) {
     throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
   if (!visibilityText.includes('Integrated relationship readiness system')) {
-    throw new Error('/prototype client bundle does not expose the skills hub surface');
+    throw new Error('/prototype client bundle does not expose the skills hub surface (expected "Integrated relationship readiness system")');
   }
   checks.push('skills hub link and surface verified in client bundle');
 
