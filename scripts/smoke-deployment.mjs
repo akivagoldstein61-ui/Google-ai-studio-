@@ -3,11 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const baseUrl = process.env.SMOKE_BASE_URL;
 const expectedSha = process.env.EXPECTED_COMMIT_SHA || '';
-const vercelProtectionBypassSecret = (
-  process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
-  process.env.VERCEL_PROTECTION_BYPASS_SECRET ||
-  ''
-).trim();
+const vercelProtectionBypassSecret = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '').trim();
 
 if (!baseUrl) {
   console.error('SMOKE_BASE_URL is required');
@@ -379,7 +375,7 @@ async function runBrowserChecks(checks) {
     throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
   if (!visibilityText.includes('Integrated relationship readiness system')) {
-    throw new Error('/skills client bundle does not expose the skills hub surface');
+    throw new Error('/prototype client bundle does not expose the skills hub surface');
   }
   checks.push('skills hub link and surface verified in client bundle');
 

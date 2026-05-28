@@ -7,11 +7,13 @@ on:
       url:
         description: "Production or preview URL to smoke-test"
         required: false
-        default: "https://google-ai-studio-sage-sigma.vercel.app"
 
 permissions:
   contents: read
   deployments: read
+
+env:
+  KESHER_PRODUCTION_URL: https://google-ai-studio-sage-sigma.vercel.app
 
 jobs:
   smoke:
@@ -43,7 +45,7 @@ jobs:
           elif [ -n "${{ github.event.deployment_status.environment_url }}" ]; then
             echo "url=${{ github.event.deployment_status.environment_url }}" >> "$GITHUB_OUTPUT"
           else
-            echo "url=https://google-ai-studio-sage-sigma.vercel.app" >> "$GITHUB_OUTPUT"
+            echo "url=${{ env.KESHER_PRODUCTION_URL }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run deployment smoke test

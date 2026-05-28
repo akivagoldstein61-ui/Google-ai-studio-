@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+env:
+  KESHER_PRODUCTION_URL: https://google-ai-studio-sage-sigma.vercel.app
+  VERCEL_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+
 jobs:
   deploy-production:
     name: Deploy (Production)
@@ -24,7 +28,7 @@ jobs:
     if: github.event_name == 'push' || inputs.target == 'production'
     environment:
       name: production
-      url: https://google-ai-studio-sage-sigma.vercel.app
+      url: ${{ env.KESHER_PRODUCTION_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +78,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          VITE_BUILD_TIME: ${{ env.VERCEL_BUILD_TIME }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: production
 
@@ -120,7 +124,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          VITE_BUILD_TIME: ${{ env.VERCEL_BUILD_TIME }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: production
 
@@ -129,7 +133,7 @@ jobs:
         # Confirms /api/* routes are actually mounted on Vercel rather than
         # falling through to the SPA's index.html (which would return HTML
         # with status 200 — a silent regression). See scripts/api-smoke.mjs.
-        run: node scripts/api-smoke.mjs https://google-ai-studio-sage-sigma.vercel.app
+        run: node scripts/api-smoke.mjs "${{ env.KESHER_PRODUCTION_URL }}"
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
@@ -190,7 +194,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          VITE_BUILD_TIME: ${{ env.VERCEL_BUILD_TIME }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: preview
 
@@ -244,7 +248,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          VITE_BUILD_TIME: ${{ env.VERCEL_BUILD_TIME }}
           VITE_GIT_BRANCH: ${{ github.ref_name }}
           VITE_DEPLOY_ENV: preview
 

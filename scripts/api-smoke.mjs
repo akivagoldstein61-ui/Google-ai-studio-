@@ -21,11 +21,7 @@ const baseUrl =
   process.argv[2] ?? process.env.KESHER_BASE_URL ?? DEFAULT_BASE;
 
 const cleanBase = baseUrl.replace(/\/+$/, "");
-const vercelProtectionBypassSecret = (
-  process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
-  process.env.VERCEL_PROTECTION_BYPASS_SECRET ||
-  ""
-).trim();
+const vercelProtectionBypassSecret = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
 
 function getVercelProtectionHeaders() {
   if (!vercelProtectionBypassSecret) return {};
