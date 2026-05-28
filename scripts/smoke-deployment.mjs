@@ -3,6 +3,11 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const baseUrl = process.env.SMOKE_BASE_URL;
 const expectedSha = process.env.EXPECTED_COMMIT_SHA || '';
+const vercelProtectionBypassSecret = (
+  process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
+  process.env.VERCEL_PROTECTION_BYPASS_SECRET ||
+  ''
+).trim();
 
 if (!baseUrl) {
   console.error('SMOKE_BASE_URL is required');
@@ -45,8 +50,12 @@ const requiredShaPatterns = expectedSha
   : [];
 
 async function fetchText(url) {
-  const response = await fetch(url, { redirect: 'follow' });
+  const response = await fetch(url, {
+    redirect: 'follow',
+    headers: getVercelProtectionHeaders(),
+  });
   if (!response.ok) {
+    assertNotVercelProtectionBlocked(url, response);
     throw new Error(`Unreachable URL ${url}: ${response.status}`);
   }
   const text = await response.text();
@@ -54,9 +63,14 @@ async function fetchText(url) {
 }
 
 async function fetchJson(url, expectedStatus = 200) {
-  const response = await fetch(url, { redirect: 'manual', cache: 'no-store' });
+  const response = await fetch(url, {
+    redirect: 'manual',
+    cache: 'no-store',
+    headers: getVercelProtectionHeaders(),
+  });
 
   if (response.status !== expectedStatus) {
+    assertNotVercelProtectionBlocked(url, response);
     throw new Error(`Unexpected status for ${url}: got ${response.status}, expected ${expectedStatus}`);
   }
 
@@ -64,6 +78,25 @@ async function fetchJson(url, expectedStatus = 200) {
   const text = await response.text();
   if (!contentType.toLowerCase().includes('application/json')) {
     throw new Error(`${url} did not return JSON (content-type: ${contentType || 'missing'})`);
+  }
+
+  function getVercelProtectionHeaders() {
+    if (!vercelProtectionBypassSecret) return {};
+    return {
+      'x-vercel-protection-bypass': vercelProtectionBypassSecret,
+    };
+  }
+
+  function assertNotVercelProtectionBlocked(url, response) {
+    const hostname = new URL(url).hostname;
+    if (!hostname.endsWith('.vercel.app')) return;
+    if (response.status !== 401 && response.status !== 403) return;
+
+    throw new Error(
+      `${url} is blocked by Vercel Deployment Protection (${response.status}). ` +
+      'Set VERCEL_AUTOMATION_BYPASS_SECRET in GitHub/Vercel and expose it to this smoke job, ' +
+      'or make the target deployment publicly reachable before verification.'
+    );
   }
   if (/<!doctype\s*html|<html/i.test(text)) {
     throw new Error(`${url} returned the SPA HTML shell instead of API JSON`);
@@ -169,6 +202,10 @@ async function runBrowserChecks(checks) {
 
   try {
     const page = await browser.newPage();
+    const vercelProtectionHeaders = getVercelProtectionHeaders();
+    if (Object.keys(vercelProtectionHeaders).length > 0) {
+      await page.setExtraHTTPHeaders(vercelProtectionHeaders);
+    }
     await page.setViewport({ width: 1366, height: 900 });
 
     await page.goto(skillsHubUrl, { waitUntil: 'load', timeout: 30000 });
