@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 const baseUrl = process.env.SMOKE_BASE_URL;
 const expectedSha = process.env.EXPECTED_COMMIT_SHA || '';
 const vercelProtectionBypassSecret = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '').trim();
+const EXPECTED_SKILLS_HUB_TEXT = 'Integrated relationship readiness system';
 
 if (!baseUrl) {
   console.error('SMOKE_BASE_URL is required');
@@ -13,7 +14,7 @@ if (!baseUrl) {
 const rootUrl = new URL('/', baseUrl).toString();
 const prototypeUrl = new URL('/prototype', baseUrl).toString();
 const personalityPrototypeUrl = new URL('/prototype/personality', baseUrl).toString();
-const skillsRouteUrl = new URL('/skills', baseUrl).toString();
+const skillsAppRouteUrl = new URL('/skills', baseUrl).toString();
 const skillsHubUrl = new URL('/skills-hub', baseUrl).toString();
 const staticSkillsUrl = new URL('/prototype/skills.html', baseUrl).toString();
 const demoUrl = new URL('/demo?demo=1', baseUrl).toString();
@@ -232,7 +233,7 @@ async function runBrowserChecks(checks) {
       throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
     }
     if (skillsState.declaredCount < 1 || skillsState.visibleCards !== skillsState.declaredCount) {
-      throw new Error(`/skills-hub invalid skill count: expected visible cards to match declared count, got ${skillsState.visibleCards}/${skillsState.declaredCount}`);
+      throw new Error(`/skills-hub skill count mismatch: visible cards (${skillsState.visibleCards}) should equal declared count (${skillsState.declaredCount})`);
     }
     if (skillsState.operationalCards < 1 || (
       skillsState.operationalCards + skillsState.gatedCards + skillsState.plannedCards
@@ -306,7 +307,7 @@ async function runBrowserChecks(checks) {
   const personalityPrototype = await fetchText(personalityPrototypeUrl);
   checks.push(`/prototype/personality reachable (${personalityPrototype.response.status})`);
 
-  const skillsRoute = await fetchText(skillsRouteUrl);
+  const skillsRoute = await fetchText(skillsAppRouteUrl);
   checks.push(`/skills reachable (${skillsRoute.response.status})`);
 
   const skillsHub = await fetchText(skillsHubUrl);
@@ -374,8 +375,8 @@ async function runBrowserChecks(checks) {
   if (!visibilityText.includes('/prototype/personality') || !visibilityText.includes('IPIP-BFAS 100')) {
     throw new Error('/prototype client bundle does not expose the personality prototype journey');
   }
-  if (!visibilityText.includes('Integrated relationship readiness system')) {
-    throw new Error('/prototype client bundle does not expose the skills hub surface (expected "Integrated relationship readiness system")');
+  if (!visibilityText.includes(EXPECTED_SKILLS_HUB_TEXT)) {
+    throw new Error(`/prototype client bundle does not expose the skills hub surface (expected "${EXPECTED_SKILLS_HUB_TEXT}")`);
   }
   checks.push('skills hub link and surface verified in client bundle');
 
