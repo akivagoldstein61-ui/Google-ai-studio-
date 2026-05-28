@@ -52,7 +52,7 @@ async function fetchText(url) {
     headers: getVercelProtectionHeaders(),
   });
   if (!response.ok) {
-    assertNotVercelProtectionBlocked(url, response);
+    throwIfVercelProtectionBlocked(url, response);
     throw new Error(`Unreachable URL ${url}: ${response.status}`);
   }
   const text = await response.text();
@@ -67,7 +67,7 @@ async function fetchJson(url, expectedStatus = 200) {
   });
 
   if (response.status !== expectedStatus) {
-    assertNotVercelProtectionBlocked(url, response);
+    throwIfVercelProtectionBlocked(url, response);
     throw new Error(`Unexpected status for ${url}: got ${response.status}, expected ${expectedStatus}`);
   }
 
@@ -95,7 +95,7 @@ function getVercelProtectionHeaders() {
   };
 }
 
-function assertNotVercelProtectionBlocked(url, response) {
+function throwIfVercelProtectionBlocked(url, response) {
   const hostname = new URL(url).hostname;
   if (!hostname.endsWith('.vercel.app')) return;
   if (response.status !== 401 && response.status !== 403) return;
@@ -232,7 +232,7 @@ async function runBrowserChecks(checks) {
       throw new Error('/skills-hub did not render the Kesher Skills Hub heading');
     }
     if (skillsState.declaredCount < 1 || skillsState.visibleCards !== skillsState.declaredCount) {
-      throw new Error(`/skills-hub rendered ${skillsState.visibleCards}/${skillsState.declaredCount} skill cards`);
+      throw new Error(`/skills-hub invalid skill count: expected visible cards to match declared count, got ${skillsState.visibleCards}/${skillsState.declaredCount}`);
     }
     if (skillsState.operationalCards < 1 || (
       skillsState.operationalCards + skillsState.gatedCards + skillsState.plannedCards

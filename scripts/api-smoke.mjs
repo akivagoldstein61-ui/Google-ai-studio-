@@ -30,7 +30,7 @@ function getVercelProtectionHeaders() {
   };
 }
 
-function isVercelProtectionBlocked(url, status) {
+function wasRequestBlockedByVercelProtection(url, status) {
   return new URL(url).hostname.endsWith(".vercel.app") && (status === 401 || status === 403);
 }
 
@@ -101,7 +101,7 @@ for (const check of CHECKS) {
 
     failures++;
     console.log(`FAIL (${res.status} ${contentType})`);
-    if (isVercelProtectionBlocked(url, res.status)) {
+    if (wasRequestBlockedByVercelProtection(url, res.status)) {
       console.log("    Vercel Deployment Protection blocked this smoke request.");
       console.log("    Set VERCEL_AUTOMATION_BYPASS_SECRET for automation or make the target deployment publicly reachable.");
     }
