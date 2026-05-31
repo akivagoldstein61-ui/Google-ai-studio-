@@ -29,6 +29,10 @@ describe('capabilityRouter', () => {
       expect(capabilityRouter.getRoute('safety_advice')).toBe(MODEL_REGISTRY.primarySearchGroundedModel);
     });
 
+    it('routes daily_picks_intro to primaryStructuredModel', () => {
+      expect(capabilityRouter.getRoute('daily_picks_intro')).toBe(MODEL_REGISTRY.primaryStructuredModel);
+    });
+
     it('routes visual_icebreaker to imageGenerationModel', () => {
       expect(capabilityRouter.getRoute('visual_icebreaker')).toBe(MODEL_REGISTRY.imageGenerationModel);
     });
@@ -50,6 +54,10 @@ describe('capabilityRouter', () => {
 
     it('returns mapsGroundedModel for date_planner', () => {
       expect(capabilityRouter.getRouteName('date_planner')).toBe('mapsGroundedModel');
+    });
+
+    it('returns primaryStructuredModel for daily_picks_intro', () => {
+      expect(capabilityRouter.getRouteName('daily_picks_intro')).toBe('primaryStructuredModel');
     });
 
     it('returns primaryReasoningModel for unknown features', () => {

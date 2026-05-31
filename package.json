@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "test:schemas": "node scripts/personality-smoke-tests.mjs",
+    "test:schemas": "node scripts/test-personality-schemas.mjs && node scripts/personality-smoke-tests.mjs",
     "test:skills": "node scripts/test-skills.mjs",
     "test:scoring": "node scripts/test-personality-scoring.mjs",
     "redteam:personality": "node scripts/redteam-personality.mjs",

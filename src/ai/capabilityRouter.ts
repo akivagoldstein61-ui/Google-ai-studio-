@@ -17,6 +17,7 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'daily_picks_intro':
       case 'personality_profile':
       case 'compatibility_reflection':
       case 'pacing_coach':
@@ -53,6 +54,7 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'daily_picks_intro':
       case 'personality_profile':
       case 'compatibility_reflection':
       case 'pacing_coach':

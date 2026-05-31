@@ -6,14 +6,16 @@ import { SlidersHorizontal, Grid, LayoutList, Check, X, ShieldCheck, Sparkles } 
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
+import { getDocumentDirection } from '@/lib/direction';
 
 export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
   const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
+  const pageDir = getDocumentDirection();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="h-full flex flex-col px-6 py-4 space-y-6 overflow-hidden">
+    <div className="h-full flex flex-col px-6 py-4 space-y-6 overflow-hidden" dir={pageDir}>
       <header className="flex justify-between items-center">
         <div className="space-y-1">
           <h2 className="text-2xl font-serif italic text-[#2D2926]">Explore</h2>
@@ -106,6 +108,7 @@ const FilterDrawer: React.FC<{
   onResetTaste: () => void
 }> = ({ preferences, onClose, onApply, onResetTaste }) => {
   const [localPrefs, setLocalPrefs] = useState(preferences);
+  const pageDir = getDocumentDirection();
 
   return (
     <motion.div 
@@ -113,6 +116,7 @@ const FilterDrawer: React.FC<{
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end"
+      dir={pageDir}
       onClick={onClose}
     >
       <motion.div 

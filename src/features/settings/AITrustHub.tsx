@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Sparkles, Shield, Eye, RefreshCw, Info, ChevronLeft, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
+import { MODEL_REGISTRY } from '@/ai/modelRegistry';
 import {
   TRUST_HUB_PHILOSOPHY,
   TRUST_HUB_DOES,
@@ -10,6 +11,7 @@ import {
   TRUST_HUB_CONTROLS,
 } from '@/ai/trustHubCopy';
 import { cn } from '@/lib/utils';
+import { getDocumentDirection } from '@/lib/direction';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 
@@ -19,6 +21,7 @@ import { SKILLS } from '@/features/skills/skillRegistry';
 
 export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () => void, onShowPersonalityVisibility?: () => void }> = ({ onBack, onShowTasteProfile, onShowPersonalityVisibility }) => {
   const { resetTasteProfile, user } = useApp();
+  const pageDir = getDocumentDirection();
   const [enabledFeatures, setEnabledFeatures] = useState<string[]>(
     AI_FEATURE_REGISTRY.filter(f => f.default_enabled).map(f => f.id)
   );
@@ -65,7 +68,7 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#FDFCFB]">
+    <div className="h-full flex flex-col bg-[#FDFCFB]" dir={pageDir}>
       <header className="px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
         <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
           <ChevronLeft size={20} className="text-[#2D2926]" />
@@ -98,19 +101,19 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
               <div className="flex flex-col gap-1 text-xs text-white/80">
                 <div className="flex justify-between">
                   <span>Primary Reasoning:</span>
-                  <span className="font-mono text-[10px]">gemini-3.1-pro-preview</span>
+                  <span className="font-mono text-[10px]">{MODEL_REGISTRY.primaryReasoningModel}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Maps Grounding (Exception):</span>
-                  <span className="font-mono text-[10px]">gemini-2.5-flash</span>
+                  <span className="font-mono text-[10px]">{MODEL_REGISTRY.mapsGroundedModel}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Image Generation (Exception):</span>
-                  <span className="font-mono text-[10px]">gemini-3.1-flash-image-preview</span>
+                  <span className="font-mono text-[10px]">{MODEL_REGISTRY.imageGenerationModel}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Live Audio (Exception):</span>
-                  <span className="font-mono text-[10px]">gemini-2.5-flash-native-audio-preview-12-2025</span>
+                  <span className="font-mono text-[10px]">{MODEL_REGISTRY.liveModel}</span>
                 </div>
               </div>
             </div>

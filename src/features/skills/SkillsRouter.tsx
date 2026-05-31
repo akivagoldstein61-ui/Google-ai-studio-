@@ -33,7 +33,10 @@ export const SkillsRouter: React.FC<{
 
   const handleSelectSkill = (skillId: string) => {
     emitSkillEvent(trackEvent, 'skill_viewed', { skillId, surface: 'skills-hub' });
-    startSkill(skillId, 'skills-hub');
+    const skill = SKILLS.find((item) => item.id === skillId);
+    if (skill?.experienceType === 'interactive') {
+      startSkill(skillId, 'skills-hub');
+    }
     setActiveSkill(skillId);
   };
 

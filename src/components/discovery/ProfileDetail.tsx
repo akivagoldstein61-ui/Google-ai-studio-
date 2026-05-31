@@ -11,6 +11,7 @@ import { ReportFlow } from '@/features/safety/ReportFlow';
 import { SkillContextPanel } from '@/features/skills/components/SkillContextPanel';
 
 import { trustService } from '@/services/trustService';
+import { getDocumentDirection } from '@/lib/direction';
 
 export const ProfileDetail: React.FC<{ 
   profile: Profile, 
@@ -18,6 +19,7 @@ export const ProfileDetail: React.FC<{
   onLike: () => void,
   onPass: () => void
 }> = ({ profile, onBack, onLike, onPass }) => {
+  const pageDir = getDocumentDirection();
   const [openers, setOpeners] = useState<any[]>([]);
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
@@ -80,7 +82,7 @@ export const ProfileDetail: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#FDFCFB] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-40 bg-[#FDFCFB] flex flex-col overflow-hidden" dir={pageDir}>
       <header className="absolute top-0 left-0 right-0 z-50 px-6 pt-14 pb-6 flex items-center justify-between pointer-events-none">
         <button 
           onClick={onBack}
@@ -276,6 +278,7 @@ export const ProfileDetail: React.FC<{
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-end"
+            dir={pageDir}
             onClick={() => setShowOpeners(false)}
           >
             <motion.div 

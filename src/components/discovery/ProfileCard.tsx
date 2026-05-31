@@ -3,6 +3,7 @@ import { Profile } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { MapPin, Info, Shield, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getDocumentDirection } from '@/lib/direction';
 
 interface ProfileCardProps {
   profile: Profile;
@@ -19,6 +20,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onPass,
   onSelect 
 }) => {
+  const pageDir = getDocumentDirection();
+
   return (
     <motion.div 
       layout
@@ -26,6 +29,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className="relative w-full aspect-[3/4] rounded-[40px] overflow-hidden shadow-2xl bg-surface-raised cursor-pointer group border border-black/5"
+      dir={pageDir}
       onClick={onSelect}
     >
       <img 

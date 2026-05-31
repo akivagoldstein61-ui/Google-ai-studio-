@@ -59,3 +59,60 @@ test("missing Gemini API key uses a safe fallback without exposing raw errors", 
     }
   }
 });
+
+test("AI route metadata uses registry feature ids for guarded and lab routes", async () => {
+  const app = express();
+  app.use(express.json());
+  app.use("/api/ai", aiRouter);
+
+  const server = app.listen(0);
+  const { port } = server.address() as { port: number };
+  const logs: string[] = [];
+  const originalLog = console.log;
+
+  console.log = (...args: unknown[]) => {
+    logs.push(args.map(String).join(" "));
+  };
+
+  try {
+    await fetch(`http://127.0.0.1:${port}/api/ai/message-safety`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    await fetch(`http://127.0.0.1:${port}/api/ai/analyze-photos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    await fetch(`http://127.0.0.1:${port}/api/ai/moderation-summary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    const featureIds = logs
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter((entry) => entry?.log_type === "ai_route_metadata")
+      .map((entry) => entry.feature_id);
+
+    assert.deepEqual(featureIds, [
+      "safety_scan",
+      "visual_icebreaker",
+      "mod_summarizer",
+    ]);
+  } finally {
+    console.log = originalLog;
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});

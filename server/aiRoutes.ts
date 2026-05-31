@@ -101,6 +101,20 @@ const parseAIResponse = (text: string | null | undefined) => {
   }
 };
 
+const extractGroundingCitations = (response: any) => {
+  const chunks = response?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+  if (!Array.isArray(chunks)) return [];
+
+  return chunks
+    .map((chunk: any) => chunk?.web)
+    .filter((web: any) => typeof web?.uri === "string")
+    .slice(0, 5)
+    .map((web: any) => ({
+      uri: web.uri,
+      title: typeof web.title === "string" ? web.title : undefined,
+    }));
+};
+
 // Safe metadata logging middleware
 const routeMetadataLogger = (
   req: express.Request,
@@ -186,21 +200,28 @@ aiRouter.post("/safety-advice", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: capabilityRouter.getRoute("safety_advice"),
       contents: `Provide brief, calm, and actionable safety advice for this dating app user's question: "${question}"`,
       config: {
         systemInstruction:
           "You are Kesher's safety assistant. Provide brief, calm, and actionable safety advice. Never blame the user. If the situation sounds dangerous, advise them to contact local authorities.",
+        tools: [{ googleSearch: {} }],
       },
     });
 
     res.locals.ai_metadata.validator_result = "success";
-    res.json({ advice: response.text });
+    res.json({
+      advice: response.text,
+      citations: extractGroundingCitations(response),
+      grounding_used: true,
+    });
   } catch (error: any) {
     handleAiError(error, res, "Safety advice generation failed:");
     res.json({
       advice:
         "Your safety is our priority. Please contact support if you have immediate concerns.",
+      citations: [],
+      grounding_used: false,
     }); // Safe fallback
   }
 });
@@ -355,7 +376,7 @@ aiRouter.post("/daily-picks-intro", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: capabilityRouter.getRoute("bio_coach"), // Using a generic structured model route
+      model: capabilityRouter.getRoute("daily_picks_intro"),
       contents: `Generate a short daily picks intro for this user: ${JSON.stringify(userProfile)}`,
       config: {
         systemInstruction:
@@ -554,7 +575,7 @@ aiRouter.post("/rephrase", async (req, res) => {
 });
 
 aiRouter.post("/message-safety", async (req, res) => {
-  res.locals.ai_metadata.feature_id = "message_safety_scan";
+  res.locals.ai_metadata.feature_id = "safety_scan";
   res.locals.ai_metadata.prompt_version = "v1.0";
   
   try {
@@ -705,7 +726,7 @@ aiRouter.post("/pacing-intervention", async (req, res) => {
 });
 
 aiRouter.post("/analyze-photos", async (req, res) => {
-  res.locals.ai_metadata.feature_id = "analyze_photos";
+  res.locals.ai_metadata.feature_id = "visual_icebreaker";
   res.locals.ai_metadata.prompt_version = "v1.0";
   try {
     const { photoUrl } = req.body;
@@ -718,7 +739,7 @@ aiRouter.post("/analyze-photos", async (req, res) => {
     // For this prototype, we'll assume the URL is accessible or we pass it as text context.
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro", // Use pro for image understanding
+      model: capabilityRouter.getRoute("visual_icebreaker"),
       contents: `Analyze this photo for a dating profile: ${photoUrl}`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.PHOTO_ANALYSIS,
@@ -746,7 +767,7 @@ aiRouter.post("/analyze-photos", async (req, res) => {
 });
 
 aiRouter.post("/moderation-summary", async (req, res) => {
-  res.locals.ai_metadata.feature_id = "moderation_summary";
+  res.locals.ai_metadata.feature_id = "mod_summarizer";
   res.locals.ai_metadata.prompt_version = "v1.0";
   try {
     const { reports } = req.body;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, CheckCircle2, ExternalLink, GitBranch, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronLeft, ExternalLink, GitBranch, ShieldCheck } from 'lucide-react';
 import type { SkillDefinition } from './types';
 import { SkillConsentPanel } from './components/SkillConsentPanel';
 import { SkillProgressPill } from './components/SkillProgressPill';
@@ -15,6 +15,16 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
   const { getSkillState, startSkill, completeSkill } = useSkillState();
   const state = getSkillState(skill.id);
   const isPlatform = skill.category === 'platform' || skill.category === 'governance';
+  const isInteractive = skill.experienceType === 'interactive';
+  const isNeedsVerification = skill.experienceType === 'needs_verification';
+  const isReference = skill.experienceType === 'reference' || skill.experienceType === 'external_reference';
+  const canSaveProgress = isInteractive && skill.routerStatus === 'bespoke';
+  const PageIcon = isNeedsVerification ? AlertTriangle : isReference ? BookOpen : ShieldCheck;
+  const pageLabel = isNeedsVerification
+    ? 'Verification gate'
+    : isReference
+      ? 'Reference library'
+      : 'Interactive prototype';
   const prototypeSteps = isPlatform
     ? ['Route through GitHub PR review', 'Verify on Vercel preview', 'Capture smoke evidence', 'Keep production gated']
     : ['Open the user-facing flow', 'Review consent and visibility state', 'Run seeded demo data', 'Verify reflective language'];
@@ -40,35 +50,55 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <section className="p-6 bg-[#F7F2EE] rounded-[24px] border border-[#E5E0DB] space-y-4">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-emerald-700" />
+            <PageIcon size={18} className={isNeedsVerification ? 'text-purple-700' : 'text-emerald-700'} />
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
-              Prototype experience
+              {pageLabel}
             </span>
           </div>
           <h2 className="text-base font-serif italic text-[#2D2926]">{skill.title}</h2>
           <p className="text-sm text-[#6B5E52] leading-relaxed">{skill.description}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => startSkill(skill.id, 'skills-hub')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D2926] text-white rounded-full text-[10px] font-bold uppercase tracking-widest"
-            >
-              Start skill
-            </button>
-            <button
-              type="button"
-              onClick={() => completeSkill(skill.id, {
-                id: `${skill.id}-prototype-note`,
-                type: skill.outputType,
-                summary: skill.demoModeBehavior,
-                createdAt: new Date().toISOString(),
-                sourceSurface: 'skills-hub',
-              }, 'skills-hub')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2D2926] border border-[#E5E0DB] rounded-full text-[10px] font-bold uppercase tracking-widest"
-            >
-              Save note
-            </button>
+          <div className="rounded-2xl bg-white border border-[#E5E0DB] p-4 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+              {skill.classification}
+            </p>
+            <p className="text-xs text-[#6B5E52] leading-relaxed">
+              Decision: {skill.deepeningDecision}. Evidence: {skill.evidenceLabel}. Router: {skill.routerStatus}.
+            </p>
+            <p className="text-xs text-[#6B5E52] leading-relaxed">
+              Render status: {skill.renderedStatus}.
+            </p>
           </div>
+          {canSaveProgress ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => startSkill(skill.id, 'skills-hub')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D2926] text-white rounded-full text-[10px] font-bold uppercase tracking-widest"
+              >
+                Start skill
+              </button>
+              <button
+                type="button"
+                onClick={() => completeSkill(skill.id, {
+                  id: `${skill.id}-prototype-note`,
+                  type: skill.outputType,
+                  summary: skill.demoModeBehavior,
+                  createdAt: new Date().toISOString(),
+                  sourceSurface: 'skills-hub',
+                }, 'skills-hub')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2D2926] border border-[#E5E0DB] rounded-full text-[10px] font-bold uppercase tracking-widest"
+              >
+                Save note
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white border border-[#E5E0DB] p-4">
+              <p className="text-xs text-[#6B5E52] leading-relaxed italic">
+                This item is not counted as a completed interactive skill. It remains visible for review until a
+                bespoke route, state boundary, tests, and rendered evidence are verified.
+              </p>
+            </div>
+          )}
         </section>
 
         <SkillConsentPanel skill={skill} />

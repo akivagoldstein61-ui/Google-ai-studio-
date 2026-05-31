@@ -67,6 +67,27 @@ function getApiNamespace(url: string) {
   return namespace;
 }
 
+function getAuthorizationHeader(request: IncomingMessage) {
+  const header = request.headers.authorization;
+  return Array.isArray(header) ? header[0] : header;
+}
+
+function hasBearerAuth(request: IncomingMessage) {
+  const header = getAuthorizationHeader(request);
+  return typeof header === 'string' && /^Bearer\s+\S+$/i.test(header.trim());
+}
+
+function createAuthRequired(path: string) {
+  return {
+    status: 'unauthorized',
+    source: 'vercel-api-function',
+    service: 'kesher',
+    path,
+    error: 'Authentication required',
+    timestamp: new Date().toISOString(),
+  };
+}
+
 async function getApp(): Promise<ExpressHandler> {
   if (cached) return cached;
   cached = import('../server.ts')
@@ -89,6 +110,11 @@ export default async function handler(
   const namespace = getApiNamespace(req.url ?? '/api');
   if (!namespace || !SUPPORTED_API_NAMESPACES.has(namespace)) {
     sendJson(res, 404, createApiNotFound(req.url ?? '/api'));
+    return;
+  }
+
+  if (!hasBearerAuth(req)) {
+    sendJson(res, 401, createAuthRequired(req.url ?? '/api'));
     return;
   }
 

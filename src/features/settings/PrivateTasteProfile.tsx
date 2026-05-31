@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 import type { TasteProfileDraft } from '@/types';
+import { getDocumentDirection } from '@/lib/direction';
 
 type TasteListKey = 'soft_preferences' | 'things_to_avoid' | 'hard_dealbreakers';
 
@@ -67,6 +68,7 @@ function mergeManualControls(raw: any, current: TasteProfileDraft): TasteProfile
 }
 
 export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const pageDir = getDocumentDirection();
   const {
     tasteProfile,
     setTasteProfile,
@@ -246,7 +248,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#FDFCFB]">
+    <div className="h-full flex flex-col bg-[#FDFCFB]" dir={pageDir}>
       <header className="px-6 py-4 flex items-center justify-between border-b border-[#F3EFEA]">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">

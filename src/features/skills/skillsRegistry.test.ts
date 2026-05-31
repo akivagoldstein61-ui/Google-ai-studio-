@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  getInteractiveSkills,
+  getNeedsVerificationSkills,
+  getReferenceSkills,
   getRecommendedSkillsForSurface,
   getSkillById,
+  SKILL_AUDIT_COUNTS,
   SKILL_LIVE_ROUTES,
   SKILLS,
 } from './skillRegistry';
@@ -53,9 +57,17 @@ const EXPECTED_SKILL_IDS = [
 ];
 
 describe('Kesher skills registry prototype visibility', () => {
-  it('keeps all 35 Kesher skills visible as prototype experiences', () => {
+  it('keeps all 35 Kesher skills visible with explicit audit classifications', () => {
     expect(SKILLS).toHaveLength(35);
     expect(SKILLS.every((skill) => skill.status === 'prototype')).toBe(true);
+    expect(SKILL_AUDIT_COUNTS).toEqual({
+      interactive: 12,
+      needsVerification: 6,
+      reference: 14,
+      externalReference: 3,
+      bespoke: 17,
+      plannedFallback: 18,
+    });
   });
 
   it('gives every visible skill enough metadata to render a details page', () => {
@@ -76,9 +88,62 @@ describe('Kesher skills registry prototype visibility', () => {
       expect(skill.privacyNotes.length).toBeGreaterThan(0);
       expect(skill.safetyLevel).toBeTruthy();
       expect(skill.outputType).toBeTruthy();
+      expect(skill.classification).toMatch(/^[A-F] /);
+      expect(skill.deepeningDecision).toMatch(/^[A-Z_]+$/);
+      expect(skill.evidenceLabel).toBe('VERIFIED');
+      expect(skill.routerStatus === 'bespoke' || skill.routerStatus === 'planned fallback').toBe(true);
+      expect(skill.experienceType).toBeTruthy();
+      expect(skill.referenceSection).toBeTruthy();
+      expect(skill.renderedStatus).toContain('rendered route status pending');
       expect(skill.demoModeBehavior).toBeTruthy();
       expect(skill.keyFeatures?.length).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('separates interactive skills from reference and unverified capabilities', () => {
+    expect(getInteractiveSkills().map((skill) => skill.id)).toEqual([
+      'personality-assessment',
+      'personality-profile',
+      'personality-ocean',
+      'personality-visibility',
+      'consent-ux',
+      'private-taste',
+      'why-this-match',
+      'permissioned-sharing',
+      'compatibility-reflection',
+      'filtering-marketplace',
+      'learned-taste',
+      'pacing-coach',
+    ]);
+
+    expect(getNeedsVerificationSkills().map((skill) => skill.id)).toEqual([
+      'privacy-recommendation',
+      'private-recommendations',
+      'maps-date-planner',
+      'grounded-search',
+      'image-analysis',
+      'voice-integration',
+    ]);
+
+    expect(getReferenceSkills().map((skill) => skill.id)).toEqual([
+      'personality-engine',
+      'personality-research',
+      'israeli-privacy',
+      'explainable-ai',
+      'ai-runtime-governance',
+      'ai-feature-modules',
+      'gemini-integration',
+      'low-latency-ai',
+      'high-thinking-routing',
+      'google-ai-studio-app-builder',
+      'sparkmatch-dating-app-skill',
+      'video-generator',
+      'system-prompt',
+      'calm-ux',
+      'psychometric-validation',
+      'dark-pattern-audit',
+      'personality-delivery',
+    ]);
   });
 
   it('keeps the extracted featured skill inventory complete and launchable', () => {
@@ -90,6 +155,12 @@ describe('Kesher skills registry prototype visibility', () => {
       expect(skill?.entryPoints.some((entryPoint) => entryPoint.route)).toBe(true);
       expect(SKILL_LIVE_ROUTES[id]?.path).toMatch(/^\//);
     }
+
+    expect(getSkillById('grounded-search')?.skillId).toBe('kesher-grounded-search');
+    expect(getSkillById('image-analysis')?.skillId).toBe('kesher-image-analysis');
+    expect(getSkillById('voice-integration')?.skillId).toBe('kesher-voice-integration');
+    expect(getSkillById('sparkmatch-dating-app-skill')?.skillId).toBe('sparkmatch-dating-app-skill');
+    expect(getSkillById('video-generator')?.skillId).toBe('video-generator');
   });
 
   it('recommends contextual skills for primary app surfaces', () => {

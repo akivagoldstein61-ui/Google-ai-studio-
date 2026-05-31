@@ -1,9 +1,13 @@
 import React from 'react';
 import { Shield, AlertTriangle, Activity, BarChart2, ChevronLeft } from 'lucide-react';
+import { MODEL_REGISTRY } from '@/ai/modelRegistry';
+import { getDocumentDirection } from '@/lib/direction';
 
 export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const pageDir = getDocumentDirection();
+
   return (
-    <div className="h-full flex flex-col bg-[#FDFCFB]">
+    <div className="h-full flex flex-col bg-[#FDFCFB]" dir={pageDir}>
       <header className="px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
         <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
           <ChevronLeft size={20} className="text-[#2D2926]" />
@@ -39,15 +43,15 @@ export const AIOpsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <h3 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Model Performance</h3>
           <div className="p-4 bg-white border border-[#F3EFEA] rounded-2xl shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b border-[#F3EFEA] pb-2">
-              <span className="text-sm font-bold">gemini-3.1-pro-preview</span>
+              <span className="text-sm font-bold">{MODEL_REGISTRY.primaryReasoningModel}</span>
               <span className="text-xs text-green-600 font-bold">Healthy</span>
             </div>
             <div className="flex justify-between items-center border-b border-[#F3EFEA] pb-2">
-              <span className="text-sm font-bold">gemini-2.5-flash</span>
+              <span className="text-sm font-bold">{MODEL_REGISTRY.optionalFastFallbackModel}</span>
               <span className="text-xs text-green-600 font-bold">Healthy</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-bold">gemini-3.1-flash-image-preview</span>
+              <span className="text-sm font-bold">{MODEL_REGISTRY.imageGenerationModel}</span>
               <span className="text-xs text-amber-600 font-bold">Degraded</span>
             </div>
           </div>

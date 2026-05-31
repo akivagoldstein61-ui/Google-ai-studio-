@@ -4,6 +4,37 @@ export type SkillCategory = 'personality' | 'privacy' | 'governance' | 'ux' | 'p
 
 export type SkillStatus = 'live' | 'prototype' | 'planned';
 
+export type SkillClassification =
+  | 'A Fully functioning interactive skill'
+  | 'B Functioning interactive skill that should be deepened'
+  | 'C Interactive concept present but not functioning enough to deepen yet'
+  | 'D Internal reference-only page'
+  | 'E External reference-only resource'
+  | 'F Unknown / needs verification';
+
+export type SkillDeepeningDecision =
+  | 'DEEPEN_NOW'
+  | 'DEEPEN_AFTER_FIX'
+  | 'DO_NOT_DEEPEN_REFERENCE_ONLY'
+  | 'MOVE_TO_REFERENCE_SECTION'
+  | 'REMOVE_OR_HIDE_UNTIL_VERIFIED'
+  | 'UNKNOWN_PENDING_RENDERED_TEST';
+
+export type SkillEvidenceLabel = 'VERIFIED' | 'INFERRED' | 'HEURISTIC' | 'UNKNOWN' | 'BLOCKED';
+
+export type SkillRouterStatus = 'bespoke' | 'planned fallback' | 'missing';
+
+export type SkillExperienceType = 'interactive' | 'reference' | 'external_reference' | 'needs_verification';
+
+export type SkillReferenceSection =
+  | 'Interactive Skills'
+  | 'Future Capability Holding Area'
+  | 'Legal / Privacy Reference'
+  | 'Governance / AI Runtime Reference'
+  | 'Product / Operator Reference'
+  | 'UX / Safety Review Reference'
+  | 'External Platform Reference';
+
 export type SkillSurface =
   | 'skills-hub'
   | 'skills'
@@ -88,6 +119,13 @@ export interface SkillDefinition {
   aiFeatureKey?: string;
   outputType: SkillOutputType;
   status: SkillStatus;
+  classification: SkillClassification;
+  deepeningDecision: SkillDeepeningDecision;
+  evidenceLabel: SkillEvidenceLabel;
+  routerStatus: SkillRouterStatus;
+  experienceType: SkillExperienceType;
+  referenceSection: SkillReferenceSection;
+  renderedStatus: string;
   prerequisites: string[];
   recommendedNextActions: string[];
   demoModeBehavior: string;

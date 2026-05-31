@@ -26,6 +26,7 @@ const FEATURE_ROUTES: Record<string, string> = {
   safety_advice: '/api/ai/safety-advice',
   rephrase_message: '/api/ai/rephrase',
   generate_openers: '/api/ai/openers',
+  daily_picks_intro: '/api/ai/daily-picks-intro',
   personality_profile: '/api/ai/personality-profile',
   compatibility_reflection: '/api/ai/compatibility-reflection',
   pacing_coach: '/api/ai/pacing-intervention',

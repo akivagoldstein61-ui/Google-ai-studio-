@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ExternalLink, LockKeyhole, ShieldCheck } from 'lucide-react';
 import type { SkillDefinition, UserSkillState } from '../types';
 import { SkillProgressPill } from './SkillProgressPill';
 
@@ -12,6 +12,41 @@ const statusBadge = (status: SkillDefinition['status']) => {
   return map[status];
 };
 
+const experienceBadge = (skill: SkillDefinition) => {
+  switch (skill.experienceType) {
+    case 'interactive':
+      return {
+        label: 'Interactive',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        Icon: ShieldCheck,
+      };
+    case 'needs_verification':
+      return {
+        label: 'Verify first',
+        className: 'bg-purple-50 text-purple-700 border-purple-200',
+        Icon: LockKeyhole,
+      };
+    case 'external_reference':
+      return {
+        label: 'External ref',
+        className: 'bg-slate-50 text-slate-600 border-slate-200',
+        Icon: ExternalLink,
+      };
+    default:
+      return {
+        label: 'Reference',
+        className: 'bg-stone-50 text-stone-700 border-stone-200',
+        Icon: ExternalLink,
+      };
+  }
+};
+
+const actionLabel = (skill: SkillDefinition) => {
+  if (skill.experienceType === 'interactive') return 'Open skill';
+  if (skill.experienceType === 'needs_verification') return 'Review gate';
+  return 'Review reference';
+};
+
 export const SkillCard: React.FC<{
   skill: SkillDefinition;
   state?: UserSkillState;
@@ -20,6 +55,8 @@ export const SkillCard: React.FC<{
   liveRoute?: { path: string; label: string };
 }> = ({ skill, state, onSelect, onOpenFeature, liveRoute }) => {
   const Icon = skill.icon;
+  const badge = experienceBadge(skill);
+  const BadgeIcon = badge.Icon;
   return (
     <div
       className="flex flex-col p-5 bg-white border border-[#F3EFEA] rounded-[24px] shadow-sm hover:shadow-md hover:border-[#D4AF37]/30 transition-all group"
@@ -38,6 +75,14 @@ export const SkillCard: React.FC<{
             >
               {skill.status}
             </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-full border ${badge.className}`}
+              data-skill-experience={skill.experienceType}
+              title={skill.classification}
+            >
+              <BadgeIcon size={10} />
+              {badge.label}
+            </span>
             {state && <SkillProgressPill status={state.status} progress={state.progress} />}
           </div>
         </div>
@@ -51,6 +96,9 @@ export const SkillCard: React.FC<{
           <p className="text-xs text-[#6B5E52] leading-relaxed mt-2">
             {skill.summary}
           </p>
+          <p className="text-[10px] text-[#8C7E6E] leading-relaxed mt-2">
+            {skill.referenceSection} · {skill.deepeningDecision}
+          </p>
         </div>
       </button>
       <div className="mt-3 flex items-center justify-between gap-2">
@@ -58,7 +106,7 @@ export const SkillCard: React.FC<{
           onClick={() => onSelect(skill.id)}
           className="flex items-center gap-1 text-[10px] font-bold text-[#8C7E6E] hover:text-[#D4AF37] uppercase tracking-widest transition-colors"
         >
-          Explore <ChevronRight size={12} />
+          {actionLabel(skill)} <ChevronRight size={12} />
         </button>
         {liveRoute && onOpenFeature && (
           <button

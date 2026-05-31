@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Beaker, ChevronLeft, ToggleLeft, ToggleRight } from 'lucide-react';
 import { FEATURE_FLAGS } from '@/ai/featureFlags';
 import { cn } from '@/lib/utils';
+import { getDocumentDirection } from '@/lib/direction';
 
 export const ExperimentsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [flags, setFlags] = useState(FEATURE_FLAGS);
+  const pageDir = getDocumentDirection();
 
   const toggleFlag = (key: keyof typeof FEATURE_FLAGS) => {
     setFlags(prev => ({
@@ -14,7 +16,7 @@ export const ExperimentsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) 
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#FDFCFB]">
+    <div className="h-full flex flex-col bg-[#FDFCFB]" dir={pageDir}>
       <header className="px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
         <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
           <ChevronLeft size={20} className="text-[#2D2926]" />

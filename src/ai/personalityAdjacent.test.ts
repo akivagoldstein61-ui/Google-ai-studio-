@@ -321,6 +321,19 @@ describe('AI feature registry — no LLM personality scoring features', () => {
       expect(id.toLowerCase()).not.toMatch(/personality_score|attractiveness|compatibility_score/);
     }
   });
+
+  it('declares structured outputs for message drafting routes that use schemas', () => {
+    expect(getFeatureById('rephrase_message')?.structured_output_used).toBe(true);
+    expect(getFeatureById('generate_openers')?.structured_output_used).toBe(true);
+    expect(getFeatureById('daily_picks_intro')?.structured_output_used).toBe(true);
+  });
+
+  it('keeps search and maps features citation-gated', () => {
+    expect(getFeatureById('safety_advice')?.requires_citation_ui).toBe(true);
+    expect(getFeatureById('safety_advice')?.search_used).toBe(true);
+    expect(getFeatureById('date_planner')?.requires_citation_ui).toBe(true);
+    expect(getFeatureById('date_planner')?.maps_used).toBe(true);
+  });
 });
 
 describe('Personality service shell', () => {

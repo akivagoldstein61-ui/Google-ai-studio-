@@ -8,6 +8,7 @@ import {
   type PersonalityVisibilityScope,
 } from '@/ai/schemas';
 import { cn } from '@/lib/utils';
+import { getDocumentDirection } from '@/lib/direction';
 
 const FIELD_LABELS: Record<PersonalityVisibilityField, { en: string; he: string; hint: string }> = {
   trait_summary: {
@@ -62,6 +63,7 @@ const DEFAULT_FIELDS: Record<PersonalityVisibilityField, PersonalityVisibilitySc
 
 export const PersonalityVisibilitySettings: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user } = useApp();
+  const pageDir = getDocumentDirection();
   const [fields, setFields] = useState<Record<PersonalityVisibilityField, PersonalityVisibilityScope>>(DEFAULT_FIELDS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,7 +113,7 @@ export const PersonalityVisibilitySettings: React.FC<{ onBack: () => void }> = (
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col bg-[#FDFCFB] items-center justify-center space-y-4">
+      <div className="h-full flex flex-col bg-[#FDFCFB] items-center justify-center space-y-4" dir={pageDir}>
         <Loader2 className="animate-spin text-[#D4AF37]" size={32} />
         <p className="text-[#8C7E6E] italic font-serif">Loading visibility settings…</p>
       </div>
@@ -119,7 +121,7 @@ export const PersonalityVisibilitySettings: React.FC<{ onBack: () => void }> = (
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#FDFCFB]">
+    <div className="h-full flex flex-col bg-[#FDFCFB]" dir={pageDir}>
       <header className="px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA] sticky top-0 bg-[#FDFCFB] z-10">
         <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
           <ChevronLeft size={20} className="text-[#2D2926]" />

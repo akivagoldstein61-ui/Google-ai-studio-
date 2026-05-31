@@ -29,10 +29,16 @@ import {
 } from 'lucide-react';
 import type {
   SkillCategory,
+  SkillClassification,
   SkillConsentType,
+  SkillDeepeningDecision,
   SkillDefinition,
+  SkillEvidenceLabel,
+  SkillExperienceType,
   SkillEntryPoint,
   SkillOutputType,
+  SkillReferenceSection,
+  SkillRouterStatus,
   SkillSafetyLevel,
   SkillStatus,
   SkillSurface,
@@ -63,6 +69,13 @@ type SkillInput = {
   recommendedNextActions?: string[];
   demoModeBehavior?: string;
   featured?: boolean;
+  classification?: SkillClassification;
+  deepeningDecision?: SkillDeepeningDecision;
+  evidenceLabel?: SkillEvidenceLabel;
+  routerStatus?: SkillRouterStatus;
+  experienceType?: SkillExperienceType;
+  referenceSection?: SkillReferenceSection;
+  renderedStatus?: string;
 };
 
 const entry = (
@@ -79,9 +92,132 @@ const DEFAULT_PRIVACY_NOTES = [
   'AI output is assistive only; the member stays in control.',
 ];
 
+const BESPOKE_ROUTER_SKILLS = new Set([
+  'personality-assessment',
+  'consent-ux',
+  'israeli-privacy',
+  'privacy-recommendation',
+  'why-this-match',
+  'permissioned-sharing',
+  'compatibility-reflection',
+  'psychometric-validation',
+  'dark-pattern-audit',
+  'ai-runtime-governance',
+  'personality-profile',
+  'pacing-coach',
+  'private-taste',
+  'personality-visibility',
+  'personality-ocean',
+  'learned-taste',
+  'filtering-marketplace',
+]);
+
+const DEEPEN_NOW_SKILLS = new Set([
+  'personality-assessment',
+  'personality-ocean',
+  'private-taste',
+  'filtering-marketplace',
+  'learned-taste',
+  'pacing-coach',
+]);
+
+const DEEPEN_AFTER_FIX_SKILLS = new Set([
+  'personality-profile',
+  'personality-visibility',
+  'consent-ux',
+  'privacy-recommendation',
+  'private-recommendations',
+  'why-this-match',
+  'permissioned-sharing',
+  'compatibility-reflection',
+  'maps-date-planner',
+  'grounded-search',
+]);
+
+const REFERENCE_ONLY_SKILLS = new Set([
+  'personality-engine',
+  'personality-research',
+  'israeli-privacy',
+  'explainable-ai',
+  'ai-runtime-governance',
+  'ai-feature-modules',
+  'gemini-integration',
+  'low-latency-ai',
+  'high-thinking-routing',
+  'system-prompt',
+  'calm-ux',
+  'psychometric-validation',
+  'dark-pattern-audit',
+  'personality-delivery',
+]);
+
+const EXTERNAL_REFERENCE_SKILLS = new Set([
+  'google-ai-studio-app-builder',
+  'sparkmatch-dating-app-skill',
+  'video-generator',
+]);
+
+const NEEDS_VERIFICATION_SKILLS = new Set([
+  'privacy-recommendation',
+  'private-recommendations',
+  'maps-date-planner',
+  'grounded-search',
+  'image-analysis',
+  'voice-integration',
+]);
+
+const REMOVE_OR_HIDE_UNTIL_VERIFIED_SKILLS = new Set([
+  'image-analysis',
+  'voice-integration',
+  'video-generator',
+]);
+
+const getDefaultRouterStatus = (id: string): SkillRouterStatus => (
+  BESPOKE_ROUTER_SKILLS.has(id) ? 'bespoke' : 'planned fallback'
+);
+
+const getDefaultExperienceType = (id: string): SkillExperienceType => {
+  if (EXTERNAL_REFERENCE_SKILLS.has(id)) return 'external_reference';
+  if (REFERENCE_ONLY_SKILLS.has(id)) return 'reference';
+  if (NEEDS_VERIFICATION_SKILLS.has(id)) return 'needs_verification';
+  return 'interactive';
+};
+
+const getDefaultClassification = (id: string): SkillClassification => {
+  const experience = getDefaultExperienceType(id);
+  if (experience === 'interactive') return 'B Functioning interactive skill that should be deepened';
+  if (experience === 'needs_verification') return 'C Interactive concept present but not functioning enough to deepen yet';
+  if (experience === 'reference') return 'D Internal reference-only page';
+  return 'E External reference-only resource';
+};
+
+const getDefaultDeepeningDecision = (id: string): SkillDeepeningDecision => {
+  if (DEEPEN_NOW_SKILLS.has(id)) return 'DEEPEN_NOW';
+  if (DEEPEN_AFTER_FIX_SKILLS.has(id)) return 'DEEPEN_AFTER_FIX';
+  if (REMOVE_OR_HIDE_UNTIL_VERIFIED_SKILLS.has(id)) return 'REMOVE_OR_HIDE_UNTIL_VERIFIED';
+  if (REFERENCE_ONLY_SKILLS.has(id) || EXTERNAL_REFERENCE_SKILLS.has(id)) return 'MOVE_TO_REFERENCE_SECTION';
+  return 'UNKNOWN_PENDING_RENDERED_TEST';
+};
+
+const getDefaultReferenceSection = (id: string, category: SkillCategory): SkillReferenceSection => {
+  if (NEEDS_VERIFICATION_SKILLS.has(id)) return 'Future Capability Holding Area';
+  if (EXTERNAL_REFERENCE_SKILLS.has(id)) return 'External Platform Reference';
+  if (id === 'israeli-privacy') return 'Legal / Privacy Reference';
+  if (['ai-runtime-governance', 'ai-feature-modules', 'gemini-integration', 'low-latency-ai', 'high-thinking-routing', 'system-prompt', 'explainable-ai'].includes(id)) {
+    return 'Governance / AI Runtime Reference';
+  }
+  if (['calm-ux', 'dark-pattern-audit'].includes(id)) return 'UX / Safety Review Reference';
+  if (['personality-delivery', 'psychometric-validation', 'personality-research', 'personality-engine'].includes(id)) {
+    return 'Product / Operator Reference';
+  }
+  if (category === 'governance' || category === 'platform') return 'Governance / AI Runtime Reference';
+  return 'Interactive Skills';
+};
+
 const defineSkill = (input: SkillInput): SkillDefinition => {
   const surfaces = new Set<SkillSurface>(['skills-hub', 'skills', input.primarySurface]);
   input.entryPoints.forEach((point) => surfaces.add(point.surface));
+  const experienceType = input.experienceType ?? getDefaultExperienceType(input.id);
 
   return {
     id: input.id,
@@ -105,6 +241,13 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
     aiFeatureKey: input.aiFeatureKey,
     outputType: input.outputType ?? 'reference',
     status: input.status,
+    classification: input.classification ?? getDefaultClassification(input.id),
+    deepeningDecision: input.deepeningDecision ?? getDefaultDeepeningDecision(input.id),
+    evidenceLabel: input.evidenceLabel ?? 'VERIFIED',
+    routerStatus: input.routerStatus ?? getDefaultRouterStatus(input.id),
+    experienceType,
+    referenceSection: input.referenceSection ?? getDefaultReferenceSection(input.id, input.category),
+    renderedStatus: input.renderedStatus ?? 'HTML shell 200; rendered route status pending browser verification',
     prerequisites: input.prerequisites ?? ['Member is signed into the Kesher prototype.'],
     recommendedNextActions: input.recommendedNextActions ?? input.entryPoints.map((point) => point.label),
     demoModeBehavior: input.demoModeBehavior ?? 'Starts a demo-safe skill state and opens the related prototype surface when available.',
@@ -617,6 +760,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'grounded-search',
+    skillId: 'kesher-grounded-search',
     title: 'Grounded Search',
     shortTitle: 'Search Grounding',
     subtitle: 'Google Search Integration',
@@ -637,6 +781,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'image-analysis',
+    skillId: 'kesher-image-analysis',
     title: 'Image Analysis',
     shortTitle: 'Photo Checks',
     subtitle: 'Trust-Forward Photo Checks',
@@ -657,6 +802,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'voice-integration',
+    skillId: 'kesher-voice-integration',
     title: 'Voice Integration',
     shortTitle: 'Voice',
     subtitle: 'Gemini Live API',
@@ -699,6 +845,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'sparkmatch-dating-app-skill',
+    skillId: 'sparkmatch-dating-app-skill',
     title: 'SparkMatch Dating App',
     shortTitle: 'Reference App',
     subtitle: 'Reference App Patterns',
@@ -719,6 +866,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'video-generator',
+    skillId: 'video-generator',
     title: 'Video Generator',
     shortTitle: 'Video',
     subtitle: 'Multimodal Prototype Utility',
@@ -851,6 +999,15 @@ export const SKILL_COUNTS = {
   planned: SKILLS.filter((skill) => skill.status === 'planned').length,
 };
 
+export const SKILL_AUDIT_COUNTS = {
+  interactive: SKILLS.filter((skill) => skill.experienceType === 'interactive').length,
+  needsVerification: SKILLS.filter((skill) => skill.experienceType === 'needs_verification').length,
+  reference: SKILLS.filter((skill) => skill.experienceType === 'reference').length,
+  externalReference: SKILLS.filter((skill) => skill.experienceType === 'external_reference').length,
+  bespoke: SKILLS.filter((skill) => skill.routerStatus === 'bespoke').length,
+  plannedFallback: SKILLS.filter((skill) => skill.routerStatus === 'planned fallback').length,
+};
+
 export const CATEGORY_LABELS: Record<'all' | SkillCategory, string> = {
   all: 'All',
   personality: 'Personality',
@@ -875,6 +1032,14 @@ export const SKILL_LIVE_ROUTES: Record<string, { path: string; label: string }> 
 export const getSkillById = (skillId: string) => SKILLS.find((skill) => skill.id === skillId);
 
 export const getFeaturedSkills = () => SKILLS.filter((skill) => skill.featured);
+
+export const getInteractiveSkills = () => SKILLS.filter((skill) => skill.experienceType === 'interactive');
+
+export const getReferenceSkills = () => SKILLS.filter((skill) => (
+  skill.experienceType === 'reference' || skill.experienceType === 'external_reference'
+));
+
+export const getNeedsVerificationSkills = () => SKILLS.filter((skill) => skill.experienceType === 'needs_verification');
 
 export const getSkillsForSurface = (surface: SkillSurface, options?: { includeInternal?: boolean }) => (
   SKILLS.filter((skill) => {
