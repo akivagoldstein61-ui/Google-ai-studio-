@@ -1,0 +1,60 @@
+name: Post-Deploy Smoke Test
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Production or preview URL to smoke-test"
+        required: false
+
+permissions:
+  contents: read
+  deployments: read
+
+env:
+  KESHER_PRODUCTION_URL: https://google-ai-studio-sage-sigma.vercel.app
+
+jobs:
+  smoke:
+    name: Smoke — deployment routes and API
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Determine URL
+        id: target
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.url }}" ]; then
+            echo "url=${{ github.event.inputs.url }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.deployment_status.target_url }}" ]; then
+            echo "url=${{ github.event.deployment_status.target_url }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.deployment_status.environment_url }}" ]; then
+            echo "url=${{ github.event.deployment_status.environment_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=${{ env.KESHER_PRODUCTION_URL }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run deployment smoke test
+        run: node scripts/smoke-deployment.mjs
+        env:
+          SMOKE_BASE_URL: ${{ steps.target.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      - name: Run API smoke test
+        run: node scripts/api-smoke.mjs "${{ steps.target.outputs.url }}"
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
