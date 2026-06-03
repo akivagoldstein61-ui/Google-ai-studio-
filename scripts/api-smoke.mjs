@@ -21,6 +21,18 @@ const baseUrl =
   process.argv[2] ?? process.env.KESHER_BASE_URL ?? DEFAULT_BASE;
 
 const cleanBase = baseUrl.replace(/\/+$/, "");
+const vercelProtectionBypassSecret = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
+
+function getVercelProtectionHeaders() {
+  if (!vercelProtectionBypassSecret) return {};
+  return {
+    "x-vercel-protection-bypass": vercelProtectionBypassSecret,
+  };
+}
+
+function wasRequestBlockedByVercelProtection(url, status) {
+  return new URL(url).hostname.endsWith(".vercel.app") && (status === 401 || status === 403);
+}
 
 /**
  * Each check states the expected behaviour. We do NOT supply auth tokens —
@@ -71,7 +83,10 @@ for (const check of CHECKS) {
   try {
     const res = await fetch(url, {
       method: check.method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...getVercelProtectionHeaders(),
+      },
       body: check.body ? JSON.stringify(check.body) : undefined,
     });
 
@@ -86,6 +101,10 @@ for (const check of CHECKS) {
 
     failures++;
     console.log(`FAIL (${res.status} ${contentType})`);
+    if (wasRequestBlockedByVercelProtection(url, res.status)) {
+      console.log("    Vercel Deployment Protection blocked this smoke request.");
+      console.log("    Set VERCEL_AUTOMATION_BYPASS_SECRET for automation or make the target deployment publicly reachable.");
+    }
     console.log(`    expected status one of ${JSON.stringify(check.expectStatus)} with content-type ${check.expectContentType}`);
 
     // If we got HTML back, that's the classic "SPA caught the API route"
