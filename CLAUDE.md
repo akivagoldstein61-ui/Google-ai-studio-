@@ -18,31 +18,40 @@
 ## 2. Current Architecture
 
 ```
-server.ts                    → Express entry point
-server/aiRoutes.ts           → 11 POST routes proxying Gemini (server-side only)
-server/authMiddleware.ts     → Firebase Admin token verification middleware
+server.ts                    → Express entry point; mounts all /api routers + /api/health, /api/version
+server/aiRoutes.ts           → Gemini proxy router (server-side only), behind authMiddleware
+server/authMiddleware.ts     → Firebase ID-token verification; prototype/mock fallback unless AI_ROUTE_AUTH_MODE=strict
+server/discoveryRoutes.ts    → /api/discovery — daily-picks/explore/like/pass (self-auth via authMiddleware)
+server/tasteRoutes.ts        → /api/taste — taste profile/events/reset/export/delete (self-auth via authMiddleware)
+server/trustRoutes.ts        → /api/safety,/api/profile,/api/account,/api/support — report/block/unmatch/rights (self-auth via requireAuth + verifyIdToken)
+server/shareRoutes.ts        → /api/share — permissioned share cards (self-auth via requireAuth + verifyIdToken)
 src/
   ai/                        → Canonical AI layer (DO NOT MOVE)
-    featureRegistry.ts       → 12 AI features with metadata, risk, consent, routing
+    featureRegistry.ts       → 15 AI features with metadata, risk, consent, routing (AI_FEATURE_REGISTRY)
     policies.ts              → STRICT_DATING safety settings, system instructions
-    schemas.ts               → 7 Gemini structured output schemas
-    prompts.ts               → 10 parameterized prompt templates
-    outputValidators.ts      → 6 runtime validators
-    capabilityRouter.ts      → feature → model routing
-    modelRegistry.ts         → 6 model routes (gemini-3.1-pro, gemini-2.5-flash, etc.)
-    featureFlags.ts          → boolean flags per feature
+    schemas.ts               → Gemini structured output schemas
+    prompts.ts               → parameterized prompt templates
+    outputValidators.ts      → runtime validators
+    capabilityRouter.ts      → feature → model routing (15 feature ids)
+    modelRegistry.ts         → 8 model routes, all gemini-2.5-pro / gemini-2.5-flash (NO gemini-3.1)
+    featureFlags.ts          → boolean flags per feature (voice_reflection + visual_icebreaker OFF)
     types.ts                 → AIFeatureMetadata, AIResponse, AICitation
+  features/ai/aiFeatureRegistry.ts → DERIVED contract view of AI_FEATURE_REGISTRY (not a second registry)
   services/
     aiService.ts             → fetch-based proxy client (calls /api/ai/*)
     aiSafetyService.ts       → safety-scan + safety-advice proxy client
     aiDatePlannerService.ts  → date-planner proxy client
     authFetch.ts             → Thin fetch wrapper that attaches Firebase ID token
-  types/index.ts             → Canonical domain types (Profile, Match, Conversation, etc.)
+  types.ts                   → Canonical domain types (Profile, Match, Conversation, etc.); src/types/index.ts is UNUSED
   features/                  → Screen components by domain
-  context/AppContext.tsx      → App state (Firebase auth, mock data, in-memory)
+  features/skills/           → Skills Hub: 35-entry registry, 17 bespoke pages, 18 PlannedSkillPage fallbacks
+  product/completionPlan.ts  → 8 product-completion skills + 10 deepened + 8 completion gates
+  context/AppContext.tsx      → App state: Google OAuth + demo/local-mock; Firestore-backed with MOCK_PROFILES fallback
   components/                → Shared UI components
-  data/mockProfiles.ts       → 4 hardcoded test profiles
+  data/mockProfiles.ts       → hardcoded profiles used as demo/local + fallback data
 ```
+
+> **Repo-truth corrections (PR 0, commit `506e27e`, branch `claude/trusting-cori-6pnwv`).** Several facts above were corrected from earlier drafts of this file. Verified in current repo: models are `gemini-2.5-*` (not `gemini-3.1-pro`); auth is **Google OAuth popup + demo/local-mock** (not phone/email); discovery + matching are **server-side** via `discoveryService` → `/api/discovery` (no client-side `Math.random`); data is **Firestore-backed with mock fallback**; canonical domain types live in `src/types.ts` (`src/types/index.ts` is not imported). All non-AI API routers self-authenticate; production must run `AI_ROUTE_AUTH_MODE=strict`. See `docs/skills/INVENTORY.md` for the full Skills Hub crosswalk.
 
 ---
 
@@ -54,7 +63,7 @@ When sources disagree, prefer later items over earlier ones **only if** the late
 2. The current user task
 3. **Verified current repo files** (what `git ls-files` and `Read` actually show today)
 4. `src/ai/*` — AI feature definitions, policies, schemas, prompts
-5. `src/types/index.ts` — domain type definitions
+5. `src/types.ts` — canonical domain type definitions (`src/types/index.ts` exists but is unused)
 6. `docs/claude-import-refresh/00-08` — planning artifacts (audit, plan, slices)
 7. `docs/target-architecture.md` — **non-authoritative** future-state vision; do not treat as live truth
 8. Root PDFs — product requirements, strategic review, AI master plan, architecture vision
@@ -131,9 +140,9 @@ Dependency chain for remaining work (completed items struck through):
 5. ~~CLAUDE.md — project memory file~~ (DONE — this file)
 6. ~~Prompt input sanitization — prevent injection in AI prompts~~ (DONE)
 7. ~~Router introduction — React Router v7 replacing useState navigation~~ (DONE)
-8. ~~Real Firebase Auth — phone/email sign-in~~ (DONE)
-9. Firestore persistence — replace mock data (approval needed, blocked by 8)
-10. Real matching algorithm — replace Math.random() (approval needed, blocked by 9)
+8. ~~Real Firebase Auth — Google OAuth + demo/local-mock~~ (DONE; not phone/email)
+9. ~~Firestore persistence — Firestore-backed user/match/conversation/taste state with mock fallback~~ (LARGELY DONE; client reads/writes `users/{uid}/private/*`, `matches`, `conversations`. Remaining: schema finalization + message-model reconciliation — approval needed)
+10. ~~Real matching algorithm — replace `Math.random()`~~ (DONE on client: matching is server-side via `discoveryService` → `/api/discovery`. Remaining: ranking/fairness hardening in `server/discoveryRoutes.ts` — approval needed for scoring design)
 
 ---
 
@@ -157,8 +166,9 @@ Dependency chain for remaining work (completed items struck through):
 ## 9. Single Safest Next Slices
 
 **Needs approval:**
-- Firestore persistence — replace mock data (blocked by auth — now unblocked)
-- Real matching algorithm — replace Math.random() (blocked by Firestore)
+- Firestore schema finalization + message-model reconciliation (`conversations.messages[]` vs `matches/{id}/messages` subcollection) — persistence scaffolding already exists
+- Matching/ranking scoring design — server-side discovery exists; reciprocal ranking + exposure fairness still to be designed
+- Skills Hub deepening (reference separation + first deepen-now batch) — see `docs/skills/INVENTORY.md`
 
 ---
 
