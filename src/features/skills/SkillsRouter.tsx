@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SkillsHub } from './SkillsHub';
-import { SKILLS } from './skillRegistry';
+import { SKILLS, isInteractiveSkill } from './skillRegistry';
 import { PersonalityAssessmentSkill } from './PersonalityAssessmentSkill';
 import { ConsentUxSkill } from './ConsentUxSkill';
 import { IsraeliPrivacySkill } from './IsraeliPrivacySkill';
@@ -33,7 +33,12 @@ export const SkillsRouter: React.FC<{
 
   const handleSelectSkill = (skillId: string) => {
     emitSkillEvent(trackEvent, 'skill_viewed', { skillId, surface: 'skills-hub' });
-    startSkill(skillId, 'skills-hub');
+    // Reference/operator/legal/platform/hidden items are not practice surfaces:
+    // opening one must not create skill progress/completion history.
+    const meta = SKILLS.find((skill) => skill.id === skillId);
+    if (meta && isInteractiveSkill(meta)) {
+      startSkill(skillId, 'skills-hub');
+    }
     setActiveSkill(skillId);
   };
 
@@ -81,7 +86,13 @@ export const SkillsRouter: React.FC<{
     default: {
       const meta = SKILLS.find(s => s.id === activeSkill);
       if (meta) {
-        return <PlannedSkillPage skill={meta} onBack={() => setActiveSkill(null)} />;
+        return (
+          <PlannedSkillPage
+            skill={meta}
+            onBack={() => setActiveSkill(null)}
+            readOnly={!isInteractiveSkill(meta)}
+          />
+        );
       }
       return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
     }

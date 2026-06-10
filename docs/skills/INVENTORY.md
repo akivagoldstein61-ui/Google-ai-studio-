@@ -173,3 +173,17 @@ Page: **B** = bespoke component, **P** = `PlannedSkillPage`. Render/mobile/RTL =
 ## G. Rendered Verification Status
 
 **BLOCKED.** Vercel and Replit prototypes return HTTP 403 on every probed route (`/`, `/skills-hub`, `/api/health`, `/api/version`, unknown `/api/*`). No mobile/RTL/render result is asserted. This is a deployment-reachability finding, not evidence of broken app logic. Resolve via authorized preview access (PR 10).
+
+---
+
+## H. PR 1 — Applied truth labels (registry/UI only)
+
+PR 1 made the §C classification executable via additive registry metadata — no runtime/backend/AI/deploy change.
+
+- Added `surfaceClass` / `visibility` / `deepeningDecision` to `SkillDefinition` (`types.ts`), centralized in `SKILL_CLASSIFICATION` (`skillRegistry.ts`).
+- Hub now renders **grouped sections** (Interactive Skills · Settings & Controls · Trust & Safety · Reference & Governance · Platform / Vendor); `visibility:'hidden'` items are not shown in the member Hub.
+- Launch gating: only `member_interactive`/`settings_control`/`trust_safety` (and `member_visible`) record skill progress. Reference/operator/legal/platform cards show **"Open reference"** (no "Start skill", no progress pill, no completion history). `PlannedSkillPage` gains a `readOnly` mode for reference items.
+- Backfilled the 5 missing `skillId` links (`grounded-search→kesher-grounded-search`, `image-analysis→kesher-image-analysis`, `voice-integration→kesher-voice-integration`, `sparkmatch-dating-app-skill`, `video-generator`). Linking does **not** make hidden/external items interactive.
+- Counts: **16** `member_visible`, **16** `reference_visible`, **3** `hidden` (`voice-integration`, `sparkmatch-dating-app-skill`, `video-generator`). Registry array length unchanged at 35.
+- Repo-truth note: `privacy-recommendation` (bespoke) = `member_interactive`/`DEEPEN_AFTER_FIX`; `private-recommendations` (PlannedSkillPage) = `reference`/`MOVE_TO_REFERENCE_SECTION`. `image-analysis` has no wired AI feature (still flagged for PR 5/6).
+- D/E/reference/operator/legal/platform items are **not** member-facing interactive skills. Hidden/external/demo items are not in the main member Hub. PR 2 may deepen only verified interactive surfaces.

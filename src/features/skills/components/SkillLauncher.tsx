@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Check, ExternalLink } from 'lucide-react';
-import { getSkillEntryPoint } from '../skillRegistry';
+import { getSkillEntryPoint, isInteractiveSkill } from '../skillRegistry';
 import type { SkillDefinition, SkillSurface } from '../types';
 import { SkillProgressPill } from './SkillProgressPill';
 import { useSkillState } from '../hooks/useSkillState';
@@ -16,6 +16,7 @@ export const SkillLauncher: React.FC<{
   const state = getSkillState(skill.id);
   const point = getSkillEntryPoint(skill, surface);
   const Icon = skill.icon;
+  const interactive = isInteractiveSkill(skill);
 
   const route = point?.route;
   const getPreservedRoute = (path: string) => {
@@ -28,7 +29,8 @@ export const SkillLauncher: React.FC<{
   };
 
   const handleLaunch = () => {
-    startSkill(skill.id, surface);
+    // Only practice surfaces record progress; reference items just open.
+    if (interactive) startSkill(skill.id, surface);
     if (route) {
       const preservedRoute = getPreservedRoute(route);
       if (onOpenRoute) {
@@ -64,12 +66,12 @@ export const SkillLauncher: React.FC<{
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-sm font-bold text-[#2D2926] leading-tight">{skill.shortTitle}</h4>
-            <SkillProgressPill status={state.status} progress={state.progress} />
+            {interactive && <SkillProgressPill status={state.status} progress={state.progress} />}
           </div>
           <p className="text-xs leading-relaxed text-[#6B5E52]">{point?.description ?? skill.summary}</p>
         </div>
       </div>
-      {!compact && state.status !== 'available' && (
+      {!compact && interactive && state.status !== 'available' && (
         <p className="text-[11px] leading-relaxed text-[#8C7E6E] bg-[#F7F2EE] rounded-xl px-3 py-2">
           {state.status === 'completed' || state.status === 'applied'
             ? 'Saved privately to your skill history.'
@@ -85,7 +87,7 @@ export const SkillLauncher: React.FC<{
         >
           {point?.label ?? 'Start'} {route ? <ExternalLink size={11} /> : <ArrowRight size={11} />}
         </button>
-        {state.status === 'started' && (
+        {interactive && state.status === 'started' && (
           <button
             type="button"
             onClick={handleSaveInsight}

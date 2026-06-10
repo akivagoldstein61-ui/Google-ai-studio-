@@ -33,3 +33,6 @@ Deepen-after-fix: `personality-profile`, `personality-ocean`, `filtering-marketp
 5. **Preserve all knowledge** — move/label, do not erase. Canonical `skills/*/SKILL.md` packages remain.
 
 > Hard rule restated: D/E items are reference-only and are **not** `DEEPEN_NOW`.
+
+## 9. PR 1 — Executed
+The §8 direction is now implemented (registry/UI only): `surfaceClass`/`visibility`/`deepeningDecision` added to the registry; the Hub renders grouped sections and hides `hidden` items; reference cards use "Open reference" with no start/complete; the 5 missing `skillId`s were linked without making external/hidden items interactive. Invariants are enforced in `src/features/skills/inventoryConsistency.test.ts`. No backend/auth/Firestore/AI-prompt/deploy change. Operator bridge wrappers in `.agents/skills/*` remain operator-only and are not surfaced in the member Hub.
