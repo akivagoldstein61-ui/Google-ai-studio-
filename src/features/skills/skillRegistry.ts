@@ -31,11 +31,14 @@ import type {
   SkillCategory,
   SkillConsentType,
   SkillDefinition,
+  SkillDeepeningDecision,
   SkillEntryPoint,
   SkillOutputType,
   SkillSafetyLevel,
   SkillStatus,
   SkillSurface,
+  SkillSurfaceClass,
+  SkillVisibility,
 } from './types';
 
 export type SkillMeta = SkillDefinition;
@@ -79,9 +82,89 @@ const DEFAULT_PRIVACY_NOTES = [
   'AI output is assistive only; the member stays in control.',
 ];
 
+// ---------------------------------------------------------------------------
+// PR 1 — Skills Hub truth labels.
+// Classification is centralized here (additive) so the 35 defineSkill() calls
+// stay unchanged. surfaceClass drives hub grouping; visibility hides non-member
+// items; deepeningDecision records the PR 0 inventory decision. See
+// docs/skills/INVENTORY.md.
+// ---------------------------------------------------------------------------
+type SkillClassification = {
+  surfaceClass: SkillSurfaceClass;
+  visibility: SkillVisibility;
+  deepeningDecision: SkillDeepeningDecision;
+};
+
+const DEFAULT_CLASSIFICATION: SkillClassification = {
+  surfaceClass: 'reference',
+  visibility: 'reference_visible',
+  deepeningDecision: 'UNKNOWN_PENDING_RENDERED_TEST',
+};
+
+const member = (
+  surfaceClass: Extract<SkillSurfaceClass, 'member_interactive' | 'settings_control' | 'trust_safety'>,
+  deepeningDecision: SkillDeepeningDecision,
+): SkillClassification => ({ surfaceClass, visibility: 'member_visible', deepeningDecision });
+
+const ref = (surfaceClass: SkillSurfaceClass): SkillClassification => ({
+  surfaceClass,
+  visibility: 'reference_visible',
+  deepeningDecision: 'MOVE_TO_REFERENCE_SECTION',
+});
+
+const hide = (surfaceClass: Extract<SkillSurfaceClass, 'external_demo' | 'hidden_until_verified'>): SkillClassification => ({
+  surfaceClass,
+  visibility: 'hidden',
+  deepeningDecision: 'REMOVE_OR_HIDE_UNTIL_VERIFIED',
+});
+
+const SKILL_CLASSIFICATION: Record<string, SkillClassification> = {
+  // Interactive + controls (member-facing)
+  'private-taste': member('settings_control', 'DEEPEN_NOW'),
+  'why-this-match': member('member_interactive', 'DEEPEN_NOW'),
+  'pacing-coach': member('member_interactive', 'DEEPEN_NOW'),
+  'consent-ux': member('settings_control', 'DEEPEN_AFTER_FIX'),
+  'personality-visibility': member('settings_control', 'DEEPEN_AFTER_FIX'),
+  'personality-profile': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'personality-ocean': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'personality-assessment': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'filtering-marketplace': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'learned-taste': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'privacy-recommendation': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'permissioned-sharing': member('trust_safety', 'DEEPEN_AFTER_FIX'),
+  'compatibility-reflection': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'maps-date-planner': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  'grounded-search': member('trust_safety', 'DEEPEN_AFTER_FIX'),
+  'image-analysis': member('trust_safety', 'DEEPEN_AFTER_FIX'),
+  // Legal / research / operator / reference (not member-facing interactive)
+  'israeli-privacy': ref('legal_privacy'),
+  'psychometric-validation': ref('research'),
+  'personality-research': ref('research'),
+  'ai-runtime-governance': ref('operator'),
+  'ai-feature-modules': ref('operator'),
+  'low-latency-ai': ref('operator'),
+  'high-thinking-routing': ref('operator'),
+  'system-prompt': ref('operator'),
+  'personality-delivery': ref('operator'),
+  'dark-pattern-audit': ref('reference'),
+  'explainable-ai': ref('reference'),
+  'personality-engine': ref('reference'),
+  'calm-ux': ref('reference'),
+  'private-recommendations': ref('reference'),
+  // Platform / vendor
+  'gemini-integration': ref('platform_vendor'),
+  'google-ai-studio-app-builder': ref('platform_vendor'),
+  // Hidden / external (flag-off or not a Kesher member feature)
+  'voice-integration': hide('hidden_until_verified'),
+  'sparkmatch-dating-app-skill': hide('external_demo'),
+  'video-generator': hide('external_demo'),
+};
+
 const defineSkill = (input: SkillInput): SkillDefinition => {
   const surfaces = new Set<SkillSurface>(['skills-hub', 'skills', input.primarySurface]);
   input.entryPoints.forEach((point) => surfaces.add(point.surface));
+
+  const classification = SKILL_CLASSIFICATION[input.id] ?? DEFAULT_CLASSIFICATION;
 
   return {
     id: input.id,
@@ -105,6 +188,9 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
     aiFeatureKey: input.aiFeatureKey,
     outputType: input.outputType ?? 'reference',
     status: input.status,
+    surfaceClass: classification.surfaceClass,
+    visibility: classification.visibility,
+    deepeningDecision: classification.deepeningDecision,
     prerequisites: input.prerequisites ?? ['Member is signed into the Kesher prototype.'],
     recommendedNextActions: input.recommendedNextActions ?? input.entryPoints.map((point) => point.label),
     demoModeBehavior: input.demoModeBehavior ?? 'Starts a demo-safe skill state and opens the related prototype surface when available.',
@@ -617,6 +703,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'grounded-search',
+    skillId: 'kesher-grounded-search',
     title: 'Grounded Search',
     shortTitle: 'Search Grounding',
     subtitle: 'Google Search Integration',
@@ -637,6 +724,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'image-analysis',
+    skillId: 'kesher-image-analysis',
     title: 'Image Analysis',
     shortTitle: 'Photo Checks',
     subtitle: 'Trust-Forward Photo Checks',
@@ -657,6 +745,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'voice-integration',
+    skillId: 'kesher-voice-integration',
     title: 'Voice Integration',
     shortTitle: 'Voice',
     subtitle: 'Gemini Live API',
@@ -699,6 +788,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'sparkmatch-dating-app-skill',
+    skillId: 'sparkmatch-dating-app-skill',
     title: 'SparkMatch Dating App',
     shortTitle: 'Reference App',
     subtitle: 'Reference App Patterns',
@@ -719,6 +809,7 @@ export const SKILLS: SkillDefinition[] = [
   }),
   defineSkill({
     id: 'video-generator',
+    skillId: 'video-generator',
     title: 'Video Generator',
     shortTitle: 'Video',
     subtitle: 'Multimodal Prototype Utility',
@@ -895,3 +986,28 @@ export const getSkillEntryPoint = (skill: SkillDefinition, surface: SkillSurface
   ?? skill.entryPoints.find((point) => point.featured)
   ?? skill.entryPoints[0]
 );
+
+// ---------------------------------------------------------------------------
+// PR 1 — truth-label helpers for hub grouping + launch gating.
+// ---------------------------------------------------------------------------
+export const INTERACTIVE_SURFACE_CLASSES: SkillSurfaceClass[] = [
+  'member_interactive',
+  'settings_control',
+  'trust_safety',
+];
+
+/** A skill is launchable as a practice surface only if member-visible AND interactive. */
+export const isInteractiveSkill = (skill: SkillDefinition): boolean =>
+  skill.visibility === 'member_visible' && INTERACTIVE_SURFACE_CLASSES.includes(skill.surfaceClass);
+
+/** Skills shown in the member-facing Hub (everything except `hidden`). */
+export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.visibility !== 'hidden');
+
+/** Ordered, labeled sections for the member Hub. Hidden/external items are not listed. */
+export const SKILL_SECTIONS: { key: string; label: string; classes: SkillSurfaceClass[] }[] = [
+  { key: 'interactive', label: 'Interactive Skills', classes: ['member_interactive'] },
+  { key: 'controls', label: 'Settings & Controls', classes: ['settings_control'] },
+  { key: 'trust', label: 'Trust & Safety', classes: ['trust_safety'] },
+  { key: 'reference', label: 'Reference & Governance', classes: ['reference', 'research', 'operator', 'legal_privacy'] },
+  { key: 'platform', label: 'Platform / Vendor', classes: ['platform_vendor'] },
+];

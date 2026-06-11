@@ -4,12 +4,12 @@ import { SkillCard } from './components/SkillCard';
 import { SkillRecommendationRail } from './components/SkillRecommendationRail';
 import { useSkillState } from './hooks/useSkillState';
 import {
-  CATEGORY_LABELS,
   SKILL_COUNTS,
   SKILL_LIVE_ROUTES,
+  SKILL_SECTIONS,
   SKILLS,
+  getMemberVisibleSkills,
 } from './skillRegistry';
-import type { SkillCategory } from './types';
 import type { SkillMeta } from './skillRegistry';
 
 export type { SkillMeta };
@@ -20,12 +20,8 @@ export const SkillsHub: React.FC<{
   onSelect: (id: string) => void;
   onOpenFeature?: (path: string) => void;
 }> = ({ onBack, onSelect, onOpenFeature }) => {
-  const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
   const { getSkillState } = useSkillState();
-
-  const filtered = activeCategory === 'all'
-    ? SKILLS
-    : SKILLS.filter((skill) => skill.category === activeCategory);
+  const memberSkills = getMemberVisibleSkills();
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926] overflow-y-auto">
@@ -83,39 +79,38 @@ export const SkillsHub: React.FC<{
           onOpenRoute={onOpenFeature}
         />
 
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setActiveCategory(key as 'all' | SkillCategory)}
-              className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all border ${
-                activeCategory === key
-                  ? 'bg-[#2D2926] text-white border-[#2D2926]'
-                  : 'bg-white text-[#8C7E6E] border-[#F3EFEA] hover:border-[#D4AF37]/40'
-              }`}
-            >
-              {label}
-              {key !== 'all' && (
-                <span className="ml-1.5 opacity-60">
-                  {SKILLS.filter((skill) => skill.category === key).length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((skill) => (
-            <SkillCard
-              key={skill.id}
-              skill={skill}
-              state={getSkillState(skill.id)}
-              liveRoute={SKILL_LIVE_ROUTES[skill.id]}
-              onSelect={onSelect}
-              onOpenFeature={onOpenFeature}
-            />
-          ))}
-        </section>
+        {SKILL_SECTIONS.map((section) => {
+          const sectionSkills = memberSkills.filter((skill) => section.classes.includes(skill.surfaceClass));
+          if (!sectionSkills.length) return null;
+          const isReferenceSection = section.key === 'reference' || section.key === 'platform';
+          return (
+            <section key={section.key} className="space-y-3" data-testid={`skills-section-${section.key}`}>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+                  {section.label}
+                  <span className="ml-2 opacity-60">{sectionSkills.length}</span>
+                </h3>
+                {isReferenceSection && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#B6A597]">
+                    Reference — not a member skill
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sectionSkills.map((skill) => (
+                  <SkillCard
+                    key={skill.id}
+                    skill={skill}
+                    state={getSkillState(skill.id)}
+                    liveRoute={SKILL_LIVE_ROUTES[skill.id]}
+                    onSelect={onSelect}
+                    onOpenFeature={onOpenFeature}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </main>
     </div>
   );

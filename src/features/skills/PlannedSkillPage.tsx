@@ -8,9 +8,11 @@ import { useSkillState } from './hooks/useSkillState';
 interface PlannedSkillPageProps {
   skill: SkillDefinition;
   onBack: () => void;
+  /** Reference/operator/legal/platform items: show documentation, never a startable practice surface. */
+  readOnly?: boolean;
 }
 
-export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBack }) => {
+export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBack, readOnly = false }) => {
   const Icon = skill.icon;
   const { getSkillState, startSkill, completeSkill } = useSkillState();
   const state = getSkillState(skill.id);
@@ -33,7 +35,7 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
             <h1 className="text-lg font-serif italic">{skill.title}</h1>
             <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">{skill.subtitle}</p>
           </div>
-          <SkillProgressPill status={state.status} progress={state.progress} />
+          {!readOnly && <SkillProgressPill status={state.status} progress={state.progress} />}
         </div>
       </header>
 
@@ -42,33 +44,40 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
           <div className="flex items-center gap-2">
             <CheckCircle2 size={18} className="text-emerald-700" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
-              Prototype experience
+              {readOnly ? 'Reference' : 'Prototype experience'}
             </span>
           </div>
           <h2 className="text-base font-serif italic text-[#2D2926]">{skill.title}</h2>
           <p className="text-sm text-[#6B5E52] leading-relaxed">{skill.description}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => startSkill(skill.id, 'skills-hub')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D2926] text-white rounded-full text-[10px] font-bold uppercase tracking-widest"
-            >
-              Start skill
-            </button>
-            <button
-              type="button"
-              onClick={() => completeSkill(skill.id, {
-                id: `${skill.id}-prototype-note`,
-                type: skill.outputType,
-                summary: skill.demoModeBehavior,
-                createdAt: new Date().toISOString(),
-                sourceSurface: 'skills-hub',
-              }, 'skills-hub')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2D2926] border border-[#E5E0DB] rounded-full text-[10px] font-bold uppercase tracking-widest"
-            >
-              Save note
-            </button>
-          </div>
+          {readOnly ? (
+            <p className="text-[11px] leading-relaxed text-[#8C7E6E] bg-white border border-[#E5E0DB] rounded-xl px-3 py-2">
+              This is a reference page, not a member skill. It documents how Kesher approaches this area —
+              there is nothing to start or complete here.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => startSkill(skill.id, 'skills-hub')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D2926] text-white rounded-full text-[10px] font-bold uppercase tracking-widest"
+              >
+                Start skill
+              </button>
+              <button
+                type="button"
+                onClick={() => completeSkill(skill.id, {
+                  id: `${skill.id}-prototype-note`,
+                  type: skill.outputType,
+                  summary: skill.demoModeBehavior,
+                  createdAt: new Date().toISOString(),
+                  sourceSurface: 'skills-hub',
+                }, 'skills-hub')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#2D2926] border border-[#E5E0DB] rounded-full text-[10px] font-bold uppercase tracking-widest"
+              >
+                Save note
+              </button>
+            </div>
+          )}
         </section>
 
         <SkillConsentPanel skill={skill} />

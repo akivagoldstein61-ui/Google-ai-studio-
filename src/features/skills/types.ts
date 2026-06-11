@@ -45,6 +45,33 @@ export type SkillConsentType =
 
 export type UserSkillStatus = 'locked' | 'available' | 'started' | 'completed' | 'applied' | 'dismissed';
 
+/**
+ * PR 1 — Skills Hub truth labels.
+ * surfaceClass separates member-facing interactive skills from reference,
+ * operator, legal/privacy, platform/vendor, external, and hidden items.
+ */
+export type SkillSurfaceClass =
+  | 'member_interactive'
+  | 'settings_control'
+  | 'trust_safety'
+  | 'reference'
+  | 'research'
+  | 'operator'
+  | 'legal_privacy'
+  | 'platform_vendor'
+  | 'external_demo'
+  | 'hidden_until_verified';
+
+export type SkillVisibility = 'member_visible' | 'reference_visible' | 'hidden';
+
+export type SkillDeepeningDecision =
+  | 'DEEPEN_NOW'
+  | 'DEEPEN_AFTER_FIX'
+  | 'DO_NOT_DEEPEN_REFERENCE_ONLY'
+  | 'MOVE_TO_REFERENCE_SECTION'
+  | 'REMOVE_OR_HIDE_UNTIL_VERIFIED'
+  | 'UNKNOWN_PENDING_RENDERED_TEST';
+
 export type SkillEventName =
   | 'skill_viewed'
   | 'skill_started'
@@ -88,6 +115,10 @@ export interface SkillDefinition {
   aiFeatureKey?: string;
   outputType: SkillOutputType;
   status: SkillStatus;
+  /** PR 1 truth labels — additive classification used for hub grouping + launch gating. */
+  surfaceClass: SkillSurfaceClass;
+  visibility: SkillVisibility;
+  deepeningDecision: SkillDeepeningDecision;
   prerequisites: string[];
   recommendedNextActions: string[];
   demoModeBehavior: string;
