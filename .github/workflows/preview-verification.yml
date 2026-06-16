@@ -74,6 +74,13 @@ jobs:
           EXPECTED_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
+      - name: Verify preview API routing
+        if: steps.discover.outputs.preview_url != ''
+        run: node scripts/api-smoke.mjs "${{ steps.discover.outputs.preview_url }}"
+        env:
+          EXPECTED_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
       - name: Warn if preview URL missing
         if: steps.discover.outputs.preview_url == ''
         run: |

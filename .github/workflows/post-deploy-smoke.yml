@@ -57,4 +57,5 @@ jobs:
       - name: Run API smoke test
         run: node scripts/api-smoke.mjs "${{ steps.target.outputs.url }}"
         env:
+          EXPECTED_COMMIT_SHA: ${{ github.event.deployment.sha }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
