@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronLeft, Sparkles } from 'lucide-react';
 import { SkillCard } from './components/SkillCard';
 import { SkillRecommendationRail } from './components/SkillRecommendationRail';
 import { useSkillState } from './hooks/useSkillState';
@@ -8,6 +8,9 @@ import {
   SKILL_COUNTS,
   SKILL_LIVE_ROUTES,
   SKILLS,
+  getInteractiveSkills,
+  getMemberVisibleSkills,
+  getReferenceSkills,
 } from './skillRegistry';
 import type { SkillCategory } from './types';
 import type { SkillMeta } from './skillRegistry';
@@ -23,9 +26,17 @@ export const SkillsHub: React.FC<{
   const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
   const { getSkillState } = useSkillState();
 
-  const filtered = activeCategory === 'all'
-    ? SKILLS
-    : SKILLS.filter((skill) => skill.category === activeCategory);
+  // Member hub never shows operator/internal (admin) skills.
+  const memberSkills = React.useMemo(() => getMemberVisibleSkills(), []);
+  const interactiveSkills = React.useMemo(() => getInteractiveSkills(), []);
+  const referenceSkills = React.useMemo(() => getReferenceSkills(), []);
+
+  const byCategory = <T extends { category: SkillCategory }>(skills: T[]) => (
+    activeCategory === 'all' ? skills : skills.filter((skill) => skill.category === activeCategory)
+  );
+
+  const filteredInteractive = byCategory(interactiveSkills);
+  const filteredReference = byCategory(referenceSkills);
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926] overflow-y-auto">
@@ -50,9 +61,9 @@ export const SkillsHub: React.FC<{
           <h2
             className="text-lg font-serif italic leading-snug"
             data-testid="skills-hub-count"
-            data-skill-count={SKILLS.length}
+            data-skill-count={interactiveSkills.length}
           >
-            {SKILLS.length} capabilities for relationship readiness, safety, taste, compatibility, and AI transparency
+            {interactiveSkills.length} capabilities for relationship readiness, safety, taste, compatibility, and AI transparency
           </h2>
           <p className="text-sm text-white/70 leading-relaxed italic">
             Skills are private tools inside Kesher. They can coach, explain, draft, warn, and help you choose,
@@ -97,25 +108,58 @@ export const SkillsHub: React.FC<{
               {label}
               {key !== 'all' && (
                 <span className="ml-1.5 opacity-60">
-                  {SKILLS.filter((skill) => skill.category === key).length}
+                  {memberSkills.filter((skill) => skill.category === key).length}
                 </span>
               )}
             </button>
           ))}
         </div>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((skill) => (
-            <SkillCard
-              key={skill.id}
-              skill={skill}
-              state={getSkillState(skill.id)}
-              liveRoute={SKILL_LIVE_ROUTES[skill.id]}
-              onSelect={onSelect}
-              onOpenFeature={onOpenFeature}
-            />
-          ))}
-        </section>
+        {filteredInteractive.length > 0 ? (
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="skills-interactive-grid">
+            {filteredInteractive.map((skill) => (
+              <SkillCard
+                key={skill.id}
+                skill={skill}
+                state={getSkillState(skill.id)}
+                liveRoute={SKILL_LIVE_ROUTES[skill.id]}
+                onSelect={onSelect}
+                onOpenFeature={onOpenFeature}
+              />
+            ))}
+          </section>
+        ) : (
+          <p className="text-xs text-[#8C7E6E] italic">
+            No launchable capabilities in this category yet — see Reference & Governance below.
+          </p>
+        )}
+
+        {filteredReference.length > 0 && (
+          <section className="space-y-4" data-testid="skills-reference-section">
+            <div className="flex items-center gap-2 pt-2 border-t border-[#F3EFEA]">
+              <BookOpen size={16} className="text-[#8C7E6E]" />
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#2D2926]">
+                  Reference &amp; Governance
+                </h3>
+                <p className="text-[11px] text-[#8C7E6E] leading-relaxed">
+                  How Kesher works behind the scenes. These explainers are not launchable tools — they
+                  describe policy, architecture, and the boundaries the product holds to.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredReference.map((skill) => (
+                <SkillCard
+                  key={skill.id}
+                  skill={skill}
+                  state={getSkillState(skill.id)}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

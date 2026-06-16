@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  getInteractiveSkills,
+  getMemberVisibleSkills,
   getRecommendedSkillsForSurface,
+  getReferenceSkills,
   getSkillById,
+  INTERACTIVE_SKILL_IDS,
   SKILL_LIVE_ROUTES,
   SKILLS,
 } from './skillRegistry';
@@ -89,6 +93,58 @@ describe('Kesher skills registry prototype visibility', () => {
       expect(skill).toBeTruthy();
       expect(skill?.entryPoints.some((entryPoint) => entryPoint.route)).toBe(true);
       expect(SKILL_LIVE_ROUTES[id]?.path).toMatch(/^\//);
+    }
+  });
+
+  it('hides operator/internal (admin) skills from the member hub', () => {
+    const adminIds = SKILLS.filter((skill) => skill.audience === 'admin').map((skill) => skill.id).sort();
+    expect(adminIds).toEqual([
+      'ai-runtime-governance',
+      'gemini-integration',
+      'google-ai-studio-app-builder',
+      'high-thinking-routing',
+      'low-latency-ai',
+      'personality-delivery',
+      'sparkmatch-dating-app-skill',
+      'system-prompt',
+      'video-generator',
+    ]);
+
+    // Registry stays complete (35) for shareable-bundle/smoke parity; only visibility changes.
+    expect(SKILLS).toHaveLength(35);
+    expect(getMemberVisibleSkills()).toHaveLength(26);
+    expect(getMemberVisibleSkills().every((skill) => skill.audience === 'member')).toBe(true);
+  });
+
+  it('separates launchable capabilities from reference material for members', () => {
+    const interactive = getInteractiveSkills();
+    const reference = getReferenceSkills();
+
+    expect(interactive.every((skill) => skill.kind === 'interactive' && skill.audience === 'member')).toBe(true);
+    expect(reference.every((skill) => skill.kind === 'reference' && skill.audience === 'member')).toBe(true);
+    expect(interactive.length + reference.length).toBe(26);
+
+    // ai-runtime-governance is interactive but operator-only -> excluded from the member capability grid.
+    expect(interactive.map((skill) => skill.id)).not.toContain('ai-runtime-governance');
+
+    // Every declared interactive id is tagged interactive in the registry.
+    for (const id of INTERACTIVE_SKILL_IDS) {
+      expect(getSkillById(id)?.kind).toBe('interactive');
+    }
+  });
+
+  it('routes every interactive skill to a real component and lets reference skills fall through', () => {
+    const routerSource = readFileSync('src/features/skills/SkillsRouter.tsx', 'utf8');
+
+    // Guards against fallback drift: an "interactive" skill with no router case
+    // would silently render the read-only PlannedSkillPage.
+    for (const id of INTERACTIVE_SKILL_IDS) {
+      expect(routerSource).toContain(`case '${id}':`);
+    }
+
+    // Reference skills must intentionally fall through to PlannedSkillPage.
+    for (const skill of SKILLS.filter((s) => s.kind === 'reference')) {
+      expect(routerSource).not.toContain(`case '${skill.id}':`);
     }
   });
 
