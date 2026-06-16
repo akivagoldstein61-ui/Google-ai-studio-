@@ -72,7 +72,10 @@ jobs:
         env:
           SMOKE_BASE_URL: ${{ steps.discover.outputs.preview_url }}
           EXPECTED_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Warn if preview URL missing
         if: steps.discover.outputs.preview_url == ''
-        run: echo "::warning::Preview URL discovery skipped; run smoke manually once deployment metadata is available."
+        run: |
+          echo "::warning::Preview URL discovery skipped; run smoke manually once deployment metadata is available."
+          echo "::notice::If Vercel Git integration did not create a preview, run the Deploy to Vercel workflow with target=preview after configuring VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID."

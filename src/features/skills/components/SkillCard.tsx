@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import type { SkillDefinition, UserSkillState } from '../types';
+import { isInteractiveSkill } from '../skillRegistry';
 import { SkillProgressPill } from './SkillProgressPill';
 
 const statusBadge = (status: SkillDefinition['status']) => {
@@ -20,11 +21,14 @@ export const SkillCard: React.FC<{
   liveRoute?: { path: string; label: string };
 }> = ({ skill, state, onSelect, onOpenFeature, liveRoute }) => {
   const Icon = skill.icon;
+  const interactive = isInteractiveSkill(skill);
   return (
     <div
       className="flex flex-col p-5 bg-white border border-[#F3EFEA] rounded-[24px] shadow-sm hover:shadow-md hover:border-[#D4AF37]/30 transition-all group"
       data-testid={`skill-card-${skill.id}`}
       data-skill-id={skill.id}
+      data-skill-surface-class={skill.surfaceClass}
+      data-skill-interactive={interactive ? 'true' : 'false'}
     >
       <button onClick={() => onSelect(skill.id)} className="text-left w-full">
         <div className="flex items-start justify-between gap-3">
@@ -38,7 +42,7 @@ export const SkillCard: React.FC<{
             >
               {skill.status}
             </span>
-            {state && <SkillProgressPill status={state.status} progress={state.progress} />}
+            {state && interactive && <SkillProgressPill status={state.status} progress={state.progress} />}
           </div>
         </div>
         <div className="mt-3 space-y-1">
@@ -58,7 +62,7 @@ export const SkillCard: React.FC<{
           onClick={() => onSelect(skill.id)}
           className="flex items-center gap-1 text-[10px] font-bold text-[#8C7E6E] hover:text-[#D4AF37] uppercase tracking-widest transition-colors"
         >
-          Explore <ChevronRight size={12} />
+          {interactive ? 'Explore' : 'Open reference'} <ChevronRight size={12} />
         </button>
         {liveRoute && onOpenFeature && (
           <button
