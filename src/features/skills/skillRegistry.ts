@@ -1050,9 +1050,6 @@ export const isInteractiveSkill = (skill: SkillDefinition): boolean =>
   skill.visibility === 'member_visible' && INTERACTIVE_SURFACE_CLASSES.includes(skill.surfaceClass);
 
 /** Skills shown in the member-facing Hub (everything except `hidden`). */
-export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.visibility !== 'hidden');
-
-/** Ordered, labeled sections for the member Hub. Hidden/external items are not listed. */
 export const SKILL_SECTIONS: { key: string; label: string; classes: SkillSurfaceClass[] }[] = [
   { key: 'interactive', label: 'Interactive Skills', classes: ['member_interactive'] },
   { key: 'controls', label: 'Settings & Controls', classes: ['settings_control'] },
