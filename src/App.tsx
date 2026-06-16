@@ -22,6 +22,7 @@ import { SafetyCenter } from './features/safety/SafetyCenter';
 import { PrototypeScreen } from './features/prototype/PrototypeScreen';
 import { PersonalityPrototypeScreen } from './features/prototype/PersonalityPrototypeScreen';
 import { SkillsRouter } from './features/skills';
+import { AdminGuard } from './components/auth/AdminGuard';
 import { AnimatePresence, motion } from 'motion/react';
 import { Profile, Conversation } from './types';
 import { AppProvider } from './context/AppContext';
@@ -318,8 +319,8 @@ const AppContent: React.FC = () => {
           <Route path="/settings/taste-profile" element={<TasteProfileRoute />} />
           <Route path="/settings/personality" element={<PersonalityProfileRoute />} />
           <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
-          <Route path="/admin/ai-ops" element={<AIOpsRoute />} />
-          <Route path="/admin/experiments" element={<ExperimentsRoute />} />
+          <Route path="/admin/ai-ops" element={<AdminGuard><AIOpsRoute /></AdminGuard>} />
+          <Route path="/admin/experiments" element={<AdminGuard><ExperimentsRoute /></AdminGuard>} />
           <Route path="/demo" element={<Navigate to="/daily?demo=1" replace />} />
 
           {/* Default redirect */}
