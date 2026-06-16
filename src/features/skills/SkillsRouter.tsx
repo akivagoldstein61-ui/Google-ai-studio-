@@ -23,6 +23,54 @@ import { useSkillState } from './hooks/useSkillState';
 import { useApp } from '@/context/AppContext';
 import { emitSkillEvent } from './skillEvents';
 
+/**
+ * Bespoke skill pages keyed by skill id. Skills not listed here fall back to
+ * PlannedSkillPage (interactive when member-visible, read-only for reference).
+ * Exported so route→component resolution can be asserted in tests without
+ * mounting every page. Keep this map and `resolveSkillView` in sync.
+ */
+export const BESPOKE_SKILL_COMPONENTS: Record<string, React.FC<{ onBack: () => void }>> = {
+  'personality-assessment': PersonalityAssessmentSkill,
+  'consent-ux': ConsentUxSkill,
+  'israeli-privacy': IsraeliPrivacySkill,
+  'privacy-recommendation': PrivacyRecommendationSkill,
+  'why-this-match': WhyThisMatchSkill,
+  'permissioned-sharing': PermissionedSharingSkill,
+  'compatibility-reflection': CompatibilityReflectionSkill,
+  'psychometric-validation': PsychometricValidationSkill,
+  'dark-pattern-audit': DarkPatternAuditSkill,
+  'ai-runtime-governance': AIRuntimeGovernanceSkill,
+  'personality-profile': PersonalityProfileSkill,
+  'pacing-coach': PacingCoachSkill,
+  'private-taste': PrivateTasteSkill,
+  'personality-visibility': PersonalityVisibilitySkill,
+  'personality-ocean': PersonalityOceanSkill,
+  'learned-taste': LearnedTasteSkill,
+  'filtering-marketplace': FilteringMarketplaceSkill,
+};
+
+export type SkillView =
+  | { kind: 'bespoke'; component: React.FC<{ onBack: () => void }> }
+  | { kind: 'planned'; skill: (typeof SKILLS)[number]; readOnly: boolean }
+  | { kind: 'not-found' };
+
+/**
+ * Pure route→component resolver. Every registered skill id must resolve to a
+ * bespoke page or an explicitly-flagged PlannedSkillPage; only unknown ids
+ * resolve to `not-found` (which the router treats as "return to the hub").
+ */
+export const resolveSkillView = (skillId: string): SkillView => {
+  const component = BESPOKE_SKILL_COMPONENTS[skillId];
+  if (component) {
+    return { kind: 'bespoke', component };
+  }
+  const skill = SKILLS.find((s) => s.id === skillId);
+  if (skill) {
+    return { kind: 'planned', skill, readOnly: !isInteractiveSkill(skill) };
+  }
+  return { kind: 'not-found' };
+};
+
 export const SkillsRouter: React.FC<{
   onBack: () => void;
   onOpenFeature?: (path: string) => void;
@@ -46,55 +94,15 @@ export const SkillsRouter: React.FC<{
     return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
   }
 
-  const skillProps = { onBack: () => setActiveSkill(null) };
+  const onBackToHub = () => setActiveSkill(null);
+  const view = resolveSkillView(activeSkill);
 
-  switch (activeSkill) {
-    case 'personality-assessment':
-      return <PersonalityAssessmentSkill {...skillProps} />;
-    case 'consent-ux':
-      return <ConsentUxSkill {...skillProps} />;
-    case 'israeli-privacy':
-      return <IsraeliPrivacySkill {...skillProps} />;
-    case 'privacy-recommendation':
-      return <PrivacyRecommendationSkill {...skillProps} />;
-    case 'why-this-match':
-      return <WhyThisMatchSkill {...skillProps} />;
-    case 'permissioned-sharing':
-      return <PermissionedSharingSkill {...skillProps} />;
-    case 'compatibility-reflection':
-      return <CompatibilityReflectionSkill {...skillProps} />;
-    case 'psychometric-validation':
-      return <PsychometricValidationSkill {...skillProps} />;
-    case 'dark-pattern-audit':
-      return <DarkPatternAuditSkill {...skillProps} />;
-    case 'ai-runtime-governance':
-      return <AIRuntimeGovernanceSkill {...skillProps} />;
-    case 'personality-profile':
-      return <PersonalityProfileSkill {...skillProps} />;
-    case 'pacing-coach':
-      return <PacingCoachSkill {...skillProps} />;
-    case 'private-taste':
-      return <PrivateTasteSkill {...skillProps} />;
-    case 'personality-visibility':
-      return <PersonalityVisibilitySkill {...skillProps} />;
-    case 'personality-ocean':
-      return <PersonalityOceanSkill {...skillProps} />;
-    case 'learned-taste':
-      return <LearnedTasteSkill {...skillProps} />;
-    case 'filtering-marketplace':
-      return <FilteringMarketplaceSkill {...skillProps} />;
-    default: {
-      const meta = SKILLS.find(s => s.id === activeSkill);
-      if (meta) {
-        return (
-          <PlannedSkillPage
-            skill={meta}
-            onBack={() => setActiveSkill(null)}
-            readOnly={!isInteractiveSkill(meta)}
-          />
-        );
-      }
-      return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
-    }
+  if (view.kind === 'bespoke') {
+    const Bespoke = view.component;
+    return <Bespoke onBack={onBackToHub} />;
   }
+  if (view.kind === 'planned') {
+    return <PlannedSkillPage skill={view.skill} onBack={onBackToHub} readOnly={view.readOnly} />;
+  }
+  return <SkillsHub onBack={onBack} onSelect={handleSelectSkill} onOpenFeature={onOpenFeature} />;
 };

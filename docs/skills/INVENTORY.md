@@ -74,8 +74,8 @@ Page: **B** = bespoke component, **P** = `PlannedSkillPage`. Render/mobile/RTL =
 |22|gemini-integration|kesher-gemini-integration|P|/settings/ai-trust,/admin|—|n/a|**vendor platform**|E|MOVE_TO_REFERENCE|vendor doc|—|
 |23|low-latency-ai|kesher-low-latency-ai|P|/admin/ai-ops|—|n/a|operator|D|MOVE_TO_REFERENCE|internal|—|
 |24|high-thinking-routing|kesher-high-thinking-routing|P|/admin/experiments|—|n/a|operator|D|MOVE_TO_REFERENCE|internal|—|
-|25|grounded-search|**(missing — should be `kesher-grounded-search`)**|P|/settings/safety|safety_advice|✓|citations|C|DEEPEN_AFTER_FIX|no bespoke page; **skillId missing**|citation chips|
-|26|image-analysis|**(missing — should be `kesher-image-analysis`)**|P|/profile/edit|— (none)|n/a|photo_analysis; sensitive|C|DEEPEN_AFTER_FIX|**skillId missing; no aiFeatureKey; flag-off feature is visual_icebreaker**|no attractiveness/trait|
+|25|grounded-search|kesher-grounded-search|P|/settings/safety|safety_advice|✓|citations|C|DEEPEN_AFTER_FIX|no bespoke page|citation chips|
+|26|image-analysis|kesher-image-analysis|P|/profile/edit|— (none)|n/a|photo_analysis; sensitive|C|REMOVE_OR_HIDE_UNTIL_VERIFIED|**no aiFeatureKey; only photo feature is flag-off `visual_icebreaker` (generation). Hidden until a real image-analysis feature is wired (PR 5/6).**|no attractiveness/trait|
 |27|voice-integration|**(missing — should be `kesher-voice-integration`)**|P|/inbox|voice_reflection|✓ (flag OFF)|beta|C|REMOVE_OR_HIDE_UNTIL_VERIFIED|**skillId missing; ENABLE_AI_VOICE_REFLECTION=false**|flag-consistency|
 |28|google-ai-studio-app-builder|google-ai-studio-app-builder|P|/admin/experiments|—|n/a|**external platform**|E|MOVE_TO_REFERENCE|platform|—|
 |29|sparkmatch-dating-app-skill|**(missing — dir `sparkmatch-dating-app-skill` exists)**|P|/admin/experiments|—|n/a|**external app**|E|REMOVE_OR_HIDE_UNTIL_VERIFIED|skillId missing; not Kesher|—|
@@ -88,7 +88,7 @@ Page: **B** = bespoke component, **P** = `PlannedSkillPage`. Render/mobile/RTL =
 
 ¹ `DEEPEN_NOW` for #6/#7 is conditional on render verification (currently BLOCKED). If render fails → downgrade to `DEEPEN_AFTER_FIX`.
 
-**Buckets:** DEEPEN_NOW = 3 (#10/#12/#19) + 2 conditional (#6/#7). DEEPEN_AFTER_FIX ≈ 9. MOVE_TO_REFERENCE ≈ 13. REMOVE_OR_HIDE ≈ 3 (#27/#29/#30). Consolidate (taste overlap) = #9/#11/#17 → fold into #10.
+**Buckets:** DEEPEN_NOW = 3 (#10/#12/#19) + 2 conditional (#6/#7). DEEPEN_AFTER_FIX ≈ 8. MOVE_TO_REFERENCE ≈ 13. REMOVE_OR_HIDE ≈ 4 (#26/#27/#29/#30). Consolidate (taste overlap) = #9/#11/#17 → fold into #10.
 
 ---
 
@@ -109,10 +109,10 @@ Page: **B** = bespoke component, **P** = `PlannedSkillPage`. Render/mobile/RTL =
 | kesher-explainable-ai | #15 | governance | reference |
 | kesher-filtering-marketplace | #16 | discovery | deepen-after-fix |
 | kesher-gemini-integration | #22 | vendor | reference |
-| kesher-grounded-search | #25 (skillId NOT linked) | safety | link + deepen-after-fix |
+| kesher-grounded-search | #25 | safety | deepen-after-fix |
 | kesher-high-thinking-routing | #24 | operator | reference |
 | kesher-identity-verification | **no** | `completionPlan` ADDED | product-completion (p0, gated) |
-| kesher-image-analysis | #26 (skillId NOT linked) | profile/photo | link + deepen-after-fix |
+| kesher-image-analysis | #26 | profile/photo | hide (no wired feature) |
 | kesher-israeli-privacy | #8 | legal | reference |
 | kesher-learned-taste | #17 | discovery | deepen-after-fix |
 | kesher-low-latency-ai | #23 | operator | reference |
@@ -161,7 +161,7 @@ Page: **B** = bespoke component, **P** = `PlannedSkillPage`. Render/mobile/RTL =
 15 AI features (all present, all `gemini-2.5-*`): `bio_coach, taste_profile, why_match, safety_scan, date_planner, safety_advice, rephrase_message, generate_openers, profile_completeness, voice_reflection, mod_summarizer, visual_icebreaker, personality_profile, compatibility_reflection, pacing_coach`. Skill `aiFeatureKey`s used (`personality_profile, taste_profile, why_match, compatibility_reflection, date_planner, pacing_coach, safety_advice, voice_reflection, visual_icebreaker`) all exist.
 
 **Known drift (fix in later PRs, eval-first):**
-1. **`image-analysis` (#26)** has **no `aiFeatureKey`** and there is **no `image_analysis`/`analyze_photos` feature** — the only photo feature is `visual_icebreaker` (image *generation*, OFF). Skill copy implies analysis that isn't wired.
+1. **`image-analysis` (#26)** has **no `aiFeatureKey`** and there is **no `image_analysis`/`analyze_photos` feature** — the only photo feature is `visual_icebreaker` (image *generation*, OFF). **Resolved in PR 1: hidden (`hidden_until_verified`)** so the unwired skill no longer surfaces in the member Hub or rails; revisit to wire-or-keep-hidden in PR 5/6.
 2. **`safety_scan`** feature vs route `/api/ai/message-safety` (key/path naming mismatch to document).
 3. **Eval fixtures missing:** `aiFeatureRegistry.ts` references `src/ai/evals/<id>.fixture.json`, but **`src/ai/evals/` does not exist** (there is a `docs/evals/`).
 4. **Flag-off but visible interactive:** `voice-integration` (#27, `voice_reflection` OFF) and `video-generator` (#30, `visual_icebreaker` OFF).
@@ -184,6 +184,21 @@ PR 1 made the §C classification executable via additive registry metadata — n
 - Hub now renders **grouped sections** (Interactive Skills · Settings & Controls · Trust & Safety · Reference & Governance · Platform / Vendor); `visibility:'hidden'` items are not shown in the member Hub.
 - Launch gating: only `member_interactive`/`settings_control`/`trust_safety` (and `member_visible`) record skill progress. Reference/operator/legal/platform cards show **"Open reference"** (no "Start skill", no progress pill, no completion history). `PlannedSkillPage` gains a `readOnly` mode for reference items.
 - Backfilled the 5 missing `skillId` links (`grounded-search→kesher-grounded-search`, `image-analysis→kesher-image-analysis`, `voice-integration→kesher-voice-integration`, `sparkmatch-dating-app-skill`, `video-generator`). Linking does **not** make hidden/external items interactive.
-- Counts: **16** `member_visible`, **16** `reference_visible`, **3** `hidden` (`voice-integration`, `sparkmatch-dating-app-skill`, `video-generator`). Registry array length unchanged at 35.
-- Repo-truth note: `privacy-recommendation` (bespoke) = `member_interactive`/`DEEPEN_AFTER_FIX`; `private-recommendations` (PlannedSkillPage) = `reference`/`MOVE_TO_REFERENCE_SECTION`. `image-analysis` has no wired AI feature (still flagged for PR 5/6).
+- Counts (after PR 1.1 reconciliation): **15** `member_visible`, **16** `reference_visible`, **4** `hidden` (`image-analysis`, `voice-integration`, `sparkmatch-dating-app-skill`, `video-generator`). Registry array length unchanged at 35.
+- Repo-truth note: `privacy-recommendation` (bespoke) = `member_interactive`/`DEEPEN_AFTER_FIX`; `private-recommendations` (PlannedSkillPage) = `reference`/`MOVE_TO_REFERENCE_SECTION`.
 - D/E/reference/operator/legal/platform items are **not** member-facing interactive skills. Hidden/external/demo items are not in the main member Hub. PR 2 may deepen only verified interactive surfaces.
+
+---
+
+## I. PR 1.1 — Inventory & route-truth reconciliation
+
+Resolves the remaining PR 1 gaps from the implementation plan (non-STOP-POINT, reversible diffs).
+
+- **vitest include gap fixed.** `vitest.config.ts` `include` now covers `tests/**/*.test.ts`; the two root contract suites (`tests/aiRoutes.test.ts`, `tests/taste-discovery-contract.test.ts`) were ported from the `node:test` runner to vitest and now execute (and pass) under `npm test`.
+- **`image-analysis` wire-or-hide → hidden.** No enabled photo-analysis AI feature exists, so the skill is reclassified `hidden_until_verified` (`REMOVE_OR_HIDE_UNTIL_VERIFIED`). It no longer appears in the member Hub.
+- **Recommendation rail respects visibility.** `SkillRecommendationRail` now filters out `visibility:'hidden'` skills even when referenced by an explicit `skillIds` list. This also stops the previously-leaked `voice-integration` (flag OFF) from surfacing in rails.
+- **Route→component resolution test added** (`skillRouting.test.tsx`): every registered skill id resolves to a bespoke page or an explicitly-flagged `PlannedSkillPage` (interactive vs read-only); bespoke map keys must be real skill ids; an inline snapshot pins the full route→component map. `SkillsRouter` was refactored to expose a pure `resolveSkillView` resolver + `BESPOKE_SKILL_COMPONENTS` map (behavior unchanged).
+- **Registry-integrity** (every `aiFeatureKey` exists in `AI_FEATURE_REGISTRY`) is already asserted by `inventoryConsistency.test.ts` and remains green.
+- **Repo hygiene:** removed unreferenced root artifacts (`patch.ts`, `patch_service.ts`, `patch_service2.ts`, `patch_services.js`, `test_duplicate_keys.js`, `test_genai.js`, `test_ping.js`, `files.zip`) after confirming no imports.
+- No changes to `firestore.rules`, auth mode, `policies.ts` thresholds, Vercel config, or production data.
+

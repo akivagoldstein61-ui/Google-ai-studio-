@@ -11,6 +11,6 @@ export default defineConfig({
     environment: 'node',
     // Node is the default env for unit tests (some read the filesystem).
     // Component render tests opt into jsdom per-file via `// @vitest-environment jsdom`.
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'server/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'server/**/*.test.ts', 'tests/**/*.test.ts'],
   },
 });

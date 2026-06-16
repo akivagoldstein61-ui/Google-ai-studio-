@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { test } from 'vitest';
 import type { Server } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
