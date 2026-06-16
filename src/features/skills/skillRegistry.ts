@@ -28,11 +28,13 @@ import {
   Zap,
 } from 'lucide-react';
 import type {
+  SkillAudience,
   SkillCategory,
   SkillConsentType,
   SkillDefinition,
   SkillDeepeningDecision,
   SkillEntryPoint,
+  SkillKind,
   SkillOutputType,
   SkillSafetyLevel,
   SkillStatus,
@@ -66,7 +68,37 @@ type SkillInput = {
   recommendedNextActions?: string[];
   demoModeBehavior?: string;
   featured?: boolean;
+  kind?: SkillKind;
+  audience?: SkillAudience;
 };
+
+/**
+ * Canonical source of truth for which skills are launchable, member-operable
+ * capabilities. Each id here MUST have an explicit `case` in SkillsRouter.tsx
+ * (guarded by a test) — everything else falls through to the read-only
+ * PlannedSkillPage and is classified as reference material.
+ */
+export const INTERACTIVE_SKILL_IDS = [
+  'personality-assessment',
+  'personality-profile',
+  'personality-ocean',
+  'personality-visibility',
+  'consent-ux',
+  'israeli-privacy',
+  'privacy-recommendation',
+  'private-taste',
+  'why-this-match',
+  'permissioned-sharing',
+  'compatibility-reflection',
+  'psychometric-validation',
+  'dark-pattern-audit',
+  'ai-runtime-governance',
+  'pacing-coach',
+  'learned-taste',
+  'filtering-marketplace',
+] as const;
+
+const INTERACTIVE_SKILL_ID_SET = new Set<string>(INTERACTIVE_SKILL_IDS);
 
 const entry = (
   surface: SkillSurface,
@@ -164,6 +196,8 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
   const surfaces = new Set<SkillSurface>(['skills-hub', 'skills', input.primarySurface]);
   input.entryPoints.forEach((point) => surfaces.add(point.surface));
 
+  const isInternal = input.safetyLevel === 'internal'
+    || (input.requiredConsent ?? []).includes('admin_only');
   const classification = SKILL_CLASSIFICATION[input.id] ?? DEFAULT_CLASSIFICATION;
 
   return {
@@ -174,6 +208,8 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
     shortTitle: input.shortTitle ?? input.title,
     subtitle: input.subtitle,
     category: input.category,
+    kind: input.kind ?? (INTERACTIVE_SKILL_ID_SET.has(input.id) ? 'interactive' : 'reference'),
+    audience: input.audience ?? (isInternal ? 'admin' : 'member'),
     summary: input.description,
     fullDescription: `${input.description} ${input.keyFeatures.join(' ')}`,
     featured: input.featured ?? true,
@@ -967,6 +1003,19 @@ export const getSkillById = (skillId: string) => SKILLS.find((skill) => skill.id
 
 export const getFeaturedSkills = () => SKILLS.filter((skill) => skill.featured);
 
+/** Skills a signed-in member may see. Excludes operator/internal (admin) skills. */
+export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.audience === 'member');
+
+/** Member-facing, launchable capabilities (real component + SkillsRouter case). */
+export const getInteractiveSkills = () => (
+  getMemberVisibleSkills().filter((skill) => skill.kind === 'interactive')
+);
+
+/** Member-facing, read-only explainer/governance material (not launchable). */
+export const getReferenceSkills = () => (
+  getMemberVisibleSkills().filter((skill) => skill.kind === 'reference')
+);
+
 export const getSkillsForSurface = (surface: SkillSurface, options?: { includeInternal?: boolean }) => (
   SKILLS.filter((skill) => {
     if (!options?.includeInternal && skill.safetyLevel === 'internal' && surface !== 'admin') return false;
@@ -1001,9 +1050,6 @@ export const isInteractiveSkill = (skill: SkillDefinition): boolean =>
   skill.visibility === 'member_visible' && INTERACTIVE_SURFACE_CLASSES.includes(skill.surfaceClass);
 
 /** Skills shown in the member-facing Hub (everything except `hidden`). */
-export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.visibility !== 'hidden');
-
-/** Ordered, labeled sections for the member Hub. Hidden/external items are not listed. */
 export const SKILL_SECTIONS: { key: string; label: string; classes: SkillSurfaceClass[] }[] = [
   { key: 'interactive', label: 'Interactive Skills', classes: ['member_interactive'] },
   { key: 'controls', label: 'Settings & Controls', classes: ['settings_control'] },
