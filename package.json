@@ -23,6 +23,7 @@
     "build:skills": "node scripts/build-shareable-skills.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs",
     "smoke:api": "node scripts/api-smoke.mjs",
+    "smoke:replit": "node scripts/replit-parity-smoke.mjs",
     "check:vercel-upload": "node scripts/check-vercel-upload.mjs"
   },
   "dependencies": {

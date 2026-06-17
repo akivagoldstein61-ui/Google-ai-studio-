@@ -14,3 +14,4 @@
 - Use `/prototype` to confirm running commit and environment metadata.
 - Use `/skills-hub` to review all visible Kesher skill modules without signing in.
 - Use `npm run smoke:api -- <preview-url>` when manually checking API routing. Protected routes should return JSON auth/validation responses, never the SPA shell or `FUNCTION_INVOCATION_FAILED`.
+- Replit is workshop/QA evidence only. Use `npm run smoke:replit -- <public-replit-url>` only after publishing a public Replit App URL; private `*.pike.replit.dev` URLs that redirect to ReplShield or `silent-auth` are not external parity evidence.

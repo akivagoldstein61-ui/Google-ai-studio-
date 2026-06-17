@@ -6,12 +6,20 @@
 - Vercel is configured through `vercel.json` with Vercel Functions for `/api/health`, `/api/version`, `/__version`, and a JSON API catch-all.
 - The Vercel SPA fallback excludes `/api/*` so API routes are not served as `index.html`.
 - `/prototype` links to `/skills-hub`, which exposes all prototype skill modules without Firebase auth.
+- Replit has authenticated workshop evidence for `/daily`, but the public app and mobile URLs are not yet valid external parity evidence. Private `*.pike.replit.dev` routes such as `/daily` and `/skills` redirect through ReplShield/`silent-auth`; see `docs/deployment/replit.md`.
 
 ## Required Environment
 - `GEMINI_API_KEY`: server-only. Required for live AI responses.
 - `AI_ROUTE_AUTH_MODE`: use `prototype` only for local/prototype testing; use `strict` for production.
 - `firebase-applet-config.json`: required by current Firebase client/server initialization.
 - Firebase Admin credentials/environment must be configured by the host for strict auth verification.
+
+## Replit Workshop Posture
+
+- Replit may be used for fast implementation and QA only.
+- Sync from GitHub `main` or the active PR branch; do not import from Vercel output.
+- Do not count Replit parity until a public Replit App URL passes `npm run smoke:replit -- <url>` or an authenticated-only evidence packet is clearly labeled.
+- Do not change production Firebase data, Vercel settings, secrets, domains, billing, auth mode, Firestore rules, moderation thresholds, or AI thresholds from Replit.
 
 ## Recommended Host Posture
 - Use any Node 22-capable host for the current baseline.
