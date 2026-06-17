@@ -7,6 +7,7 @@
 - [ ] Date planner opens and handles location safely.
 - [ ] AI routes fail calmly in strict mode without an auth token.
 - [ ] AI routes function in explicit `prototype` mode.
+- [ ] Replit workshop evidence is labeled correctly: public URL passes `npm run smoke:replit -- <url>`, or authenticated-only screenshots are not counted as external parity.
 - [ ] No client-side secrets introduced (checked `.env` and `src/`).
 - [ ] Camera permission removed from `metadata.json`.
 - [ ] Geolocation requested narrowly.
