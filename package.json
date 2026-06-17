@@ -22,6 +22,7 @@
     "scan:logs": "node scripts/scan-logs.mjs",
     "build:skills": "node scripts/build-shareable-skills.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs",
+    "smoke:api": "node scripts/api-smoke.mjs",
     "check:vercel-upload": "node scripts/check-vercel-upload.mjs"
   },
   "dependencies": {

@@ -173,14 +173,11 @@ export const useSkillState = () => {
   ), [states, userId]);
 
   const updateSkill = React.useCallback((skillId: string, action: SkillAction, options?: SkillTransitionOptions) => {
-    let next!: UserSkillState;
-    setStates(prev => {
-      const current = prev[skillId] ?? createDefaultSkillState(userId, skillId, options?.now);
-      next = transitionSkillState(current, action, options);
-      const nextStates = { ...prev, [skillId]: next };
-      void persist(nextStates);
-      return nextStates;
-    });
+    const current = states[skillId] ?? createDefaultSkillState(userId, skillId, options?.now);
+    const next = transitionSkillState(current, action, options);
+    const nextStates = { ...states, [skillId]: next };
+    setStates(nextStates);
+    void persist(nextStates);
 
     const eventByAction: Partial<Record<SkillAction, Parameters<typeof emitSkillEvent>[1]>> = {
       start: 'skill_started',
@@ -198,7 +195,7 @@ export const useSkillState = () => {
       });
     }
     return next;
-  }, [persist, trackEvent, userId]);
+  }, [persist, states, trackEvent, userId]);
 
   const startSkill = React.useCallback((skillId: string, surface?: SkillSurface, consentSnapshot?: SkillConsentSnapshot) => (
     updateSkill(skillId, 'start', { surface, consentSnapshot })

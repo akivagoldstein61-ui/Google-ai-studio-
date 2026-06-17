@@ -25,6 +25,7 @@ export const SkillsHub: React.FC<{
 }> = ({ onBack, onSelect, onOpenFeature }) => {
   const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
   const { getSkillState } = useSkillState();
+  const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
 
   // Member hub never shows operator/internal (admin) skills.
   const memberSkills = React.useMemo(() => getMemberVisibleSkills(), []);
@@ -61,7 +62,7 @@ export const SkillsHub: React.FC<{
           <h2
             className="text-lg font-serif italic leading-snug"
             data-testid="skills-hub-count"
-            data-skill-count={interactiveSkills.length}
+            data-skill-count={memberSkills.length}
           >
             {interactiveSkills.length} capabilities for relationship readiness, safety, taste, compatibility, and AI transparency
           </h2>
