@@ -23,6 +23,7 @@ export const SkillsHub: React.FC<{
   onSelect: (id: string) => void;
   onOpenFeature?: (path: string) => void;
 }> = ({ onBack, onSelect, onOpenFeature }) => {
+  const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
   const { getSkillState } = useSkillState();
   const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
 
