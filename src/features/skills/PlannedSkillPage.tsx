@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, CheckCircle2, ExternalLink, GitBranch, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ExternalLink, GitBranch, Info, Lock, ShieldCheck } from 'lucide-react';
 import type { SkillDefinition } from './types';
 import { SkillConsentPanel } from './components/SkillConsentPanel';
 import { SkillProgressPill } from './components/SkillProgressPill';
@@ -8,15 +8,42 @@ import { useSkillState } from './hooks/useSkillState';
 interface PlannedSkillPageProps {
   skill: SkillDefinition;
   onBack: () => void;
-  /** Reference/operator/legal/platform items: show documentation, never a startable practice surface. */
+  /**
+   * When true: show documentation only, never a startable practice surface.
+   * Reference/operator/legal/platform/hidden items must always be readOnly.
+   * Skills with no dedicated router component must also be readOnly even if
+   * they are classified as member_interactive (no component = no launch).
+   */
   readOnly?: boolean;
 }
 
+/** Returns a human-readable honest label for the fallback state of a skill. */
+const getFallbackLabel = (skill: SkillDefinition): string => {
+  if (skill.visibility === 'hidden') {
+    if (skill.surfaceClass === 'external_demo') return 'External demo — not a Kesher member feature';
+    return 'Hidden until verified — not yet available';
+  }
+  if (skill.visibility === 'reference_visible') {
+    if (skill.surfaceClass === 'operator') return 'Internal / operator — not visible to members';
+    if (skill.surfaceClass === 'legal_privacy') return 'Legal & privacy reference — read only';
+    if (skill.surfaceClass === 'research') return 'Research reference — read only';
+    if (skill.surfaceClass === 'platform_vendor') return 'Platform / vendor reference — read only';
+    return 'Reference & governance — read only';
+  }
+  // member_visible but no router case yet
+  return 'Planned — component not yet built';
+};
+
 export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBack, readOnly = false }) => {
   const Icon = skill.icon;
+  // Hooks must be called unconditionally (React rules).
+  // Reference/planned/hidden pages must never create or mutate skill progress,
+  // but we still read state so the SkillProgressPill can render correctly for
+  // the interactive case (readOnly=false).
   const { getSkillState, startSkill, completeSkill } = useSkillState();
   const state = getSkillState(skill.id);
   const isPlatform = skill.category === 'platform' || skill.category === 'governance';
+  const fallbackLabel = getFallbackLabel(skill);
   const prototypeSteps = isPlatform
     ? ['Route through GitHub PR review', 'Verify on Vercel preview', 'Capture smoke evidence', 'Keep production gated']
     : ['Open the user-facing flow', 'Review consent and visibility state', 'Run seeded demo data', 'Verify reflective language'];
@@ -42,18 +69,29 @@ export const PlannedSkillPage: React.FC<PlannedSkillPageProps> = ({ skill, onBac
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <section className="p-6 bg-[#F7F2EE] rounded-[24px] border border-[#E5E0DB] space-y-4">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-emerald-700" />
+            {readOnly
+              ? <Info size={18} className="text-[#8C7E6E]" />
+              : <ShieldCheck size={18} className="text-emerald-700" />}
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
-              {readOnly ? 'Reference' : 'Prototype experience'}
+              {readOnly ? fallbackLabel : 'Prototype experience'}
             </span>
           </div>
           <h2 className="text-base font-serif italic text-[#2D2926]">{skill.title}</h2>
           <p className="text-sm text-[#6B5E52] leading-relaxed">{skill.description}</p>
           {readOnly ? (
-            <p className="text-[11px] leading-relaxed text-[#8C7E6E] bg-white border border-[#E5E0DB] rounded-xl px-3 py-2">
-              This is a reference page, not a member skill. It documents how Kesher approaches this area —
-              there is nothing to start or complete here.
-            </p>
+            <div className="space-y-2">
+              <p className="text-[11px] leading-relaxed text-[#8C7E6E] bg-white border border-[#E5E0DB] rounded-xl px-3 py-2">
+                This page documents how Kesher approaches this area. There is nothing to start or complete here —
+                no skill progress is created and no app state is changed.
+              </p>
+              {skill.deepeningDecision === 'DEEPEN_AFTER_FIX' && (
+                <p className="text-[11px] leading-relaxed text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  <Lock size={10} className="inline mr-1" />
+                  This capability is planned but the interactive component has not been built yet.
+                  It will become launchable in a future release after the required implementation and review gates pass.
+                </p>
+              )}
+            </div>
           ) : (
             <div className="flex flex-wrap gap-2">
               <button
