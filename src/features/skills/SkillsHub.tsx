@@ -25,7 +25,6 @@ export const SkillsHub: React.FC<{
 }> = ({ onBack, onSelect, onOpenFeature }) => {
   const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
   const { getSkillState } = useSkillState();
-  const [activeCategory, setActiveCategory] = React.useState<'all' | SkillCategory>('all');
 
   // Member hub never shows operator/internal (admin) skills.
   const memberSkills = React.useMemo(() => getMemberVisibleSkills(), []);
