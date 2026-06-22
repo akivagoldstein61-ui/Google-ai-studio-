@@ -14,7 +14,7 @@ import {
   MessageSafetyScanSchema,
   ModerationSummarySchema,
   PersonalitySummarySchema,
-  PairInsightReportSchema,
+  CompatibilityReflectionSchema,
   PacingInterventionSchema,
   DateIdeasSchema,
   PhotoAnalysisSchema,
@@ -34,6 +34,7 @@ import {
 } from "../src/lib/explanationSchema.ts";
 import { sanitize } from "../src/ai/promptSanitizer.ts";
 import { filterWhyMatchSignals } from "../src/ai/dataClassification.ts";
+import { verifyBilateralShareConsent } from "./consentVerification.ts";
 
 export const aiRouter = express.Router();
 
@@ -633,9 +634,14 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
   res.locals.ai_metadata.feature_id = "compatibility_reflection";
   res.locals.ai_metadata.prompt_version = "v1.0";
   try {
-    const { sharedInputs, mutualConsent, bothOptedIn } = req.body;
+    const { sharedInputs, viewerUid, candidateUid } = req.body;
 
-    if (mutualConsent !== true || bothOptedIn !== true) {
+    if (!viewerUid || !candidateUid) {
+      return res.status(400).json({ error: "Missing viewerUid or candidateUid" });
+    }
+
+    const consented = await verifyBilateralShareConsent(viewerUid, candidateUid);
+    if (!consented) {
       return res.status(403).json({ error: "MUTUAL_CONSENT_REQUIRED" });
     }
 
@@ -652,13 +658,14 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.COMPATIBILITY_REFLECTION,
         responseMimeType: "application/json",
-        responseSchema: PairInsightReportSchema,
+        responseSchema: CompatibilityReflectionSchema,
       },
     });
 
     const validated = outputValidators.validateCompatibilityReflection(
       parseAIResponse(response.text),
     );
+    validated.source = { kind: "mutually_approved_share_card", verified: true };
     res.locals.ai_metadata.validator_result = "success";
     res.json(validated);
   } catch (error: any) {
