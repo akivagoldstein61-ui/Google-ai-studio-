@@ -28,10 +28,12 @@ export const SkillRecommendationRail: React.FC<{
   }, []);
 
   const skills = React.useMemo<SkillDefinition[]>(() => {
-    if (skillIds?.length) {
-      return skillIds.map((id) => getSkillById(id)).filter((skill): skill is SkillDefinition => Boolean(skill)).slice(0, limit);
-    }
-    return getRecommendedSkillsForSurface(surface, { limit, includeInternal });
+    const resolved = skillIds?.length
+      ? skillIds.map((id) => getSkillById(id)).filter((skill): skill is SkillDefinition => Boolean(skill))
+      : getRecommendedSkillsForSurface(surface, { limit, includeInternal });
+    // Hidden/unverified skills (e.g. flag-off or external) must never surface
+    // in a member-facing rail, even when referenced by an explicit id list.
+    return resolved.filter((skill) => skill.visibility !== 'hidden').slice(0, limit);
   }, [includeInternal, limit, skillIds, surface]);
 
   if (!skills.length) return null;

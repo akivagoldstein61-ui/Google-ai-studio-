@@ -186,7 +186,11 @@ const SKILL_CLASSIFICATION: Record<string, SkillClassification> = {
   // is enforced by isInteractiveSkill() returning false for these (no router case).
   'maps-date-planner': member('member_interactive', 'DEEPEN_AFTER_FIX'),
   'grounded-search': member('trust_safety', 'DEEPEN_AFTER_FIX'),
-  'image-analysis': member('trust_safety', 'DEEPEN_AFTER_FIX'),
+  // image-analysis has no wired AI feature (the only photo feature is the
+  // flag-OFF visual_icebreaker, which is image *generation*, not analysis).
+  // Per PR 1 wire-or-hide: hide until a real, enabled image-analysis feature
+  // exists in featureRegistry.ts. Reversible single-line classification change.
+  'image-analysis': hide('hidden_until_verified'),
   // Legal / research / operator / reference (not member-facing interactive)
   // israeli-privacy, psychometric-validation, dark-pattern-audit, ai-runtime-governance
   // have real SkillsRouter cases (they are in INTERACTIVE_SKILL_IDS) so they must be
