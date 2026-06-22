@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { SKILLS, INTERACTIVE_SURFACE_CLASSES, isInteractiveSkill } from './skillRegistry';
+import { SKILLS, INTERACTIVE_SKILL_IDS, INTERACTIVE_SURFACE_CLASSES, isInteractiveSkill } from './skillRegistry';
 import { AI_FEATURE_REGISTRY } from '../../ai/featureRegistry';
 import { FEATURE_FLAGS } from '../../ai/featureFlags';
 
@@ -90,10 +90,29 @@ describe('Skills Hub truth labels (PR 1: reference separation)', () => {
     expect(invalid).toEqual([]);
   });
 
-  it('keeps reference/research/operator/legal/platform items reference_visible (not member-facing)', () => {
+  it('keeps reference/research/operator/legal/platform items reference_visible unless they have a real router case', () => {
+    // PR1 correction: skills with reference surfaceClasses (reference, research, operator,
+    // legal_privacy, platform_vendor) are normally reference_visible. However, some of
+    // these skills have real SkillsRouter cases (they are in INTERACTIVE_SKILL_IDS) and
+    // are launchable by members or admins. Those are allowed to be member_visible.
+    // Examples: israeli-privacy (legal_privacy), psychometric-validation (research),
+    //           dark-pattern-audit (reference), ai-runtime-governance (operator).
+    const interactiveIdSet = new Set<string>(INTERACTIVE_SKILL_IDS);
     const wrong = SKILLS
       .filter((s) => REFERENCE_CLASSES.includes(s.surfaceClass))
+      // Exclude skills with a real router case — they may be member_visible.
+      .filter((s) => !interactiveIdSet.has(s.id))
       .filter((s) => s.visibility !== 'reference_visible')
+      .map((s) => `${s.id}:${s.visibility}`);
+    expect(wrong).toEqual([]);
+  });
+
+  it('PR1: reference-class skills with router cases have member_visible or reference_visible (not hidden)', () => {
+    const interactiveIdSet = new Set<string>(INTERACTIVE_SKILL_IDS);
+    const wrong = SKILLS
+      .filter((s) => REFERENCE_CLASSES.includes(s.surfaceClass))
+      .filter((s) => interactiveIdSet.has(s.id))
+      .filter((s) => s.visibility === 'hidden')
       .map((s) => `${s.id}:${s.visibility}`);
     expect(wrong).toEqual([]);
   });

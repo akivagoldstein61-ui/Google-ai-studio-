@@ -84,3 +84,70 @@ describe('Skills Hub DEEPEN_NOW render foundation', () => {
     });
   }
 });
+
+describe('Private Taste skill privacy boundaries', () => {
+  it('keeps personalization off until explicit consent is accepted', () => {
+    const { container } = renderInDir(<PrivateTasteSkill onBack={vi.fn()} />, 'rtl');
+    const scope = within(container);
+
+    expect(scope.getByText(/Off by default/i)).toBeTruthy();
+    expect(scope.queryByText(/Active/i)).toBeNull();
+
+    fireEvent.click(scope.getByLabelText(/Open private taste consent gate/i));
+    expect(scope.getByText(/Enable Personalization\?/i)).toBeTruthy();
+    expect(scope.queryByText(/Active/i)).toBeNull();
+
+    fireEvent.click(scope.getByRole('button', { name: /Enable Personalization/i }));
+    expect(scope.getByText(/Active/i)).toBeTruthy();
+  });
+
+  it('keeps reset reachable from an owner-only taste surface', () => {
+    const { container } = renderInDir(<PrivateTasteSkill onBack={vi.fn()} />, 'rtl');
+    const scope = within(container);
+
+    expect(scope.getByText(/Owner View Only/i)).toBeTruthy();
+    expect(scope.getByRole('button', { name: /Reset Owner Taste/i })).toBeTruthy();
+    expect(scope.getByText(/Taste Reset Semantics/i)).toBeTruthy();
+  });
+
+  it('does not render raw taste internals or unsafe dating claims', () => {
+    const { container } = renderInDir(<PrivateTasteSkill onBack={vi.fn()} />, 'rtl');
+    const text = container.textContent?.toLowerCase() ?? '';
+
+    for (const forbidden of [
+      '0.8',
+      '0.95',
+      '-0.95',
+      'taste vector',
+      'raw taste',
+      'hidden ranking weights',
+      'protected-trait inference',
+      'desirability',
+      'attractiveness',
+      'compatibility score',
+      'perfect match',
+    ]) {
+      expect(text).not.toContain(forbidden);
+    }
+  });
+
+  it('keeps captured events limited to allowed profile-interaction signals', () => {
+    const { container } = renderInDir(<PrivateTasteSkill onBack={vi.fn()} />, 'rtl');
+    const eventTable = within(container).getByText(/Event Signal Table/i).closest('section');
+    expect(eventTable).toBeTruthy();
+    const eventText = eventTable?.textContent?.toLowerCase() ?? '';
+
+    expect(eventText).toContain('like / match');
+    expect(eventText).toContain('more like this');
+    expect(eventText).toContain('less like this');
+
+    for (const forbidden of [
+      'message content',
+      'raw personality answers',
+      'exact location',
+      'hidden ranking weights',
+    ]) {
+      expect(eventText).not.toContain(forbidden);
+    }
+  });
+});
