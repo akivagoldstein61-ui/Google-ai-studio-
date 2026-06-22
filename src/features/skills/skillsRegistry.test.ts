@@ -169,6 +169,28 @@ describe('Kesher skills registry prototype visibility', () => {
     expect(registryCopy).not.toContain('hot-or-not');
   });
 
+  it('anchors private-taste as consent-gated owner-only settings without unsafe scoring copy', () => {
+    const privateTaste = getSkillById('private-taste');
+    expect(privateTaste).toBeTruthy();
+    expect(privateTaste?.requiredConsent).toContain('private_taste');
+    expect(privateTaste?.primarySurface).toBe('settings');
+    expect(privateTaste?.outputType).toBe('settings');
+    expect(privateTaste?.deepeningDecision).toBe('DEEPEN_NOW');
+
+    const privateTasteCopy = JSON.stringify({
+      description: privateTaste?.description,
+      keyFeatures: privateTaste?.keyFeatures,
+      privacyNotes: privateTaste?.privacyNotes,
+    }).toLowerCase();
+
+    expect(privateTasteCopy).toContain('owner-only');
+    expect(privateTasteCopy).toContain('explicitly enables');
+    expect(privateTasteCopy).not.toContain('attractiveness');
+    expect(privateTasteCopy).not.toContain('desirability');
+    expect(privateTasteCopy).not.toContain('compatibility score');
+    expect(privateTasteCopy).not.toContain('hidden ranking weights');
+  });
+
   it('transitions demo skill state without storing raw outputs', () => {
     const initial = createDefaultSkillState('demo-user', 'why-this-match', '2026-05-24T00:00:00.000Z');
     const started = transitionSkillState(initial, 'start', { surface: 'daily', now: '2026-05-24T00:01:00.000Z' });
