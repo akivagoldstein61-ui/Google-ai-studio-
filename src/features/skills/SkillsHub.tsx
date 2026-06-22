@@ -1,16 +1,18 @@
 import React from 'react';
-import { BookOpen, ChevronLeft, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronLeft, Lock, Sparkles } from 'lucide-react';
 import { SkillCard } from './components/SkillCard';
 import { SkillRecommendationRail } from './components/SkillRecommendationRail';
 import { useSkillState } from './hooks/useSkillState';
 import {
   CATEGORY_LABELS,
+  INTERACTIVE_SKILL_IDS,
   SKILL_COUNTS,
   SKILL_LIVE_ROUTES,
   SKILLS,
   getInteractiveSkills,
   getMemberVisibleSkills,
   getReferenceSkills,
+  isInteractiveSkill,
 } from './skillRegistry';
 import type { SkillCategory } from './types';
 import type { SkillMeta } from './skillRegistry';
@@ -28,8 +30,17 @@ export const SkillsHub: React.FC<{
 
   // Member hub never shows operator/internal (admin) skills.
   const memberSkills = React.useMemo(() => getMemberVisibleSkills(), []);
+  // Interactive: member-visible AND has a real router case (component exists).
   const interactiveSkills = React.useMemo(() => getInteractiveSkills(), []);
+  // Reference: member-visible, read-only explainers.
   const referenceSkills = React.useMemo(() => getReferenceSkills(), []);
+  // Planned: member-visible but no component yet (classified as interactive but not in INTERACTIVE_SKILL_IDS).
+  const plannedSkills = React.useMemo(
+    () => memberSkills.filter(
+      (skill) => skill.kind === 'interactive' && !isInteractiveSkill(skill),
+    ),
+    [memberSkills],
+  );
 
   const byCategory = <T extends { category: SkillCategory }>(skills: T[]) => (
     activeCategory === 'all' ? skills : skills.filter((skill) => skill.category === activeCategory)
@@ -63,7 +74,7 @@ export const SkillsHub: React.FC<{
             data-testid="skills-hub-count"
             data-skill-count={memberSkills.length}
           >
-            {interactiveSkills.length} capabilities for relationship readiness, safety, taste, compatibility, and AI transparency
+            {INTERACTIVE_SKILL_IDS.length} launchable capabilities for relationship readiness, safety, taste, compatibility, and AI transparency
           </h2>
           <p className="text-sm text-white/70 leading-relaxed italic">
             Skills are private tools inside Kesher. They can coach, explain, draft, warn, and help you choose,
@@ -115,6 +126,20 @@ export const SkillsHub: React.FC<{
           ))}
         </div>
 
+        {/* Section header for launchable capabilities */}
+        {filteredInteractive.length > 0 && (
+          <div className="flex items-center gap-2 pt-2 border-t border-[#F3EFEA]">
+            <Sparkles size={16} className="text-[#C8956B]" />
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#2D2926]">
+                Launchable Capabilities
+              </h3>
+              <p className="text-[11px] text-[#8C7E6E] leading-relaxed">
+                These skills have a real interactive component. You can start, use, and save output from each one.
+              </p>
+            </div>
+          </div>
+        )}
         {filteredInteractive.length > 0 ? (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="skills-interactive-grid">
             {filteredInteractive.map((skill) => (
@@ -130,8 +155,36 @@ export const SkillsHub: React.FC<{
           </section>
         ) : (
           <p className="text-xs text-[#8C7E6E] italic">
-            No launchable capabilities in this category yet — see Reference & Governance below.
+            No launchable capabilities in this category yet — see Reference &amp; Governance below.
           </p>
+        )}
+
+        {/* Planned section: member-visible but component not yet built */}
+        {byCategory(plannedSkills).length > 0 && (
+          <section className="space-y-4" data-testid="skills-planned-section">
+            <div className="flex items-center gap-2 pt-2 border-t border-[#F3EFEA]">
+              <Lock size={16} className="text-amber-600" />
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#2D2926]">
+                  Planned Capabilities
+                </h3>
+                <p className="text-[11px] text-[#8C7E6E] leading-relaxed">
+                  These capabilities are on the roadmap but the interactive component has not been built yet.
+                  Tapping one opens a reference page — no skill progress is created.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {byCategory(plannedSkills).map((skill) => (
+                <SkillCard
+                  key={skill.id}
+                  skill={skill}
+                  state={getSkillState(skill.id)}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
         {filteredReference.length > 0 && (
