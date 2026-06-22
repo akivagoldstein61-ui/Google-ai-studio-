@@ -18,6 +18,7 @@ import {
   sanitizeOutputRef,
   transitionSkillState,
 } from './hooks/useSkillState';
+import { BESPOKE_SKILL_COMPONENTS } from './SkillsRouter';
 
 const EXPECTED_SKILL_IDS = [
   'personality-assessment',
@@ -71,6 +72,8 @@ const PERSONALITY_DATA_GATED_IDS = [
   'personality-ocean',
   'personality-visibility',
 ];
+
+const HIDDEN_MEMBER_VISIBLE_EXCEPTION_IDS = new Set(['image-analysis']);
 
 describe('Kesher skills registry prototype visibility', () => {
   it('keeps all 35 Kesher skills visible as prototype experiences', () => {
@@ -164,19 +167,15 @@ describe('Kesher skills registry prototype visibility', () => {
   });
 
   it('routes every interactive skill to a real component and lets reference skills fall through', () => {
-    const routerSource = readFileSync('src/features/skills/SkillsRouter.tsx', 'utf8');
-
     // Guards against fallback drift: an "interactive" skill with no router case
     // would silently render the read-only PlannedSkillPage.
     for (const id of INTERACTIVE_SKILL_IDS) {
-      // SkillsRouter currently declares bespoke pages in a static id -> *Skill
-      // object map rather than a switch statement; keep this syntax explicit.
-      expect(routerSource).toMatch(new RegExp(`'${id}':\\s*\\w+Skill`));
+      expect(BESPOKE_SKILL_COMPONENTS[id]).toBeTruthy();
     }
 
     // Reference skills must intentionally fall through to PlannedSkillPage.
     for (const skill of SKILLS.filter((s) => s.kind === 'reference')) {
-      expect(routerSource).not.toContain(`case '${skill.id}':`);
+      expect(BESPOKE_SKILL_COMPONENTS[skill.id]).toBeUndefined();
     }
   });
 
@@ -344,14 +343,13 @@ describe('Kesher skills registry prototype visibility', () => {
         expect(memberVisible.map((s) => s.id)).not.toContain(hidden.id);
       }
     }
-    // Existing inventory keeps image-analysis in the audience-visible count even
-    // though launch gating marks it hidden until a real, enabled image-analysis
-    // feature exists. Preserve the accepted count while preventing admin hidden
-    // entries from leaking into the member hub.
-    expect(hiddenSkills.filter((skill) => skill.audience === 'member').map((skill) => skill.id)).toEqual([
-      'image-analysis',
-    ]);
-    expect(memberVisible.map((skill) => skill.id)).toEqual(expect.arrayContaining(['image-analysis']));
+    const hiddenMemberIds = hiddenSkills
+      .filter((skill) => skill.audience === 'member')
+      .map((skill) => skill.id);
+    expect(hiddenMemberIds).toEqual([...HIDDEN_MEMBER_VISIBLE_EXCEPTION_IDS]);
+    expect(memberVisible.map((skill) => skill.id)).toEqual(
+      expect.arrayContaining([...HIDDEN_MEMBER_VISIBLE_EXCEPTION_IDS]),
+    );
   });
 
   it('PR1: reference skills do not appear in getInteractiveSkills()', () => {

@@ -45,6 +45,21 @@ describe('learned taste minimization', () => {
     expect([...updated.slow.entries()]).toEqual([]);
   });
 
+  it('ignores raw message, photo, and precise-location fields at runtime', () => {
+    const updated = applyEvent(emptyTasteState(1_000), {
+      name: 'more_like_this',
+      class: 'explicit_preference',
+      candidateId: 'candidate-1',
+      messageText: 'private message content',
+      photoUrl: 'https://example.invalid/profile.jpg',
+      preciseLocation: { lat: 32.0853, lng: 34.7818 },
+      occurredAt: 2_000,
+    } as any);
+
+    expect([...updated.fast.entries()]).toEqual([]);
+    expect([...updated.slow.entries()]).toEqual([]);
+  });
+
   it('keeps message, raw photo, and precise-location channels out of the event taxonomy', () => {
     const taxonomy: Record<EventName, true> = {
       onboarding_completed: true,
