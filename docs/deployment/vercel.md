@@ -19,6 +19,7 @@
 - `/skills-hub` exposes all skill modules registered in the prototype without requiring Firebase auth.
 - `/api/health`, `/api/version`, and `/__version` are Vercel Functions that return JSON deployment/runtime metadata.
 - The SPA fallback rewrite uses a negative lookahead (`/((?!api(?:/|$)).*)`) to exclude `/api` and `/api/*`; unmatched API routes return JSON from a Vercel Function catch-all instead of `index.html`.
+- `scripts/api-smoke.mjs` checks deployment metadata, `/api/*` JSON fallback behavior, and auth-gated route shape for `/api/ai/openers`, `/api/profile/personality/visibility`, and `/api/share/create`.
 - `/downloads/kesher-personality-skills.zip` serves the bundled `skills/` archive.
 
 ## Firebase auth guidance

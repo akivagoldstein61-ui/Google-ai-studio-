@@ -22,6 +22,20 @@ export type SkillSurface =
 
 export type SkillSafetyLevel = 'low' | 'medium' | 'high' | 'internal';
 
+/**
+ * Whether a skill is a launchable, member-operable capability ('interactive')
+ * or read-only explainer/governance material ('reference'). A reference card is
+ * not a capability and must never present a "launch feature" affordance.
+ */
+export type SkillKind = 'interactive' | 'reference';
+
+/**
+ * Who a skill is for. 'admin' skills are operator/internal-only and must be
+ * hidden from the member Skills Hub. Derived from safetyLevel === 'internal'
+ * or an admin_only consent requirement unless explicitly overridden.
+ */
+export type SkillAudience = 'member' | 'admin';
+
 export type SkillOutputType =
   | 'none'
   | 'draft'
@@ -101,6 +115,8 @@ export interface SkillDefinition {
   shortTitle: string;
   subtitle: string;
   category: SkillCategory;
+  kind: SkillKind;
+  audience: SkillAudience;
   summary: string;
   fullDescription: string;
   featured: boolean;

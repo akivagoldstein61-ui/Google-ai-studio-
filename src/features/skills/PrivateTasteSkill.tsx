@@ -5,29 +5,34 @@ import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 
 const SAMPLE_TASTE_PROFILE = [
-  { signal: 'Serious relationship intent', weight: 'strong', source: 'explicit', direction: 'toward' },
-  { signal: 'Traditional observance', weight: 'moderate', source: 'explicit', direction: 'toward' },
-  { signal: 'Long-distance', weight: 'strong', source: 'explicit', direction: 'away' },
-  { signal: 'Intellectually curious profiles', weight: 'moderate', source: 'implicit', direction: 'toward' },
-  { signal: 'Profiles mentioning family', weight: 'weak', source: 'implicit', direction: 'toward' },
+  { signal: 'Serious relationship intent', source: 'explicit', direction: 'toward' },
+  { signal: 'Traditional observance', source: 'explicit', direction: 'toward' },
+  { signal: 'Long-distance', source: 'explicit', direction: 'away' },
+  { signal: 'Intellectually curious profiles', source: 'implicit', direction: 'toward' },
+  { signal: 'Profiles mentioning family', source: 'implicit', direction: 'toward' },
 ];
 
 const EVENT_TYPES = [
-  { event: 'Like / Match', authority: 'High explicit', weight: '0.8', signal: '✓' },
-  { event: '"More like this"', authority: 'Highest explicit', weight: '0.95', signal: '✓' },
-  { event: '"Less like this"', authority: 'Highest explicit', weight: '-0.95', signal: '✓' },
-  { event: 'Profile open (long dwell)', authority: 'Medium implicit', weight: '0.3', signal: '✓' },
-  { event: 'Pass', authority: 'Low implicit', weight: '-0.1', signal: '✓' },
-  { event: 'Impression only (no action)', authority: 'Not a dislike', weight: '0', signal: '—' },
-  { event: 'Message content', authority: 'EXCLUDED', weight: 'n/a', signal: '✗' },
-  { event: 'Exact location', authority: 'EXCLUDED', weight: 'n/a', signal: '✗' },
-  { event: 'Protected traits', authority: 'EXCLUDED', weight: 'n/a', signal: '✗' },
+  { event: 'Like / Match', authority: 'High explicit', signal: '✓' },
+  { event: '"More like this"', authority: 'Highest explicit', signal: '✓' },
+  { event: '"Less like this"', authority: 'Highest explicit', signal: '✓' },
+  { event: 'Profile open after a visible profile tap', authority: 'Medium implicit', signal: '✓' },
+  { event: 'Pass', authority: 'Low implicit', signal: '✓' },
+  { event: 'Impression only (no action)', authority: 'Not a dislike', signal: '—' },
+];
+
+const EXCLUDED_INPUTS = [
+  'Private conversations',
+  'Assessment answer text',
+  'GPS-level location',
+  'Sensitive trait guesses',
+  'Ranking internals',
 ];
 
 const EXPLANATION_RULES = [
   { rule: 'Never say "your private taste prefers X about this person"', correct: 'Say "based on what is visible on their profile"' },
-  { rule: 'Never expose taste vector values or weights in UI', correct: 'Show only editable category-level summaries' },
-  { rule: 'Never infer or display protected trait preferences', correct: 'Remove protected-trait fields from taste schema entirely' },
+  { rule: 'Never expose internal model values in UI', correct: 'Show only editable category-level summaries' },
+  { rule: 'Never infer or display sensitive trait preferences', correct: 'Keep sensitive-trait fields out of taste learning entirely' },
   { rule: 'Never show other users any taste data', correct: 'Taste is strictly owner-only, never surfaced to others' },
 ];
 
@@ -58,7 +63,7 @@ const Chips: React.FC<{ label: string; items?: string[]; tone: 'toward' | 'away'
  * LIVE taste model — only after explicit consent. Builds the owner-only taste
  * profile from the user's REAL interaction signals via /api/ai/taste-profile.
  * Honors this skill's own contract: category-level summaries only, no raw
- * weight vectors exposed, never any protected-trait fields.
+ * model internals exposed, never any sensitive-trait fields.
  */
 const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   const { user, interactions, tasteProfile, resetTasteProfile, trackEvent } = useApp();
@@ -134,7 +139,7 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
             {signalCount === 0 ? (
               <p className="text-sm text-white/70 italic leading-relaxed">
                 Like or pass on a few profiles in Daily Picks first — then build your model from those signals.
-                Message content, location, and protected traits are never used.
+                Private conversations, precise location, and sensitive-trait guesses are never used.
               </p>
             ) : loading ? (
               <div className="flex items-center gap-3 text-white/70">
@@ -152,7 +157,7 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
                   <p className="text-sm text-white/85 leading-relaxed italic font-serif">{model.explanation}</p>
                 )}
                 <p className="text-[9px] text-white/40 italic">
-                  Category-level summary only — exact weights are never shown, and this is visible to you alone.
+                  Category-level summary only — internal scoring values are never shown, and this is visible to you alone.
                 </p>
                 <div className="flex gap-2">
                   <Button onClick={build} variant="outline" className="h-9 rounded-full border-white/20 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4">
@@ -200,7 +205,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926]">
       <header className="sticky top-0 z-10 bg-[#FDFCFB]/95 backdrop-blur-sm px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
-        <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
+        <button onClick={onBack} aria-label="Back to Skills Hub" className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
           <ChevronLeft size={20} />
         </button>
         <div className="flex items-center gap-3">
@@ -222,7 +227,11 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
               <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Personalization</h2>
               <p className="text-xs text-[#6B5E52] mt-1 italic">Off by default. Requires explicit consent to activate.</p>
             </div>
-            <button onClick={handleToggle} className="transition-all">
+            <button
+              onClick={handleToggle}
+              aria-label={tasteEnabled ? 'Disable private taste personalization' : 'Open private taste consent gate'}
+              className="transition-all"
+            >
               {tasteEnabled
                 ? <ToggleRight size={36} className="text-purple-600" />
                 : <ToggleLeft size={36} className="text-[#C5B8AE]" />
@@ -252,14 +261,13 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <ul className="space-y-1 pl-4 text-[#6B5E52]">
                   <li>• Your swipes and likes</li>
                   <li>• Explicit controls (more/less like this)</li>
-                  <li>• Approximate session patterns</li>
+                  <li>• Coarse session patterns</li>
                 </ul>
                 <p className="font-medium mt-2">What we <span className="text-red-700">never</span> use:</p>
                 <ul className="space-y-1 pl-4 text-[#6B5E52]">
-                  <li>• Your message content</li>
-                  <li>• Personality assessment answers</li>
-                  <li>• Exact location</li>
-                  <li>• Protected trait inference</li>
+                  {EXCLUDED_INPUTS.map((input) => (
+                    <li key={input}>• {input}</li>
+                  ))}
                 </ul>
                 <p className="text-[#8C7E6E] italic">This is private. Other users never see your taste profile.</p>
               </div>
@@ -290,7 +298,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
         {/* Sample Profile (owner view) */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Sample Taste Profile (Owner View Only)</h2>
-          <p className="text-xs text-[#6B5E52] italic">Categories only — no weights, no vectors exposed to UI.</p>
+          <p className="text-xs text-[#6B5E52] italic">Categories only — internal model values stay hidden from the UI.</p>
           <div className="space-y-2">
             {SAMPLE_TASTE_PROFILE.map(item => (
               <div key={item.signal} className="flex items-center justify-between p-3 bg-[#F7F2EE] rounded-xl text-xs">
@@ -310,29 +318,34 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   }`}>
                     {item.direction === 'toward' ? '▲ toward' : '▼ away'}
                   </span>
-                  <span className="text-[9px] text-[#8C7E6E]">{item.weight}</span>
                 </div>
               </div>
             ))}
           </div>
           <div className="flex gap-2 pt-2">
-            <Button variant="ghost" size="sm" className="rounded-full text-[10px] uppercase tracking-widest bg-[#F7F2EE] flex items-center gap-1">
-              <RotateCcw size={10} /> Reset Taste
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowConsentGate(true)}
+              className="rounded-full text-[10px] uppercase tracking-widest bg-[#F7F2EE] flex items-center gap-1"
+            >
+              <RotateCcw size={10} /> Reset Owner Taste
             </Button>
           </div>
         </section>
 
         {/* Event Taxonomy */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Event Weight Table</h2>
-          <p className="text-xs text-[#6B5E52] italic">Explicit controls always outrank implicit signals. Missing impressions are never negative signals.</p>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Event Signal Table</h2>
+          <p className="text-xs text-[#6B5E52] italic">
+            Explicit controls always outrank implicit signals. A pass is an intentional away-signal; seeing a profile and taking no action is not treated as dislike.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[#F3EFEA]">
                   <th className="text-left py-2 pr-3 font-bold">Event</th>
                   <th className="text-left py-2 pr-3 font-bold">Authority</th>
-                  <th className="text-left py-2 pr-3 font-bold">Weight</th>
                   <th className="text-left py-2 font-bold">Used</th>
                 </tr>
               </thead>
@@ -341,11 +354,8 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   <tr key={row.event} className="border-b border-[#F3EFEA]/50">
                     <td className="py-2 pr-3">{row.event}</td>
                     <td className="py-2 pr-3">
-                      <span className={`text-[9px] font-bold ${
-                        row.authority === 'EXCLUDED' ? 'text-red-600' : 'text-[#6B5E52]'
-                      }`}>{row.authority}</span>
+                      <span className="text-[9px] font-bold text-[#6B5E52]">{row.authority}</span>
                     </td>
-                    <td className="py-2 pr-3 font-mono">{row.weight}</td>
                     <td className="py-2">
                       <span className={row.signal === '✗' ? 'text-red-600 font-bold' : row.signal === '—' ? 'text-[#8C7E6E]' : 'text-green-600 font-bold'}>
                         {row.signal}
@@ -389,7 +399,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-red-700 mb-2">Clears on reset</h3>
-              {['Taste vector', 'Explicit anchors', 'Explanation history cache', 'On-device summaries'].map(s => (
+              {['Internal model state', 'Explicit anchors', 'Explanation history cache', 'On-device summaries'].map(s => (
                 <div key={s} className="flex items-start gap-2 text-xs mb-1">
                   <RotateCcw size={12} className="mt-0.5 shrink-0 text-red-600" />
                   <span>{s}</span>

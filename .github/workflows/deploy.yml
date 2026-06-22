@@ -137,6 +137,7 @@ jobs:
         # with status 200 — a silent regression). See scripts/api-smoke.mjs.
         run: node scripts/api-smoke.mjs "${{ env.KESHER_PRODUCTION_URL }}"
         env:
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Explain skipped Vercel deployment
@@ -259,5 +260,11 @@ jobs:
         run: node scripts/smoke-deployment.mjs
         env:
           SMOKE_BASE_URL: ${{ steps.deploy_preview.outputs.url }}
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      - name: API smoke check (manual preview)
+        run: node scripts/api-smoke.mjs "${{ steps.deploy_preview.outputs.url }}"
+        env:
           EXPECTED_COMMIT_SHA: ${{ github.sha }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}

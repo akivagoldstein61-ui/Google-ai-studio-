@@ -14,6 +14,7 @@ change runtime behavior.
 | Current commit SHA | `b7d602779c032e8919274fa70c0e5fe19e8cf1c9` |
 | Short SHA | `b7d6027` |
 | Stable prototype | `https://google-ai-studio-sage-sigma.vercel.app` |
+| Replit workshop URL | `https://google-ai-studio-5.replit.app/` and `/mobile/` public app URLs blocked; private dev URL requires ReplShield auth |
 | Stable route probe | `2026-05-20T15:21:17Z` |
 | Primary evidence | `package.json`, `server.ts`, `api/*.ts`, `server/*.ts`, `src/firebase.ts`, `src/context/AppContext.tsx`, `src/lib/prototypeMode.ts`, `vercel.json`, `netlify.toml`, `.github/workflows/*.yml`, `.github/CODEOWNERS`, `firestore.rules`, `docs/deployment/*` |
 
@@ -46,6 +47,7 @@ change runtime behavior.
 | `scan:forbidden-fields` | `node scripts/scan-forbidden-fields.mjs` | CI privacy scan for forbidden fields. |
 | `scan:logs` | `node scripts/scan-logs.mjs` | CI log-safety scan. |
 | `smoke:deployment` | `node scripts/smoke-deployment.mjs` | Preview/stable route smoke check for app shell, metadata endpoints, demo mode, and API fallback behavior. |
+| `smoke:replit` | `node scripts/replit-parity-smoke.mjs` | External Replit parity smoke. Fails on ReplShield, `silent-auth`, Replit platform HTML, API HTML, and non-JSON API responses. |
 
 ## Deployment Topology
 
@@ -54,6 +56,7 @@ change runtime behavior.
 - Vercel API shape: `api/health.ts` and `api/version.ts` are standalone Vercel functions. `api/[...path].ts` mounts the Express routers and intends to return JSON for unmatched `/api/*`.
 - Vercel preview behavior: PRs receive preview deployments through Vercel Git integration. `.github/workflows/preview-verification.yml` tries to discover the preview URL from deployment/status metadata, then runs `scripts/smoke-deployment.mjs`. If discovery fails, it warns instead of failing.
 - Netlify static mirror: `netlify.toml` builds with `npm run build`, publishes `dist`, rewrites all paths to `/index.html`, and sets static security headers. `docs/deployment/netlify.md` explicitly says Netlify is a static mirror and does not implement Express/API routes without Netlify Functions.
+- Replit workshop preview: `https://google-ai-studio-5.replit.app/` and `https://google-ai-studio-5.replit.app/mobile/` were not externally live on June 17, 2026, and private dev URLs such as `https://b8e151ee-e61c-47d6-b5b6-c021ec075a3b-00-2y0qfvn0rk27z.pike.replit.dev/daily` and `/skills` redirected through ReplShield/`silent-auth` for unauthenticated probes. Authenticated UI evidence showed `/daily` rendering inside Replit, so Replit is useful workshop evidence but remains blocked for public parity until a public URL passes `npm run smoke:replit -- <url>` or authenticated-only evidence is labeled.
 - Firebase Auth and Firestore: `src/firebase.ts` initializes Firebase client Auth and a named Firestore database from `firebase-applet-config.json`. `src/context/AppContext.tsx` reads and writes Firestore user/private/match/conversation data outside demo mode.
 - Firebase Admin: `server/authMiddleware.ts`, `server/aiRoutes.ts`, `server/trustRoutes.ts`, and `server/shareRoutes.ts` initialize Firebase Admin with a project ID from env or local config, then verify bearer ID tokens for protected server routes.
 - Gemini routes: `server/aiRoutes.ts` keeps Gemini calls server-side via `@google/genai`. `GEMINI_API_KEY` is read only on the server and must not be exposed through Vite env or docs.
@@ -122,6 +125,7 @@ Local/server intent differs from stable production for unmatched APIs: `server.t
 6. `docs/operator/deployment-readiness.md` still recommends adding platform-specific preview/deploy config after approval, although Vercel and Netlify config are already present.
 7. Admin AI Ops / Experiments surfaces are present but not proven role-gated before production.
 8. Firestore rules need emulator-backed end-to-end validation before real beta users.
+9. Replit parity evidence is blocked until a public Replit App URL serves Kesher routes without ReplShield/login and passes external smoke, or authenticated-only evidence is explicitly labeled.
 
 ## Next PR Queue Summary
 

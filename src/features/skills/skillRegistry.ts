@@ -28,11 +28,13 @@ import {
   Zap,
 } from 'lucide-react';
 import type {
+  SkillAudience,
   SkillCategory,
   SkillConsentType,
   SkillDefinition,
   SkillDeepeningDecision,
   SkillEntryPoint,
+  SkillKind,
   SkillOutputType,
   SkillSafetyLevel,
   SkillStatus,
@@ -66,7 +68,37 @@ type SkillInput = {
   recommendedNextActions?: string[];
   demoModeBehavior?: string;
   featured?: boolean;
+  kind?: SkillKind;
+  audience?: SkillAudience;
 };
+
+/**
+ * Canonical source of truth for which skills are launchable, member-operable
+ * capabilities. Each id here MUST have an explicit `case` in SkillsRouter.tsx
+ * (guarded by a test) — everything else falls through to the read-only
+ * PlannedSkillPage and is classified as reference material.
+ */
+export const INTERACTIVE_SKILL_IDS = [
+  'personality-assessment',
+  'personality-profile',
+  'personality-ocean',
+  'personality-visibility',
+  'consent-ux',
+  'israeli-privacy',
+  'privacy-recommendation',
+  'private-taste',
+  'why-this-match',
+  'permissioned-sharing',
+  'compatibility-reflection',
+  'psychometric-validation',
+  'dark-pattern-audit',
+  'ai-runtime-governance',
+  'pacing-coach',
+  'learned-taste',
+  'filtering-marketplace',
+] as const;
+
+const INTERACTIVE_SKILL_ID_SET = new Set<string>(INTERACTIVE_SKILL_IDS);
 
 const entry = (
   surface: SkillSurface,
@@ -98,7 +130,9 @@ type SkillClassification = {
 const DEFAULT_CLASSIFICATION: SkillClassification = {
   surfaceClass: 'reference',
   visibility: 'reference_visible',
-  deepeningDecision: 'UNKNOWN_PENDING_RENDERED_TEST',
+  // Any skill not explicitly listed in SKILL_CLASSIFICATION is reference-only.
+  // UNKNOWN_PENDING_RENDERED_TEST must not appear in production.
+  deepeningDecision: 'DO_NOT_DEEPEN_REFERENCE_ONLY',
 };
 
 const member = (
@@ -111,6 +145,18 @@ const ref = (surfaceClass: SkillSurfaceClass): SkillClassification => ({
   visibility: 'reference_visible',
   deepeningDecision: 'MOVE_TO_REFERENCE_SECTION',
 });
+
+/**
+ * memberRef() — member-visible but with a non-interactive surfaceClass.
+ * Used for skills that have a real SkillsRouter case (they are in INTERACTIVE_SKILL_IDS)
+ * but whose surfaceClass is legal_privacy, research, or reference rather than
+ * member_interactive / settings_control / trust_safety.
+ * These are launchable by members but are governance/reference in nature.
+ */
+const memberRef = (
+  surfaceClass: Extract<SkillSurfaceClass, 'legal_privacy' | 'research' | 'reference' | 'operator'>,
+  deepeningDecision: SkillDeepeningDecision,
+): SkillClassification => ({ surfaceClass, visibility: 'member_visible', deepeningDecision });
 
 const hide = (surfaceClass: Extract<SkillSurfaceClass, 'external_demo' | 'hidden_until_verified'>): SkillClassification => ({
   surfaceClass,
@@ -133,6 +179,11 @@ const SKILL_CLASSIFICATION: Record<string, SkillClassification> = {
   'privacy-recommendation': member('member_interactive', 'DEEPEN_AFTER_FIX'),
   'permissioned-sharing': member('trust_safety', 'DEEPEN_AFTER_FIX'),
   'compatibility-reflection': member('member_interactive', 'DEEPEN_AFTER_FIX'),
+  // maps-date-planner, grounded-search, image-analysis: member-visible but
+  // NO dedicated component exists yet. Falls through to PlannedSkillPage.
+  // Must not create skill progress or imply launchability until component is built.
+  // deepeningDecision stays DEEPEN_AFTER_FIX to signal intent, but readOnly=true
+  // is enforced by isInteractiveSkill() returning false for these (no router case).
   'maps-date-planner': member('member_interactive', 'DEEPEN_AFTER_FIX'),
   'grounded-search': member('trust_safety', 'DEEPEN_AFTER_FIX'),
   // image-analysis has no wired AI feature (the only photo feature is the
@@ -141,23 +192,33 @@ const SKILL_CLASSIFICATION: Record<string, SkillClassification> = {
   // exists in featureRegistry.ts. Reversible single-line classification change.
   'image-analysis': hide('hidden_until_verified'),
   // Legal / research / operator / reference (not member-facing interactive)
-  'israeli-privacy': ref('legal_privacy'),
-  'psychometric-validation': ref('research'),
+  // israeli-privacy, psychometric-validation, dark-pattern-audit, ai-runtime-governance
+  // have real SkillsRouter cases (they are in INTERACTIVE_SKILL_IDS) so they must be
+  // member_visible. They are reference/governance material but still launchable.
+  'israeli-privacy': memberRef('legal_privacy', 'DEEPEN_AFTER_FIX'),
+  'psychometric-validation': memberRef('research', 'DEEPEN_AFTER_FIX'),
   'personality-research': ref('research'),
-  'ai-runtime-governance': ref('operator'),
+  // ai-runtime-governance has a real SkillsRouter case so it must be member_visible
+  // for isInteractiveSkill() to return true. It is admin-gated by audience='admin'
+  // in defineSkill (safetyLevel: 'internal'), so getMemberVisibleSkills() still
+  // excludes it from the member-facing hub. The classification is memberRef('operator')
+  // to signal: has a router case, but operator-only.
+  'ai-runtime-governance': memberRef('operator', 'DEEPEN_AFTER_FIX'),
   'ai-feature-modules': ref('operator'),
   'low-latency-ai': ref('operator'),
   'high-thinking-routing': ref('operator'),
   'system-prompt': ref('operator'),
   'personality-delivery': ref('operator'),
-  'dark-pattern-audit': ref('reference'),
+  'dark-pattern-audit': memberRef('reference', 'DEEPEN_AFTER_FIX'),
   'explainable-ai': ref('reference'),
   'personality-engine': ref('reference'),
   'calm-ux': ref('reference'),
   'private-recommendations': ref('reference'),
   // Platform / vendor
   'gemini-integration': ref('platform_vendor'),
-  'google-ai-studio-app-builder': ref('platform_vendor'),
+  // google-ai-studio-app-builder is an external demo workflow, not a Kesher
+  // member feature. Must be hidden from the member-facing hub.
+  'google-ai-studio-app-builder': hide('external_demo'),
   // Hidden / external (flag-off or not a Kesher member feature)
   'voice-integration': hide('hidden_until_verified'),
   'sparkmatch-dating-app-skill': hide('external_demo'),
@@ -168,6 +229,8 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
   const surfaces = new Set<SkillSurface>(['skills-hub', 'skills', input.primarySurface]);
   input.entryPoints.forEach((point) => surfaces.add(point.surface));
 
+  const isInternal = input.safetyLevel === 'internal'
+    || (input.requiredConsent ?? []).includes('admin_only');
   const classification = SKILL_CLASSIFICATION[input.id] ?? DEFAULT_CLASSIFICATION;
 
   return {
@@ -178,6 +241,8 @@ const defineSkill = (input: SkillInput): SkillDefinition => {
     shortTitle: input.shortTitle ?? input.title,
     subtitle: input.subtitle,
     category: input.category,
+    kind: input.kind ?? (INTERACTIVE_SKILL_ID_SET.has(input.id) ? 'interactive' : 'reference'),
+    audience: input.audience ?? (isInternal ? 'admin' : 'member'),
     summary: input.description,
     fullDescription: `${input.description} ${input.keyFeatures.join(' ')}`,
     featured: input.featured ?? true,
@@ -401,13 +466,18 @@ export const SKILLS: SkillDefinition[] = [
     status: 'prototype',
     category: 'privacy',
     description: 'Consent-gated preference learning with owner-only taste summaries, editable controls, reset semantics, and strict explanation-layer separation.',
-    keyFeatures: ['Explicit signals outrank implicit signals', 'Messages, photos, and protected traits are excluded', 'Owner-visible category summaries only', 'Reset clears taste but preserves safety records'],
+    keyFeatures: ['Explicit signals outrank implicit signals', 'Private conversations, photos, and sensitive-trait guesses are excluded', 'Owner-visible category summaries only', 'Reset clears taste but preserves safety records'],
     primarySurface: 'settings',
     entryPoints: [
       entry('settings', 'Open taste profile', 'Inspect and reset owner-only taste settings.', '/settings/taste-profile', true),
       entry('daily', 'Tune from Daily Picks', 'Use more and less signals without public objectification.', '/daily'),
     ],
     requiredConsent: ['private_taste'],
+    privacyNotes: [
+      'Private taste learning is off until the member explicitly enables it.',
+      'Taste summaries are owner-only and never become public profile labels or scores.',
+      'Events exclude private conversations, assessment answer text, GPS-level location, sensitive-trait guesses, and ranking internals.',
+    ],
     aiFeatureKey: 'taste_profile',
     outputType: 'settings',
   }),
@@ -764,7 +834,8 @@ export const SKILLS: SkillDefinition[] = [
       entry('chat', 'Review voice prototype', 'Demo-disabled voice reference in chat context.', '/inbox', true),
       entry('ai-trust', 'Check voice permissions', 'Keep voice opt-in controls explicit.', '/settings/ai-trust'),
     ],
-    requiredConsent: ['ai_assist'],
+    requiredConsent: ['admin_only'],
+    safetyLevel: 'internal',
     aiFeatureKey: 'voice_reflection',
     outputType: 'reference',
     demoModeBehavior: 'Starts a reference panel only. No microphone session is opened in the prototype.',
@@ -971,6 +1042,19 @@ export const getSkillById = (skillId: string) => SKILLS.find((skill) => skill.id
 
 export const getFeaturedSkills = () => SKILLS.filter((skill) => skill.featured);
 
+/** Skills a signed-in member may see. Excludes operator/internal (admin) skills. */
+export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.audience === 'member');
+
+/** Member-facing, launchable capabilities (real component + SkillsRouter case). */
+export const getInteractiveSkills = () => (
+  getMemberVisibleSkills().filter((skill) => skill.kind === 'interactive')
+);
+
+/** Member-facing, read-only explainer/governance material (not launchable). */
+export const getReferenceSkills = () => (
+  getMemberVisibleSkills().filter((skill) => skill.kind === 'reference')
+);
+
 export const getSkillsForSurface = (surface: SkillSurface, options?: { includeInternal?: boolean }) => (
   SKILLS.filter((skill) => {
     if (!options?.includeInternal && skill.safetyLevel === 'internal' && surface !== 'admin') return false;
@@ -994,20 +1078,39 @@ export const getSkillEntryPoint = (skill: SkillDefinition, surface: SkillSurface
 // ---------------------------------------------------------------------------
 // PR 1 — truth-label helpers for hub grouping + launch gating.
 // ---------------------------------------------------------------------------
+/**
+ * Surface classes that are considered "interactive" for member-facing hub grouping.
+ * member_interactive, settings_control, and trust_safety are the primary interactive classes.
+ * legal_privacy, research, and reference are included because some skills with these
+ * surfaceClasses (e.g. israeli-privacy, psychometric-validation, dark-pattern-audit)
+ * have real SkillsRouter cases and are launchable by members.
+ */
 export const INTERACTIVE_SURFACE_CLASSES: SkillSurfaceClass[] = [
   'member_interactive',
   'settings_control',
   'trust_safety',
+  'legal_privacy',
+  'research',
+  'reference',
+  'operator',
 ];
 
-/** A skill is launchable as a practice surface only if member-visible AND interactive. */
+/**
+ * A skill is launchable as a practice surface only if ALL three conditions hold:
+ * 1. It is member-visible (not hidden or reference-only).
+ * 2. Its surfaceClass is one of the interactive surface classes.
+ * 3. It has an explicit case in SkillsRouter.tsx (i.e. it is in INTERACTIVE_SKILL_IDS).
+ *
+ * Condition 3 prevents skills that are classified as member_interactive but have
+ * NO dedicated component (e.g. maps-date-planner, grounded-search, image-analysis)
+ * from showing "Start skill" / "Save note" buttons in PlannedSkillPage.
+ */
 export const isInteractiveSkill = (skill: SkillDefinition): boolean =>
-  skill.visibility === 'member_visible' && INTERACTIVE_SURFACE_CLASSES.includes(skill.surfaceClass);
+  skill.visibility === 'member_visible'
+  && INTERACTIVE_SURFACE_CLASSES.includes(skill.surfaceClass)
+  && INTERACTIVE_SKILL_ID_SET.has(skill.id);
 
 /** Skills shown in the member-facing Hub (everything except `hidden`). */
-export const getMemberVisibleSkills = () => SKILLS.filter((skill) => skill.visibility !== 'hidden');
-
-/** Ordered, labeled sections for the member Hub. Hidden/external items are not listed. */
 export const SKILL_SECTIONS: { key: string; label: string; classes: SkillSurfaceClass[] }[] = [
   { key: 'interactive', label: 'Interactive Skills', classes: ['member_interactive'] },
   { key: 'controls', label: 'Settings & Controls', classes: ['settings_control'] },
