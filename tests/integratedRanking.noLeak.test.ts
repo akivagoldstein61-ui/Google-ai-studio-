@@ -74,6 +74,17 @@ describe('integrated ranking evidence minimization', () => {
       'taste_driven',
     ]);
     expect(typeof result.evidence.taste_driven).toBe('boolean');
+    expect(Object.keys(result.evidence)).not.toEqual(expect.arrayContaining([
+      'weight',
+      'weights',
+      'affinity',
+      'implicitAffinity',
+      'score',
+      'finalScore',
+      'reciprocal',
+    ]));
+    // Acceptance guard: no ranking-internal terms may leak through the
+    // serialized evidence packet sent to explanation surfaces.
     expect(JSON.stringify(result.evidence)).not.toMatch(/weight|affinity|score/i);
   });
 });

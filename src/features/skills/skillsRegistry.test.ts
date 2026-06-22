@@ -169,6 +169,8 @@ describe('Kesher skills registry prototype visibility', () => {
     // Guards against fallback drift: an "interactive" skill with no router case
     // would silently render the read-only PlannedSkillPage.
     for (const id of INTERACTIVE_SKILL_IDS) {
+      // SkillsRouter currently declares bespoke pages in a static id -> *Skill
+      // object map rather than a switch statement; keep this syntax explicit.
       expect(routerSource).toMatch(new RegExp(`'${id}':\\s*\\w+Skill`));
     }
 
@@ -349,6 +351,7 @@ describe('Kesher skills registry prototype visibility', () => {
     expect(hiddenSkills.filter((skill) => skill.audience === 'member').map((skill) => skill.id)).toEqual([
       'image-analysis',
     ]);
+    expect(memberVisible.map((skill) => skill.id)).toEqual(expect.arrayContaining(['image-analysis']));
   });
 
   it('PR1: reference skills do not appear in getInteractiveSkills()', () => {
