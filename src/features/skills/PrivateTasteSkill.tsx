@@ -337,7 +337,9 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
         {/* Event Taxonomy */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Event Signal Table</h2>
-          <p className="text-xs text-[#6B5E52] italic">Explicit controls always outrank implicit signals. Missing impressions are never negative signals.</p>
+          <p className="text-xs text-[#6B5E52] italic">
+            Explicit controls always outrank implicit signals. A pass is an intentional away-signal; seeing a profile and taking no action is not treated as dislike.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
