@@ -46,28 +46,29 @@ describe('learned taste minimization', () => {
   });
 
   it('keeps message, raw photo, and precise-location channels out of the event taxonomy', () => {
-    const eventNames = [
-      'onboarding_completed',
-      'hard_filter_edited',
-      'soft_preference_edited',
-      'taste_consent_granted',
-      'taste_reset',
-      'taste_pause',
-      'like',
-      'pass',
-      'more_like_this',
-      'less_like_this',
-      'hide',
-      'block',
-      'tag_edited',
-      'profile_open',
-      'photo_carousel_depth',
-      'prompt_expanded',
-      'long_dwell',
-      'reply_received',
-      'surface_seen',
-      'session_stage',
-    ] satisfies EventName[];
+    const taxonomy: Record<EventName, true> = {
+      onboarding_completed: true,
+      hard_filter_edited: true,
+      soft_preference_edited: true,
+      taste_consent_granted: true,
+      taste_reset: true,
+      taste_pause: true,
+      like: true,
+      pass: true,
+      more_like_this: true,
+      less_like_this: true,
+      hide: true,
+      block: true,
+      tag_edited: true,
+      profile_open: true,
+      photo_carousel_depth: true,
+      prompt_expanded: true,
+      long_dwell: true,
+      reply_received: true,
+      surface_seen: true,
+      session_stage: true,
+    };
+    const eventNames = Object.keys(taxonomy);
 
     expect(eventNames).not.toEqual(expect.arrayContaining([
       'message_text',

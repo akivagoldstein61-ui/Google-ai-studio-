@@ -169,7 +169,7 @@ describe('Kesher skills registry prototype visibility', () => {
     // Guards against fallback drift: an "interactive" skill with no router case
     // would silently render the read-only PlannedSkillPage.
     for (const id of INTERACTIVE_SKILL_IDS) {
-      expect(routerSource).toContain(`'${id}':`);
+      expect(routerSource).toMatch(new RegExp(`'${id}':\\s*\\w+Skill`));
     }
 
     // Reference skills must intentionally fall through to PlannedSkillPage.
@@ -342,6 +342,13 @@ describe('Kesher skills registry prototype visibility', () => {
         expect(memberVisible.map((s) => s.id)).not.toContain(hidden.id);
       }
     }
+    // Existing inventory keeps image-analysis in the audience-visible count even
+    // though launch gating marks it hidden until a real, enabled image-analysis
+    // feature exists. Preserve the accepted count while preventing admin hidden
+    // entries from leaking into the member hub.
+    expect(hiddenSkills.filter((skill) => skill.audience === 'member').map((skill) => skill.id)).toEqual([
+      'image-analysis',
+    ]);
   });
 
   it('PR1: reference skills do not appear in getInteractiveSkills()', () => {
