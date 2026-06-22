@@ -1,36 +1,17 @@
-import admin from 'firebase-admin';
-import { initializeApp } from 'firebase/app';
-import {
-  collection,
-  getDocs,
-  getFirestore,
-  query,
-  where,
-} from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
-import fs from 'fs';
+import type { Firestore } from 'firebase-admin/firestore';
+import { getOptionalAdminFirestore } from './firebaseAdmin.ts';
 
-const configPath = './firebase-applet-config.json';
 let db: Firestore | null = null;
 
-if (fs.existsSync(configPath)) {
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  const app = initializeApp(config, 'consentVerificationApp');
-  db = getFirestore(app, config.firestoreDatabaseId);
-  if (!admin.apps.length) {
-    admin.initializeApp({ projectId: config.projectId });
-  }
-}
-
 const hasActiveShareCard = async (ownerUid: string, recipientUid: string) => {
+  db ??= getOptionalAdminFirestore();
   if (!db) return false;
 
-  const shareQuery = query(
-    collection(db, 'shareCards'),
-    where('ownerUid', '==', ownerUid),
-    where('recipientUid', '==', recipientUid),
-  );
-  const snap = await getDocs(shareQuery);
+  const snap = await db
+    .collection('shareCards')
+    .where('ownerUid', '==', ownerUid)
+    .where('recipientUid', '==', recipientUid)
+    .get();
   return snap.docs.some((docSnap) => {
     const data = docSnap.data();
     return !data.revokedAt;
