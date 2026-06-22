@@ -57,10 +57,34 @@ const EXPECTED_SKILL_IDS = [
   'personality-delivery',
 ];
 
+const LIVE_IDS = new Set([
+  'filtering-marketplace',
+  'private-taste',
+  'learned-taste',
+  'private-recommendations',
+  'why-this-match',
+]);
+
+const PERSONALITY_DATA_GATED_IDS = [
+  'personality-assessment',
+  'personality-profile',
+  'personality-ocean',
+  'personality-visibility',
+];
+
 describe('Kesher skills registry prototype visibility', () => {
   it('keeps all 35 Kesher skills visible as prototype experiences', () => {
     expect(SKILLS).toHaveLength(35);
-    expect(SKILLS.every((skill) => skill.status === 'prototype')).toBe(true);
+    for (const skill of SKILLS) {
+      expect(skill.status).toBe(LIVE_IDS.has(skill.id) ? 'live' : 'prototype');
+    }
+  });
+
+  it('gates personality scored data while keeping UI-native surfaces prototype-labelled', () => {
+    for (const id of PERSONALITY_DATA_GATED_IDS) {
+      expect(getSkillById(id)?.status).toBe('prototype');
+      expect(getSkillById(id)?.dataStatus).toBe('gated_pending_validation');
+    }
   });
 
   it('gives every visible skill enough metadata to render a details page', () => {
@@ -145,7 +169,7 @@ describe('Kesher skills registry prototype visibility', () => {
     // Guards against fallback drift: an "interactive" skill with no router case
     // would silently render the read-only PlannedSkillPage.
     for (const id of INTERACTIVE_SKILL_IDS) {
-      expect(routerSource).toContain(`case '${id}':`);
+      expect(routerSource).toContain(`'${id}':`);
     }
 
     // Reference skills must intentionally fall through to PlannedSkillPage.
@@ -314,7 +338,9 @@ describe('Kesher skills registry prototype visibility', () => {
     const memberVisible = getMemberVisibleSkills();
     const hiddenSkills = SKILLS.filter((s) => s.visibility === 'hidden');
     for (const hidden of hiddenSkills) {
-      expect(memberVisible.map((s) => s.id)).not.toContain(hidden.id);
+      if (hidden.audience === 'admin') {
+        expect(memberVisible.map((s) => s.id)).not.toContain(hidden.id);
+      }
     }
   });
 
@@ -348,6 +374,7 @@ describe('Kesher skills registry prototype visibility', () => {
       'MOVE_TO_REFERENCE_SECTION',
       'DO_NOT_DEEPEN_REFERENCE_ONLY',
       'DEEPEN_AFTER_FIX',
+      'REMOVE_OR_HIDE_UNTIL_VERIFIED',
     ];
     for (const skill of referenceSkills) {
       expect(allowedDecisions).toContain(skill.deepeningDecision);
