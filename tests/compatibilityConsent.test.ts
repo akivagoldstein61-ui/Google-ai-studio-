@@ -22,10 +22,10 @@ const validCompatibilityReflection = {
   signals_used: ["mutually_approved_share_card"],
 };
 
-const startApp = async (consented: boolean) => {
+const startApp = async (mockConsentGranted: boolean) => {
   vi.resetModules();
   vi.doMock("../server/consentVerification.ts", () => ({
-    verifyBilateralShareConsent: vi.fn().mockResolvedValue(consented),
+    verifyBilateralShareConsent: vi.fn().mockResolvedValue(mockConsentGranted),
   }));
   vi.doMock("@google/genai", () => ({
     GoogleGenAI: vi.fn().mockImplementation(function GoogleGenAI() {

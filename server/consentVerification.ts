@@ -11,11 +11,9 @@ const hasActiveShareCard = async (ownerUid: string, recipientUid: string) => {
     .collection('shareCards')
     .where('ownerUid', '==', ownerUid)
     .where('recipientUid', '==', recipientUid)
+    .where('revokedAt', '==', null)
     .get();
-  return snap.docs.some((docSnap) => {
-    const data = docSnap.data();
-    return data.revokedAt === null;
-  });
+  return !snap.empty;
 };
 
 export async function verifyBilateralShareConsent(

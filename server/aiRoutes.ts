@@ -81,6 +81,11 @@ const pickSharedCompatibilityInputs = (sharedInputs: any) => ({
   approvedShareCard: typeof sharedInputs?.approvedShareCard === "string" ? sharedInputs.approvedShareCard : undefined,
 });
 
+const VERIFIED_SHARE_CARD_SOURCE = {
+  kind: "mutually_approved_share_card",
+  verified: true,
+};
+
 // Rate limiting middleware
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -667,7 +672,7 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
     );
     const responseBody = {
       ...validated,
-      source: { kind: "mutually_approved_share_card", verified: true },
+      source: VERIFIED_SHARE_CARD_SOURCE,
     };
     res.locals.ai_metadata.validator_result = "success";
     res.json(responseBody);
