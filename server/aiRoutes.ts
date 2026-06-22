@@ -665,9 +665,12 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
     const validated = outputValidators.validateCompatibilityReflection(
       parseAIResponse(response.text),
     );
-    validated.source = { kind: "mutually_approved_share_card", verified: true };
+    const responseBody = {
+      ...validated,
+      source: { kind: "mutually_approved_share_card", verified: true },
+    };
     res.locals.ai_metadata.validator_result = "success";
-    res.json(validated);
+    res.json(responseBody);
   } catch (error: any) {
     handleAiError(error, res, "Compatibility reflection failed:");
     res.json({

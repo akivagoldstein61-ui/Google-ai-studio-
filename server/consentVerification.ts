@@ -7,10 +7,11 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import fs from 'fs';
 
 const configPath = './firebase-applet-config.json';
-let db: any = null;
+let db: Firestore | null = null;
 
 if (fs.existsSync(configPath)) {
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
