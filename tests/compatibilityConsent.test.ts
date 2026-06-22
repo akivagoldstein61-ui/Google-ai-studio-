@@ -137,3 +137,36 @@ test("compatibility reflection proceeds when bilateral share cards are verified"
     await close();
   }
 });
+
+test("compatibility reflection relies on verified share cards even when client booleans are true", async () => {
+  const { port, close } = await startApp(true);
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${port}/api/ai/compatibility-reflection`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          viewerUid: "viewer-1",
+          candidateUid: "candidate-1",
+          mutualConsent: true,
+          bothOptedIn: true,
+          sharedInputs: {
+            values: ["kindness"],
+            interests: ["hiking"],
+          },
+        }),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body.source, {
+      kind: "mutually_approved_share_card",
+      verified: true,
+    });
+  } finally {
+    await close();
+  }
+});

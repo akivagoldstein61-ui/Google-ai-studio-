@@ -1,10 +1,8 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { getOptionalAdminFirestore } from './firebaseAdmin.ts';
 
-let db: Firestore | null = null;
-
 const hasActiveShareCard = async (ownerUid: string, recipientUid: string) => {
-  db ??= getOptionalAdminFirestore();
+  const db: Firestore | null = getOptionalAdminFirestore();
   if (!db) return false;
 
   const snap = await db

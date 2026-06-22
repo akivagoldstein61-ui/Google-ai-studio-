@@ -674,6 +674,7 @@ aiRouter.post("/compatibility-reflection", async (req, res) => {
       ...validated,
       source: VERIFIED_SHARE_CARD_SOURCE,
     };
+    outputValidators.validateCompatibilityReflection(responseBody);
     res.locals.ai_metadata.validator_result = "success";
     res.json(responseBody);
   } catch (error: any) {
