@@ -14,7 +14,7 @@ const hasActiveShareCard = async (ownerUid: string, recipientUid: string) => {
     .get();
   return snap.docs.some((docSnap) => {
     const data = docSnap.data();
-    return !data.revokedAt;
+    return data.revokedAt === null;
   });
 };
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, test, vi } from "vitest";
+import { afterEach, beforeEach, test, vi } from "vitest";
 import express from "express";
 
 const validCompatibilityReflection = {
@@ -55,10 +55,21 @@ const startApp = async (consented: boolean) => {
   };
 };
 
+const originalGeminiApiKey = process.env.GEMINI_API_KEY;
+
+beforeEach(() => {
+  process.env.GEMINI_API_KEY = "test-key";
+});
+
 afterEach(() => {
   vi.doUnmock("../server/consentVerification.ts");
   vi.doUnmock("@google/genai");
   vi.resetModules();
+  if (originalGeminiApiKey === undefined) {
+    delete process.env.GEMINI_API_KEY;
+  } else {
+    process.env.GEMINI_API_KEY = originalGeminiApiKey;
+  }
 });
 
 test("compatibility reflection rejects spoofed client consent without bilateral share cards", async () => {
@@ -93,8 +104,6 @@ test("compatibility reflection rejects spoofed client consent without bilateral 
 });
 
 test("compatibility reflection proceeds when bilateral share cards are verified", async () => {
-  const previousKey = process.env.GEMINI_API_KEY;
-  process.env.GEMINI_API_KEY = "test-key";
   const { port, close } = await startApp(true);
 
   try {
@@ -126,10 +135,5 @@ test("compatibility reflection proceeds when bilateral share cards are verified"
     });
   } finally {
     await close();
-    if (previousKey === undefined) {
-      delete process.env.GEMINI_API_KEY;
-    } else {
-      process.env.GEMINI_API_KEY = previousKey;
-    }
   }
 });

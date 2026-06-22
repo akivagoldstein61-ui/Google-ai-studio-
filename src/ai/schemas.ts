@@ -208,6 +208,17 @@ export const CompatibilityReflectionSchema = {
       items: { type: Type.STRING, enum: [...COMPATIBILITY_ALLOWED_SIGNALS] },
       description: "Only mutually shared or approved inputs used for compatibility reflection.",
     },
+    source: {
+      type: Type.OBJECT,
+      properties: {
+        kind: {
+          type: Type.STRING,
+          enum: ["mutually_approved_share_card"],
+        },
+        verified: { type: Type.BOOLEAN },
+      },
+      description: "Server-attached provenance for verified bilateral share-card consent.",
+    },
   },
   required: [
     "schemaVersion",
