@@ -4,6 +4,8 @@ export type SkillCategory = 'personality' | 'privacy' | 'governance' | 'ux' | 'p
 
 export type SkillStatus = 'live' | 'prototype' | 'planned';
 
+export type SkillDataStatus = 'live' | 'gated_pending_validation';
+
 export type SkillSurface =
   | 'skills-hub'
   | 'skills'
@@ -131,6 +133,7 @@ export interface SkillDefinition {
   aiFeatureKey?: string;
   outputType: SkillOutputType;
   status: SkillStatus;
+  dataStatus?: SkillDataStatus;
   /** PR 1 truth labels — additive classification used for hub grouping + launch gating. */
   surfaceClass: SkillSurfaceClass;
   visibility: SkillVisibility;
