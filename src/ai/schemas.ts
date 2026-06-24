@@ -190,7 +190,7 @@ export const CompatibilityInsightSchema = {
   ],
 };
 
-export const PairInsightReportSchema = {
+export const CompatibilityReflectionSchema = {
   type: Type.OBJECT,
   properties: {
     ...BaseSchemaProperties,
@@ -207,6 +207,17 @@ export const PairInsightReportSchema = {
       minItems: 1,
       items: { type: Type.STRING, enum: [...COMPATIBILITY_ALLOWED_SIGNALS] },
       description: "Only mutually shared or approved inputs used for compatibility reflection.",
+    },
+    source: {
+      type: Type.OBJECT,
+      properties: {
+        kind: {
+          type: Type.STRING,
+          enum: ["mutually_approved_share_card"],
+        },
+        verified: { type: Type.BOOLEAN },
+      },
+      description: "Server-attached provenance for verified bilateral share-card consent.",
     },
   },
   required: [
@@ -660,27 +671,7 @@ export const PersonalityAspectCardSchema = {
   ],
 };
 
-export const CompatibilityReflectionSchema = {
-  type: Type.OBJECT,
-  properties: {
-    shared_strengths_he: { type: Type.ARRAY, items: { type: Type.STRING } },
-    friction_loops_he: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          dynamic_he: {
-            type: Type.STRING,
-            description: "e.g., Planner vs Spontaneous",
-          },
-          advice_he: { type: Type.STRING, description: "How to navigate it" },
-        },
-        required: ["dynamic_he", "advice_he"],
-      },
-    },
-  },
-  required: ["shared_strengths_he", "friction_loops_he"],
-};
+export const PairInsightReportSchema = CompatibilityReflectionSchema;
 
 export const PacingInterventionSchema = {
   type: Type.OBJECT,

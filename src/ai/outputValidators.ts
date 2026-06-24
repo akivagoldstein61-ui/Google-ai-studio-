@@ -388,6 +388,13 @@ export const outputValidators = {
     if (!output.gentle_boundary_he || typeof output.gentle_boundary_he !== "string") {
       throw new Error("Invalid Compatibility Reflection output: missing gentle_boundary_he.");
     }
+    if (
+      output.source &&
+      (output.source.kind !== "mutually_approved_share_card" ||
+        output.source.verified !== true)
+    ) {
+      throw new Error("Invalid Compatibility Reflection output: invalid source.");
+    }
     validateCompatibilitySignals(output);
     validateStringFields(output);
     return output;
