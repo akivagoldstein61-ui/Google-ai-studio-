@@ -229,7 +229,7 @@ describe('private taste skill contracts', () => {
     expect(app).toContain('emptyTasteStateForProfile');
     expect(app).toContain("recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted')");
     expect(server).toContain('paused: true');
-    expect(server).toContain('learningPaused: true');
+    expect(server).toContain('profile.learning.paused || previousState.learningPaused');
   });
 
   it('client taste reset preserves pause and opt-out consent state', () => {
@@ -240,6 +240,20 @@ describe('private taste skill contracts', () => {
     expect(source).toContain('optedOut: tasteProfile.learning.optedOut');
     expect(source).toContain('emptyTasteStateForProfile(emptyProfile)');
     expect(source).not.toContain('const emptyProfile = cloneDefaultTasteProfile();\n    setTasteProfileState(emptyProfile);\n\n    const emptyInteractions');
+  });
+
+  it('server taste pause and reset preserve pause and opt-out consent state', () => {
+    const source = readSource('server/tasteRoutes.ts');
+
+    expect(source).toContain('const previousProfile = req.uid ? await loadTasteProfile(req.uid) : cloneEmptyTasteProfile()');
+    expect(source).toContain('paused: previousProfile.learning.paused');
+    expect(source).toContain('optedOut: previousProfile.learning.optedOut');
+    expect(source).toContain('learningPaused: profile.learning.paused');
+    expect(source).toContain('optedOut: profile.learning.optedOut');
+    expect(source).toContain("typeof req.body?.optedOut === 'boolean'");
+    expect(source).toContain('existingProfile.learning.optedOut');
+    expect(source).not.toContain('learningPaused: true,\n      optedOut: false');
+    expect(source).not.toContain('optedOut: req.body?.optedOut === true');
   });
 
   it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
