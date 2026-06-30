@@ -20,4 +20,14 @@ describe('Filtering Marketplace skill live contracts', () => {
     expect(source).not.toContain('Soft Preference Scoring (Demo)');
     expect(source).not.toContain('demo candidate');
   });
+
+  it('previews pool impact against the full live discovery pool before falling back to seed data', () => {
+    const source = readSource('src/features/skills/FilteringMarketplaceSkill.tsx');
+
+    expect(source).toContain('const { user, preferences, setPreferences, dailyPicks, exploreProfiles, trackEvent } = useApp()');
+    expect(source).toContain('const candidatePool = useMemo(() => {');
+    expect(source).toContain('const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);\n    return live.length > 0 ? live : MOCK_PROFILES;');
+    expect(source).toContain('[dailyPicks, exploreProfiles]');
+    expect(source).not.toContain('const candidatePool = exploreProfiles.length > 0 ? exploreProfiles : MOCK_PROFILES');
+  });
 });
