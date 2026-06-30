@@ -41,11 +41,14 @@ describe('canonical filtering preference contracts', () => {
     const grammar = readSource('src/lib/filteringGrammar.ts');
     const integratedRanking = readSource('src/lib/integratedRanking.ts');
     const serverDefaults = readSource('server/discoveryRoutes.ts');
+    const appDefaults = readSource('src/context/AppContext.tsx');
 
     expect(types).toContain('similar_age?: number');
     expect(grammar).toContain('similar_age: preferences.softPreferenceWeights?.similar_age');
     expect(integratedRanking).toContain('similar_age: preferences.softPreferenceWeights?.similar_age');
     expect(serverDefaults).toContain("softPreferences: ['shared_interests', 'same_city', 'similar_age']");
+    expect(appDefaults).toContain("softPreferences: ['shared_interests', 'same_city', 'similar_age']");
+    expect(appDefaults).toContain('similar_age: 0.35');
   });
 
   it('filtering skill persists canonical controls and shows pool impact before saving', () => {
@@ -69,6 +72,36 @@ describe('canonical filtering preference contracts', () => {
     expect(source).not.toContain("'Urban'");
     expect(source).not.toContain("'Tech-focused'");
     expect(source).toContain('hardFilters: Array.from(hardFilters)');
+  });
+});
+
+describe('private taste skill contracts', () => {
+  it('taste learning is off by default until consent and resumes via taste_consent_granted', () => {
+    const app = readSource('src/context/AppContext.tsx');
+
+    expect(app).toContain('paused: true');
+    expect(app).toContain('emptyTasteStateForProfile');
+    expect(app).toContain("recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted')");
+  });
+
+  it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
+    const source = readSource('src/features/skills/PrivateTasteSkill.tsx');
+
+    expect(source).toContain('pauseTasteLearning(false)');
+    expect(source).toContain('pauseTasteLearning(true)');
+    expect(source).toContain('setTasteProfile(mergedProfile)');
+    expect(source).toContain('mergeManualControls');
+    expect(source).toContain('Current Owner Profile');
+    expect(source).not.toContain('SAMPLE_TASTE_PROFILE');
+  });
+
+  it('Learned Taste skill recompute persists owner summaries', () => {
+    const source = readSource('src/features/skills/LearnedTasteSkill.tsx');
+
+    expect(source).toContain('setTasteProfile(persisted)');
+    expect(source).toContain('Recompute and save');
+    expect(source).toContain('learningPaused');
+    expect(source).toContain('mergeManualControls');
   });
 });
 
