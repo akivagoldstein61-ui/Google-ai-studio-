@@ -51,11 +51,15 @@ export const discoveryService = {
     return apiFetch('/api/taste/delete', { method: 'POST', body: JSON.stringify({}) });
   },
 
-  recordTasteEvent(name: string, candidateId?: string, payload: TasteEventPayload = {}) {
-    return apiFetch('/api/taste/events', {
+  async recordTasteEvent(name: string, candidateId?: string, payload: TasteEventPayload = {}) {
+    const result = await apiFetch('/api/taste/events', {
       method: 'POST',
       body: JSON.stringify({ name, candidateId, ...payload }),
     });
+    if (result?.persisted !== true) {
+      throw new Error('Taste event was not persisted');
+    }
+    return result;
   },
 
   getDiscoveryPreferences() {
