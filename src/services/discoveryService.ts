@@ -62,11 +62,15 @@ export const discoveryService = {
     return apiFetch('/api/discovery/preferences');
   },
 
-  saveDiscoveryPreferences(preferences: DiscoveryPreferences) {
-    return apiFetch('/api/discovery/preferences', {
+  async saveDiscoveryPreferences(preferences: DiscoveryPreferences) {
+    const result = await apiFetch('/api/discovery/preferences', {
       method: 'POST',
       body: JSON.stringify({ preferences }),
     });
+    if (result?.persisted !== true) {
+      throw new Error('Discovery preferences were not persisted');
+    }
+    return result;
   },
 
   getDailyPicks() {
