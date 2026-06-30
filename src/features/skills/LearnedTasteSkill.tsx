@@ -10,7 +10,6 @@ import {
   SLOW_HALFLIFE_MS,
   type EventClass,
   type EventName,
-  type TasteState,
 } from '@/lib/learnedTaste';
 import { profileToFeatureTags } from '@/lib/tastePersistence';
 import type { Profile, TasteProfileDraft } from '@/types';
