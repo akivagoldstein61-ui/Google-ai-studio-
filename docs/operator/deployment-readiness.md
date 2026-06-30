@@ -7,7 +7,7 @@
 
 ## Required Environment
 - `GEMINI_API_KEY`: server-only. Required for live AI responses.
-- `AI_ROUTE_AUTH_MODE`: use `prototype` only for local/prototype testing; use `strict` for production.
+- `AI_ROUTE_AUTH_MODE`: production defaults to `strict`; use `prototype` only for local testing.
 - `firebase-applet-config.json`: required by current Firebase client/server initialization.
 - Firebase Admin credentials/environment must be configured by the host for strict auth verification.
 

@@ -22,11 +22,60 @@ export const AI_POLICIES = {
     NO_PHOTO_INFERENCE: true,
     NO_ATTRACTIVENESS_SCORING: true,
     PRIVATE_TASTE_ONLY: true,
+    PERSONALITY_INPUT_ALLOWLIST: [
+      "kesher_original_domain_bands",
+      "kesher_original_aspect_bands",
+      "instrument_version",
+      "score_version",
+      "item_text_source",
+      "public_profile_interests",
+      "public_profile_intent",
+      "public_profile_observance",
+      "public_profile_city",
+    ],
+    PERSONALITY_EXCLUDED_DATA: [
+      "raw_assessment_answers",
+      "raw_trait_scores",
+      "private_personality_profile",
+      "private_taste_profile",
+      "safety_flags",
+      "hidden_rank",
+      "raw_messages",
+      "message_drafts",
+      "photos_for_trait_inference",
+      "protected_trait_inference",
+    ],
   },
   AUTHENTICITY: {
     NO_AUTO_SEND: true,
     USER_REMAINS_SENDER: true,
     EXPLICIT_LABELS_REQUIRED: true,
+  },
+};
+
+export const PERSONALITY_POLICY_RULES = {
+  scoring: {
+    deterministic_only: true,
+    llm_scoring_allowed: false,
+    store_instrument_version: true,
+    store_score_version: true,
+    item_text_source_required: true,
+  },
+  visibility: {
+    private_by_default: true,
+    raw_trait_scores_public: false,
+    public_rank_allowed: false,
+    share_requires_grant: true,
+  },
+  discovery: {
+    deterministic_compatibility_score_allowed: false,
+    hidden_personality_ranking_allowed: false,
+    why_match_allowlist_only: true,
+  },
+  messaging: {
+    ai_auto_send_allowed: false,
+    user_remains_sender: true,
+    raw_draft_logging_allowed: false,
   },
 };
 

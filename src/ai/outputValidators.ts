@@ -1,3 +1,5 @@
+import { assertNoForbiddenPersonalityFields } from "@/personality/privacy";
+
 const PROHIBITED_TERMS = [
   "diagnosis",
   "disorder",
@@ -40,6 +42,7 @@ function containsProhibitedLanguage(text: string): boolean {
 
 function validateStringFields(obj: any) {
   if (!obj) return;
+  assertNoForbiddenPersonalityFields(obj);
   for (const key in obj) {
     if (typeof obj[key] === "string") {
       if (containsProhibitedLanguage(obj[key])) {

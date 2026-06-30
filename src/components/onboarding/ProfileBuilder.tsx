@@ -42,10 +42,9 @@ export const ProfileBuilder: React.FC<{
     ],
   );
   const [bio, setBio] = useState(initialData?.bio || "");
-  const [personalityScores, setPersonalityScores] = useState<Record<
-    string,
-    number
-  > | null>(initialData?.personalityScores || null);
+  const [personalityScores, setPersonalityScores] = useState<any>(
+    initialData?.personalityScores || null,
+  );
   const [isCoaching, setIsCoaching] = useState(false);
   const [coachDrafts, setCoachDrafts] = useState<any[]>([]);
   const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
@@ -148,10 +147,10 @@ export const ProfileBuilder: React.FC<{
             <span>Private by default</span>
           </div>
           <h3 className="text-2xl font-serif italic tracking-tight text-[#2D2926]">
-            Personality Matrix
+            Private Personality Reflection
           </h3>
           <p className="text-sm text-[#8C7E6E] italic">
-            Discover your dating blueprint. This is only visible to you.
+            Original Kesher reflection. Private by default and scored without AI.
           </p>
         </div>
         {!personalityScores ? (
@@ -165,7 +164,10 @@ export const ProfileBuilder: React.FC<{
               Assessment Complete
             </h3>
             <p className="text-sm text-[#8C7E6E] italic">
-              Your personality profile is ready.
+              {personalityScores.is_partial ? 'Finish the remaining items to complete your private report.' : 'Your private personality report is ready.'}
+            </p>
+            <p className="text-[10px] text-[#8C7E6E] uppercase tracking-widest">
+              {personalityScores.instrument_version} • {personalityScores.score_version} • {personalityScores.item_text_source}
             </p>
           </div>
         )}

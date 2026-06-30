@@ -206,6 +206,11 @@ router.post('/personality/reset', async (req, res) => {
     await updateDoc(doc(db, 'users', userId), {
       personalityAnswers: null,
       personalityProfile: null,
+      personalityScores: null,
+      personalityShareCards: null,
+      personalityShareGrants: null,
+      whyMatchPersonalityProvenance: null,
+      rawAnswersStored: false,
       updatedAt: serverTimestamp(),
     });
 
@@ -226,7 +231,13 @@ router.post('/personality/delete', async (req, res) => {
     await updateDoc(doc(db, 'users', userId), {
       personalityAnswers: null,
       personalityProfile: null,
+      personalityScores: null,
       personalityTaste: null,
+      personalityShareCards: null,
+      personalityShareGrants: null,
+      personalityConsentReceipts: null,
+      whyMatchPersonalityProvenance: null,
+      rawAnswersStored: false,
       updatedAt: serverTimestamp(),
     });
 

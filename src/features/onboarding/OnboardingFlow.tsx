@@ -331,7 +331,8 @@ export const OnboardingFlow: React.FC<{ onComplete: () => void }> = ({ onComplet
                         
                         if (data.personalityScores) {
                           await setDoc(doc(db, `users/${user.uid}/private/personality`), {
-                            scores: data.personalityScores,
+                            report: data.personalityScores,
+                            rawAnswersStored: false,
                             updatedAt: new Date().toISOString()
                           });
                         }

@@ -3,12 +3,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Brain, Sparkles, Heart, ShieldAlert, MessageCircle, Activity, Loader2, Trash2, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useApp } from '@/context/AppContext';
-import { aiService } from '@/services/aiService';
 import { trustService } from '@/services/trustService';
+import {
+  buildPrivatePersonalityProfileSummary,
+  buildPersonalityExport,
+  scoreKesherPersonalityAssessment,
+  type PersonalityAssessmentReport,
+} from '@/personality/scoring';
 
 export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user, trackEvent } = useApp();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<PersonalityAssessmentReport | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -19,31 +24,15 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
       if (!user) return;
       setLoading(true);
       try {
-        const result = await aiService.getPersonalityProfile(user);
-        if (result) {
-          setProfile(result);
-          trackEvent('personality_profile_viewed', { userId: user.id });
-        } else {
-          // Fallback to deterministic display if AI fails
-          const scores = user.personalityScores || {};
-          setProfile({
-            summary_he: "מערכת הבינה המלאכותית שלנו אינה זמינה כרגע. הנה סיכום בסיסי של התוצאות שלך:",
-            implication_card: {
-              dating_superpower_he: "לא זמין כרגע. אנא נסה שוב מאוחר יותר.",
-              growth_area_he: "לא זמין כרגע. אנא נסה שוב מאוחר יותר.",
-              likely_friction_loops_he: [],
-              repair_suggestions_he: []
-            },
-            domains: [
-              { domain_name: "פתיחות", percentile: scores['Openness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי אינטלקט ופתיחות לחוויות." },
-              { domain_name: "מצפוניות", percentile: scores['Conscientiousness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי סדר וחריצות." },
-              { domain_name: "מוחצנות", percentile: scores['Extraversion'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי אסרטיביות והתלהבות." },
-              { domain_name: "נעימות", percentile: scores['Agreeableness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי נימוס וחמלה." },
-              { domain_name: "נוירוטיות", percentile: scores['Neuroticism'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי תנודתיות ונסיגה." }
-            ]
-          });
-          trackEvent('personality_profile_viewed', { userId: user.id, fallback: true });
+        const storedReport = user.personalityScores as unknown as PersonalityAssessmentReport | undefined;
+        if (storedReport?.domains) {
+          setProfile(storedReport);
+          trackEvent('personality_profile_viewed', { userId: user.id, reportStatus: storedReport.is_partial ? 'partial' : 'complete' });
+          return;
         }
+
+        setProfile(scoreKesherPersonalityAssessment({}));
+        trackEvent('personality_profile_viewed', { userId: user.id, fallback: true });
       } catch (error) {
         console.error("Failed to fetch personality profile", error);
       } finally {
@@ -83,12 +72,18 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
     return (
       <div className="h-full flex flex-col bg-[#FDFCFB] items-center justify-center space-y-4">
         <Loader2 className="animate-spin text-[#D4AF37]" size={32} />
-        <p className="text-[#8C7E6E] italic font-serif">Generating your private profile...</p>
+        <p className="text-[#8C7E6E] italic font-serif">Loading your private profile...</p>
       </div>
     );
   }
 
   if (!profile) return null;
+
+  const profileSummary = buildPrivatePersonalityProfileSummary(profile);
+  const answeredAspects = profile.aspects.filter((aspect) => aspect.item_count > 0);
+  const sortedAnsweredAspects = [...answeredAspects].sort((left, right) => right.score - left.score);
+  const strongestAspect = sortedAnsweredAspects[0] ?? profile.aspects[0];
+  const gentlestAspect = sortedAnsweredAspects[sortedAnsweredAspects.length - 1] ?? profile.aspects[1];
 
   return (
     <div className="h-full flex flex-col bg-[#FDFCFB] relative">
@@ -111,7 +106,16 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
               <span className="text-[10px] font-bold uppercase tracking-widest">הפרופיל שלך</span>
             </div>
             <p className="text-sm text-white/90 leading-relaxed italic font-hebrew">
-              {profile.summary_he}
+              {profileSummary.summary_he}
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-[10px] text-white/70" dir="ltr">
+              <span className="rounded-full border border-white/10 px-3 py-2">complete: {profile.completion.percent}%</span>
+              <span className="rounded-full border border-white/10 px-3 py-2">status: {profileSummary.report_status}</span>
+              <span className="rounded-full border border-white/10 px-3 py-2">AI scoring: no</span>
+              <span className="rounded-full border border-white/10 px-3 py-2">raw answers: not exported</span>
+            </div>
+            <p className="text-[10px] text-white/50 uppercase tracking-widest" dir="ltr">
+              {profile.instrument_version} • {profile.score_version} • item source: {profile.item_text_source}
             </p>
           </div>
         </section>
@@ -121,19 +125,21 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
           <div className="p-6 bg-green-50 rounded-[32px] border border-green-100 space-y-4">
             <div className="flex items-center gap-2 text-green-700">
               <Heart size={18} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">כוח על</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">עוגן לשים לב אליו</span>
             </div>
+            <h4 className="font-bold text-sm text-green-950 font-hebrew">{strongestAspect.label_he}</h4>
             <p className="text-sm text-green-900 leading-relaxed font-hebrew">
-              {profile.implication_card?.dating_superpower_he}
+              {strongestAspect.description_he}
             </p>
           </div>
           <div className="p-6 bg-amber-50 rounded-[32px] border border-amber-100 space-y-4">
             <div className="flex items-center gap-2 text-amber-700">
               <ShieldAlert size={18} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">נקודת צמיחה</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">שאלה עדינה להמשך</span>
             </div>
+            <h4 className="font-bold text-sm text-amber-950 font-hebrew">{gentlestAspect.label_he}</h4>
             <p className="text-sm text-amber-900 leading-relaxed font-hebrew">
-              {profile.implication_card?.growth_area_he}
+              {gentlestAspect.reflection_prompt_he}
             </p>
           </div>
         </section>
@@ -142,19 +148,45 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
         <section className="space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">תכונות ליבה</h4>
           <div className="space-y-3">
-            {profile.domains.map((domain: any, i: number) => (
-              <div key={i} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl space-y-2">
+            {profile.domains.map((domain) => (
+              <div key={domain.id} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm text-[#2D2926] font-hebrew">{domain.domain_name}</span>
-                  <span className="text-xs text-[#8C7E6E] font-mono">{domain.percentile}%</span>
+                  <span className="font-bold text-sm text-[#2D2926] font-hebrew">{domain.label_he}</span>
+                  <span className="text-xs text-[#8C7E6E] font-mono" dir="ltr">{domain.band}</span>
                 </div>
                 <div className="w-full h-1.5 bg-[#F7F2EE] rounded-full overflow-hidden" dir="ltr">
                   <div 
                     className="h-full bg-[#D4AF37] rounded-full" 
-                    style={{ width: `${domain.percentile}%` }}
+                    style={{ width: `${domain.score}%` }}
                   />
                 </div>
-                <p className="text-xs text-[#8C7E6E] leading-relaxed pt-1 font-hebrew">{domain.description_he}</p>
+                <p className="text-xs text-[#8C7E6E] leading-relaxed pt-1 font-hebrew">
+                  {domain.dating_note_he}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">היבטי עומק</h4>
+            <span className="text-[10px] text-[#8C7E6E]" dir="ltr">{answeredAspects.length}/{profile.aspects.length} answered</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {profile.aspects.map((aspect) => (
+              <div key={aspect.id} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h5 className="font-bold text-sm text-[#2D2926] font-hebrew">{aspect.label_he}</h5>
+                    <p className="text-[10px] text-[#8C7E6E]" dir="ltr">{aspect.label_en}</p>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-widest text-[#8C7E6E]">{aspect.band}</span>
+                </div>
+                <p className="text-xs text-[#8C7E6E] leading-relaxed font-hebrew">{aspect.description_he}</p>
+                <p className="text-xs text-[#2D2926] leading-relaxed font-hebrew bg-[#F7F2EE] rounded-xl p-3">
+                  {aspect.reflection_prompt_he}
+                </p>
               </div>
             ))}
           </div>
@@ -162,7 +194,7 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
         
         <div className="pt-4 text-center">
           <p className="text-[10px] text-[#8C7E6E] italic max-w-xs mx-auto font-hebrew">
-            פרופיל זה פרטי וגלוי רק לך. הוא עוזר לקשר להבין את ההעדפות שלך ולספק התאמות טובות יותר.
+            {profile.next_step_he} פרופיל זה פרטי וגלוי רק לך. הוא לא מציג ציוני תכונה גולמיים לציבור ולא יוצר דירוג התאמה נסתר.
           </p>
         </div>
 
@@ -174,7 +206,14 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
               variant="outline" 
               className="w-full h-14 border-[#F3EFEA] text-[#2D2926] font-bold rounded-full flex items-center justify-center gap-2"
               onClick={() => {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(profile, null, 2));
+                const exportPayload = buildPersonalityExport({
+                  answers: {},
+                  report: profile,
+                  cascade: () => {
+                    throw new Error('Export does not cascade records.');
+                  },
+                });
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
                 const downloadAnchorNode = document.createElement('a');
                 downloadAnchorNode.setAttribute("href", dataStr);
                 downloadAnchorNode.setAttribute("download", "kesher_personality_data.json");

@@ -16,6 +16,9 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'personality_profile':
+      case 'compatibility_reflection':
+      case 'pacing_coach':
         route = 'primaryStructuredModel';
         break;
       case 'date_planner':
@@ -48,6 +51,9 @@ export const capabilityRouter = {
       case 'safety_scan':
       case 'mod_summarizer':
       case 'profile_completeness':
+      case 'personality_profile':
+      case 'compatibility_reflection':
+      case 'pacing_coach':
         return 'primaryStructuredModel';
       case 'date_planner':
         return 'mapsGroundedModel';

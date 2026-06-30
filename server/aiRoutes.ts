@@ -23,8 +23,21 @@ import {
 import { capabilityRouter } from "../src/ai/capabilityRouter.ts";
 import { outputValidators } from "../src/ai/outputValidators.ts";
 import { PROMPT_TEMPLATES } from "../src/ai/prompts.ts";
+import {
+  assertNoForbiddenPersonalityFields,
+  redactPersonalityLogPayload,
+} from "../src/personality/privacy.ts";
+import {
+  buildWhitelistedExplanationBundle,
+  createFallbackWhyThisMatchCard,
+  validateWhyThisMatchCard,
+} from "../src/personality/whyMatch.ts";
 
 export const aiRouter = express.Router();
+
+const getAiRouteAuthMode = () =>
+  process.env.AI_ROUTE_AUTH_MODE ||
+  (process.env.NODE_ENV === "production" ? "strict" : "prototype");
 
 const getAI = () => {
   let apiKey = process.env.GEMINI_API_KEY;
@@ -53,7 +66,7 @@ const parseAIResponse = (text: string | null | undefined) => {
   try {
     return JSON.parse(cleaned);
   } catch (e) {
-    console.error("Failed to parse AI response:", text);
+    console.error("Failed to parse AI response.");
     throw new Error("INVALID_JSON_RESPONSE");
   }
 };
@@ -92,7 +105,7 @@ const routeMetadataLogger = (
   
   res.json = function(body) {
     const latencyMs = Date.now() - start;
-    const authMode = process.env.AI_ROUTE_AUTH_MODE || "prototype";
+    const authMode = getAiRouteAuthMode();
     
     // Determine error class implicitly
     let errorClass = "none";
@@ -124,17 +137,33 @@ const routeMetadataLogger = (
   next();
 };
 
+const forbiddenFieldGuard = (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) => {
+  try {
+    assertNoForbiddenPersonalityFields(req.body);
+    next();
+  } catch (error) {
+    res.locals.ai_metadata.validator_result = "forbidden_field";
+    res.locals.ai_metadata.error_class = "policy_violation";
+    return res.status(400).json({
+      error: error instanceof Error ? error.message : "Forbidden field",
+    });
+  }
+};
+
 // Auth enforcement middleware
 const requireAuth = async (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction,
 ) => {
-  const authMode = process.env.AI_ROUTE_AUTH_MODE || "prototype";
+  const authMode = getAiRouteAuthMode();
   
   if (authMode === "prototype") {
-    // In prototype mode, allow if no token is provided, but verify if parsing is needed
-    // Skip strict rejection to allow rapid testing and build-mode
+    // Local/test-only mode for rapid iteration without Firebase Admin credentials.
     next();
     return;
   }
@@ -170,6 +199,7 @@ const requireAuth = async (
 aiRouter.use(apiLimiter);
 aiRouter.use(routeMetadataLogger);
 aiRouter.use(requireAuth);
+aiRouter.use(forbiddenFieldGuard);
 
 const handleAiError = (error: any, res: express.Response, logMessage: string) => {
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
@@ -181,7 +211,7 @@ const handleAiError = (error: any, res: express.Response, logMessage: string) =>
     res.locals.ai_metadata.fallback_used = true;
     res.locals.ai_metadata.validator_result = "schema_failure_or_catch";
     res.locals.ai_metadata.error_class = "api_error_fallback";
-    console.error(logMessage, error);
+    console.error(logMessage, redactPersonalityLogPayload(error));
   }
 };
 
@@ -395,13 +425,18 @@ aiRouter.post("/daily-picks-intro", async (req, res) => {
 aiRouter.post("/explain-match", async (req, res) => {
   res.locals.ai_metadata.feature_id = "why_match";
   res.locals.ai_metadata.prompt_version = "v1.0";
+  res.locals.ai_metadata.schema_version = "1.0";
+  const { params } = req.body;
+  const bundle = buildWhitelistedExplanationBundle({
+    userProfile: params?.user_profile ?? {},
+    candidateProfile: params?.candidate_profile ?? {},
+    requestedSignals: params?.signals ?? [],
+  });
   try {
-    const { params } = req.body;
-
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: capabilityRouter.getRoute("why_match"),
-      contents: PROMPT_TEMPLATES.WHY_MATCH(params),
+      contents: PROMPT_TEMPLATES.WHY_MATCH(bundle),
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS.WHY_MATCH,
         responseMimeType: "application/json",
@@ -409,18 +444,20 @@ aiRouter.post("/explain-match", async (req, res) => {
       },
     });
 
-    const validated = outputValidators.validateWhyMatch(
-      parseAIResponse(response.text),
-    );
+    const parsed = outputValidators.validateWhyMatch(parseAIResponse(response.text));
+    const validated = validateWhyThisMatchCard({
+      schema_version: "1.0",
+      reasons_he: parsed.reasons_he,
+      first_question_he: parsed.first_question_he,
+      gentle_clarification_he: parsed.gentle_clarification_he,
+      signals_used: parsed.signals_used,
+      signals_not_used: parsed.signals_not_used,
+    });
     res.locals.ai_metadata.validator_result = "success";
     res.json(validated);
   } catch (error: any) {
     handleAiError(error, res, "Match explanation failed:");
-    res.json({
-      reasons_he: ["שניכם אוהבים טיולים בשטח.", "הפרופיל מעיד על ערכים דומים."],
-      first_question_he: "מה המסלול האהוב עליך?",
-      gentle_clarification_he: ""
-    });
+    res.json(createFallbackWhyThisMatchCard(bundle));
   }
 });
 
@@ -644,7 +681,7 @@ aiRouter.post("/analyze-photos", async (req, res) => {
     }
 
     // In a real app, you would download the image or pass the URL if the API supports it directly.
-    // For this prototype, we'll assume the URL is accessible or we pass it as text context.
+    // Use the provided URL as the photo context for the model request.
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-pro", // Use pro for image understanding

@@ -207,6 +207,16 @@ export const WhyThisMatchPayloadSchema = {
       type: Type.STRING,
       description: "Gentle mismatch to explore",
     },
+    signals_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Whitelisted public signals used in the explanation.",
+    },
+    signals_not_used: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Private or unsafe signals explicitly excluded.",
+    },
   },
   required: [
     "schemaVersion",
@@ -214,6 +224,8 @@ export const WhyThisMatchPayloadSchema = {
     "evidenceLabel",
     "reasons_he",
     "first_question_he",
+    "signals_used",
+    "signals_not_used",
   ],
 };
 

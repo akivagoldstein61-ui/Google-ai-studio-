@@ -18,20 +18,22 @@ Requirements:
 - Keep it authentic, not salesman-like.
 - Add 2 optional “conversation hooks” as short lines.`,
 
-  WHY_MATCH: (params: { user_profile: any; candidate_profile: any; signals: string[] }) => `Create a “Why you’re seeing this” explanation.
-User profile summary: ${JSON.stringify(params.user_profile)}
-Candidate profile summary: ${JSON.stringify(params.candidate_profile)}
-Whitelisted match signals: ${JSON.stringify(params.signals)}
+  WHY_MATCH: (bundle: any) => `Create a “Why you’re seeing this” explanation from this whitelisted explanation bundle only.
+Explanation bundle: ${JSON.stringify(bundle)}
 
 CRITICAL RULES:
 - NEVER use deterministic compatibility claims (e.g., "perfect match", "soulmate", "100% match").
 - NEVER use scoring, ranking, or tier language (e.g., "league", "score").
-- Keep it reflective and based ONLY on the provided whitelisted signals.
+- Keep it reflective and based ONLY on the public facts and signals_used in the provided bundle.
+- Do not mention private personality, private taste, safety flags, hidden rank, or raw messages.
+- Return signals_used and signals_not_used exactly as provided in the bundle.
 
 Output:
 - 2–3 short reasons
 - 1 “good first question”
-- 1 “possible mismatch to clarify” (gentle)`,
+- 1 “possible mismatch to clarify” (gentle)
+- signals_used
+- signals_not_used`,
 
   SAFETY_SCAN: (params: { message_text: string; context: string }) => `Classify the following message for safety risk.
 Message: ${params.message_text}

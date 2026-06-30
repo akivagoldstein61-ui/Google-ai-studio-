@@ -100,7 +100,8 @@ const AppContent: React.FC = () => {
                         
                         if (data.personalityScores) {
                           await setDoc(doc(db, `users/${user.uid}/private/personality`), {
-                            scores: data.personalityScores,
+                            report: data.personalityScores,
+                            rawAnswersStored: false,
                             updatedAt: new Date().toISOString()
                           });
                         }
