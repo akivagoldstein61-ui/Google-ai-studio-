@@ -64,6 +64,21 @@ describe('taste and filtering server contracts', () => {
     expect(ranking).not.toContain('candidateAccountAgeMs: 14 * 24 * 60 * 60 * 1000,\n          impressionsLast7d: 10,\n          impressionsLast24h: 1');
   });
 
+  it('server discovery records served impressions into rolling exposure counters', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+    const recordCalls = server.match(/recordDiscoveryImpressions\(items\)/g) ?? [];
+
+    expect(recordCalls).toHaveLength(2);
+    expect(server).toContain('async function recordDiscoveryImpressions');
+    expect(server).toContain('recentImpressionMs');
+    expect(server).toContain('impressionsLast24h');
+    expect(server).toContain('impressionsLast7d');
+    expect(server).toContain('totalImpressions');
+    expect(server).toContain('EXPOSURE_RETENTION_MS');
+    expect(server).toContain('EXPOSURE_EVENT_LIMIT');
+    expect(server).toContain('exposureImpressionsRecorded');
+  });
+
   it('server discovery applies canonical system exclusions before ranking', () => {
     const server = readSource('server/discoveryRoutes.ts');
     const grammar = readSource('src/lib/filteringGrammar.ts');
