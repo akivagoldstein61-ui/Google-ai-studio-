@@ -361,7 +361,7 @@ async function recordDiscoveryImpressions(items: RankedProfile[]): Promise<numbe
       ? Math.max(0, now - createdAtMs)
       : readNumber(data.candidateAccountAgeMs) ?? NEUTRAL_ACCOUNT_AGE_MS;
     const totalImpressions = Math.max(0, readNumber(data.totalImpressions) ?? 0) + 1;
-    await ref.set({
+    return await ref.set({
       candidateAccountAgeMs,
       impressionsLast24h: recentImpressionMs.filter((ms) => now - ms <= DAY_MS).length,
       impressionsLast7d: recentImpressionMs.length,
@@ -369,8 +369,7 @@ async function recordDiscoveryImpressions(items: RankedProfile[]): Promise<numbe
       totalImpressions,
       lastImpressionAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true }).catch(() => null);
-    return true;
+    }, { merge: true }).then(() => true).catch(() => false);
   }));
   return results.filter(Boolean).length;
 }
