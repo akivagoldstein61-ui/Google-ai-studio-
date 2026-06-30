@@ -238,7 +238,7 @@ describe('private taste skill contracts', () => {
 
     expect(app).toContain('paused: true');
     expect(app).toContain('emptyTasteStateForProfile');
-    expect(app).toContain("recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted')");
+    expect(app).toContain("recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted', undefined");
     expect(server).toContain('paused: true');
     expect(server).toContain('profile.learning.paused || previousState.learningPaused');
   });
@@ -256,15 +256,59 @@ describe('private taste skill contracts', () => {
   it('server taste pause and reset preserve pause and opt-out consent state', () => {
     const source = readSource('server/tasteRoutes.ts');
 
-    expect(source).toContain('const previousProfile = req.uid ? await loadTasteProfile(req.uid) : cloneEmptyTasteProfile()');
+    expect(source).toContain('const previousProfile = await loadTasteProfile(req.uid)');
     expect(source).toContain('paused: previousProfile.learning.paused');
     expect(source).toContain('optedOut: previousProfile.learning.optedOut');
     expect(source).toContain('learningPaused: profile.learning.paused');
     expect(source).toContain('optedOut: profile.learning.optedOut');
-    expect(source).toContain("typeof req.body?.optedOut === 'boolean'");
-    expect(source).toContain('existingProfile.learning.optedOut');
+    expect(source).toContain("const requestedOptedOut = name === 'taste_pause' && typeof req.body?.optedOut === 'boolean'");
+    expect(source).toContain('requestedOptedOut ?? profile.learning.optedOut');
     expect(source).not.toContain('learningPaused: true,\n      optedOut: false');
     expect(source).not.toContain('optedOut: req.body?.optedOut === true');
+  });
+
+  it('taste reset and delete are server-batched and acknowledged before live client state changes', () => {
+    const server = readSource('server/tasteRoutes.ts');
+    const service = readSource('src/services/discoveryService.ts');
+    const app = readSource('src/context/AppContext.tsx');
+    const resetHandler = app.slice(app.indexOf('const resetTasteProfile'), app.indexOf('const pauseTasteLearning'));
+    const deleteHandler = app.slice(app.indexOf('const deleteTasteProfile'), app.indexOf('const sendMessage'));
+
+    expect(server).toContain("res.status(503).json({ error: 'Taste reset persistence unavailable', persisted: false })");
+    expect(server).toContain("res.status(503).json({ error: 'Taste delete persistence unavailable', persisted: false })");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_profile'), profile, { merge: false });");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_state'), serializedResetState, { merge: false });");
+    expect(server).toContain("batch.set(userPrivate.doc('interactions'), {");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_events').collection('events').doc(), {");
+    expect(server).toContain("batch.delete(userPrivate.doc('taste_profile'));");
+    expect(server).toContain("batch.delete(userPrivate.doc('taste_state'));");
+    expect(server).toContain("res.status(500).json({ error: 'Taste reset was not persisted', persisted: false })");
+    expect(server).toContain("res.status(500).json({ error: 'Taste delete was not persisted', persisted: false })");
+    expect(server).toContain('persisted: true');
+    expect(service).toContain("throw new Error('Taste reset was not persisted')");
+    expect(service).toContain("throw new Error('Taste delete was not persisted')");
+    expect(resetHandler).toContain('const result = await discoveryService.resetTasteProfile();');
+    expect(resetHandler.indexOf('const result = await discoveryService.resetTasteProfile();')).toBeLessThan(resetHandler.indexOf('setTasteProfileState(persistedProfile)'));
+    expect(deleteHandler).toContain('const result = await discoveryService.deleteTasteProfile();');
+    expect(deleteHandler.indexOf('const result = await discoveryService.deleteTasteProfile();')).toBeLessThan(deleteHandler.indexOf('setTasteProfileState(emptyProfile)'));
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)>");
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/interactions`)>");
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_state`)>");
+  });
+
+  it('pause and opt-out controls wait for the persisted server event in live mode', () => {
+    const app = readSource('src/context/AppContext.tsx');
+    const pauseHandler = app.slice(app.indexOf('const pauseTasteLearning'), app.indexOf('const optOutTasteLearning'));
+    const optOutHandler = app.slice(app.indexOf('const optOutTasteLearning'), app.indexOf('const exportTasteProfile'));
+
+    expect(pauseHandler).toContain("await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted', undefined");
+    expect(pauseHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(pauseHandler.indexOf('setTasteProfileState(updatedProfile)'));
+    expect(optOutHandler).toContain("await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true })");
+    expect(optOutHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(optOutHandler.indexOf('setTasteProfileState(updatedProfile)'));
+    expect(pauseHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
+    expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
+    expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_state`)');
+    expect(app).not.toContain('.catch(() => null);');
   });
 
   it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
