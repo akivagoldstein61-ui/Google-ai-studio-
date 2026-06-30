@@ -461,10 +461,10 @@ async function loadCandidateForInteraction(profileId: string): Promise<Profile |
 async function persistDiscoveryTasteState(
   viewerUid: string,
   name: Extract<EventName, 'like' | 'pass'>,
-  candidate: Profile,
+  candidate: Profile | null,
 ): Promise<boolean> {
   const db = getOptionalAdminFirestore();
-  if (!db) return false;
+  if (!db || !candidate) return false;
   const candidateFeatures = profileToFeatureTags(candidate);
   if (candidateFeatures.length === 0) return false;
   const previous = await loadTasteState(viewerUid);
