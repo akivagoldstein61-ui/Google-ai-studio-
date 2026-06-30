@@ -17,8 +17,11 @@ describe('Live implicit taste signal contracts', () => {
     expect(signalHandler).toContain('const event: TasteEvent = {');
     expect(signalHandler).toContain('candidateFeatures: profileToFeatureTags(profile)');
     expect(signalHandler).toContain('discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options)');
-    expect(signalHandler).toContain('.then(() => applyTasteEvent(user.uid, event, { persistRemote: false }))');
+    expect(signalHandler).toContain('.then(() => {');
+    expect(signalHandler).toContain('applyTasteEvent(user.uid, event, { persistRemote: false });');
+    expect(signalHandler).toContain('return refreshRemoteDiscovery();');
     expect(signalHandler.indexOf('discoveryService.recordTasteEvent')).toBeLessThan(signalHandler.indexOf('applyTasteEvent(user.uid, event, { persistRemote: false })'));
+    expect(signalHandler.indexOf('applyTasteEvent(user.uid, event, { persistRemote: false })')).toBeLessThan(signalHandler.indexOf('return refreshRemoteDiscovery();'));
     expect(signalHandler).not.toContain('discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options).catch(() => null)');
     expect(source).not.toMatch(/candidateFeatures:\s*profile[,}]/);
   });
@@ -33,10 +36,12 @@ describe('Live implicit taste signal contracts', () => {
     expect(server).toContain("res.status(500).json({ error: 'Taste event candidate profile was not loaded', candidateId, persisted: false })");
     expect(server).toContain('const batch = db.batch();');
     expect(server).toContain("batch.set(userPrivate.doc('taste_events').collection('events').doc(), {");
-    expect(server).toContain("batch.set(userPrivate.doc('taste_state'), serializeTasteState(nextState), { merge: false });");
+    expect(server).toContain('const serializedTasteState = serializeTasteState(nextState);');
+    expect(server).toContain("batch.set(userPrivate.doc('taste_state'), serializedTasteState, { merge: false });");
     expect(server).toContain('const persisted = await batch.commit().then(() => true).catch(() => false);');
     expect(server).toContain("res.status(500).json({ error: 'Taste event was not persisted', persisted: false })");
     expect(server).toContain('persisted: true');
+    expect(server).toContain('tasteState: serializedTasteState');
   });
 
   it('records real profile detail opens and dwell without capturing private content', () => {
