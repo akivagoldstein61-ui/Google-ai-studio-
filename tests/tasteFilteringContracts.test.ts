@@ -51,6 +51,18 @@ describe('canonical filtering preference contracts', () => {
     expect(appDefaults).toContain('similar_age: 0.35');
   });
 
+  it('saved preferences refresh visible discovery pools instead of only persisting settings', () => {
+    const source = readSource('src/context/AppContext.tsx');
+
+    expect(source).toContain('selectDailyPicks');
+    expect(source).toContain('selectExploreProfiles');
+    expect(source).toContain('rankLocalDiscovery');
+    expect(source).toContain('refreshLocalDiscovery(normalized)');
+    expect(source).toContain('await refreshRemoteDiscovery()');
+    expect(source).toContain('setDailyPicks(ranked.daily)');
+    expect(source).toContain('setExploreProfiles(ranked.explore)');
+  });
+
   it('filtering skill persists canonical controls and shows pool impact before saving', () => {
     const source = readSource('src/features/skills/FilteringMarketplaceSkill.tsx');
 
