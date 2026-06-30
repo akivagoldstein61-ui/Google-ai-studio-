@@ -30,4 +30,16 @@ describe('Filtering Marketplace skill live contracts', () => {
     expect(source).toContain('[dailyPicks, exploreProfiles]');
     expect(source).not.toContain('const candidatePool = exploreProfiles.length > 0 ? exploreProfiles : MOCK_PROFILES');
   });
+
+  it('keeps failed preference saves visible instead of treating them as applied', () => {
+    const source = readSource('src/features/skills/FilteringMarketplaceSkill.tsx');
+
+    expect(source).toContain('const [saveError, setSaveError] = useState<string | null>(null);');
+    expect(source).toContain('setSaveError(null);');
+    expect(source).toContain('await setPreferences(next);');
+    expect(source).toContain("console.error('Failed to save filtering marketplace controls', error);");
+    expect(source).toContain("setSaveError('Could not save discovery controls. Please try again.');");
+    expect(source).toContain('role="alert"');
+    expect(source).not.toContain('await Promise.resolve(setPreferences(next));');
+  });
 });
