@@ -11,7 +11,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:taste-filtering": "vitest run tests/tasteFilteringContracts.test.ts tests/discoveryInteractionExclusions.test.ts tests/discoveryPreferencesApi.test.ts tests/filteringMarketplaceSkillLiveContracts.test.ts tests/tasteInteractionsHydrationContracts.test.ts tests/liveImplicitTasteSignalsContracts.test.ts tests/dailyPicksLivePacingContracts.test.ts tests/learnedTasteSkillLiveStateContracts.test.ts tests/exploreFilterDrawerLiveContracts.test.ts",
+    "test:taste-filtering": "vitest run tests/tasteFilteringContracts.test.ts tests/discoveryInteractionExclusions.test.ts tests/discoveryPreferencesApi.test.ts tests/filteringMarketplaceSkillLiveContracts.test.ts tests/tasteInteractionsHydrationContracts.test.ts tests/liveImplicitTasteSignalsContracts.test.ts tests/dailyPicksLivePacingContracts.test.ts tests/learnedTasteSkillLiveStateContracts.test.ts tests/exploreFilterDrawerLiveContracts.test.ts tests/discoveryPreferencesPersistenceContracts.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "test:schemas": "node scripts/personality-smoke-tests.mjs",
