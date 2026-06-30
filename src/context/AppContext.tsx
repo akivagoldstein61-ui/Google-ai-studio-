@@ -511,6 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setPreferences = async (prefs: DiscoveryPreferences) => {
     const normalized = normalizeDiscoveryPreferences(prefs);
+    const previousPreferences = preferences;
     setPreferencesState(normalized);
     if (isLocalOnlyMode || !user) {
       refreshLocalDiscovery(normalized);
@@ -525,6 +526,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving preferences:', error);
+      setPreferencesState(previousPreferences);
+      throw error;
     }
   };
 
