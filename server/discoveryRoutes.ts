@@ -109,25 +109,40 @@ router.post('/preferences', async (req: AuthenticatedRequest, res) => {
 
   const nextPreferences = normalizePreferences(req.body?.preferences ?? req.body);
   const db = getOptionalAdminFirestore();
-  let persisted = false;
-  if (db) {
-    persisted = await db
-      .collection('users')
-      .doc(viewerUid)
-      .collection(PRIVATE_COLLECTION)
-      .doc('discovery_preferences')
-      .set({
-        ...nextPreferences,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: false })
-      .then(() => true)
-      .catch(() => false);
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+
+  if (!db) {
+    res.status(503).json({
+      error: 'Discovery preference persistence unavailable',
+      persisted: false,
+    });
+    return;
   }
 
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  const persisted = await db
+    .collection('users')
+    .doc(viewerUid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('discovery_preferences')
+    .set({
+      ...nextPreferences,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: false })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!persisted) {
+    res.status(500).json({
+      error: 'Discovery preferences were not persisted',
+      preferences: nextPreferences,
+      persisted: false,
+    });
+    return;
+  }
+
   res.json({
     preferences: nextPreferences,
-    persisted,
+    persisted: true,
   });
 });
 
