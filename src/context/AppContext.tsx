@@ -852,7 +852,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options)
-      .then(() => applyTasteEvent(user.uid, event, { persistRemote: false }))
+      .then(() => {
+        applyTasteEvent(user.uid, event, { persistRemote: false });
+        return refreshRemoteDiscovery();
+      })
       .catch((error: unknown) => console.error('Error recording taste signal:', error));
   };
 
