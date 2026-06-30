@@ -16,6 +16,7 @@
     "test:schemas": "node scripts/personality-smoke-tests.mjs",
     "test:skills": "node scripts/test-skills.mjs",
     "test:scoring": "node scripts/test-personality-scoring.mjs",
+    "test:taste-filtering": "vitest run tests/tasteFilteringContracts.test.ts",
     "redteam:personality": "node scripts/redteam-personality.mjs",
     "test:rtl": "node scripts/test-rtl.mjs",
     "scan:forbidden-fields": "node scripts/scan-forbidden-fields.mjs",
