@@ -208,93 +208,127 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
 });
 
 router.post('/like', async (req: AuthenticatedRequest, res) => {
-  const viewerUid = req.uid ?? DEFAULT_VIEWER.uid;
+  const viewerUid = req.uid;
   const { profileId } = req.body ?? {};
+  if (!viewerUid) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
   if (typeof profileId !== 'string' || !profileId) {
     res.status(400).json({ error: 'Missing profileId' });
     return;
   }
 
   const db = getOptionalAdminFirestore();
-  if (db) {
-    await db
-      .collection('users')
-      .doc(viewerUid)
-      .collection(PRIVATE_COLLECTION)
-      .doc('interactions')
-      .set({
-        likes: FieldValue.arrayUnion(profileId),
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true })
-      .catch(() => null);
-
-    const reciprocalSnap = await db
-      .collection('users')
-      .doc(profileId)
-      .collection(PRIVATE_COLLECTION)
-      .doc('interactions')
-      .get()
-      .catch(() => null);
-    const reciprocalLikes = reciprocalSnap?.data()?.likes;
-    const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
-    const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
-      .find((profile) => profile.uid === profileId || profile.id === profileId);
-    if (req.body?.tasteEventAlreadyRecorded !== true) {
-      await persistDiscoveryTasteState(viewerUid, 'like', candidate);
-    }
-    const match = isMatch ? buildMatch(viewerUid, profileId, candidate) : null;
-    if (match) {
-      await db.collection('matches').doc(match.id).set(match, { merge: true }).catch(() => null);
-      await db.collection('conversations').doc(match.id).set({
-        id: match.id,
-        participants: [viewerUid, profileId],
-        messages: [],
-        createdAt: match.createdAt,
-      }, { merge: true }).catch(() => null);
-    }
-
-    res.json({ success: true, isMatch, match });
+  if (!db) {
+    res.status(503).json({ error: 'Discovery interaction persistence unavailable', persisted: false });
     return;
   }
 
-  const reciprocalKey = `${profileId}:${viewerUid}`;
-  const likeKey = `${viewerUid}:${profileId}`;
-  const isMatch = outboundLikes.has(reciprocalKey);
-  outboundLikes.add(likeKey);
+  const interactionPersisted = await db
+    .collection('users')
+    .doc(viewerUid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('interactions')
+    .set({
+      likes: FieldValue.arrayUnion(profileId),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    .then(() => true)
+    .catch(() => false);
+  if (!interactionPersisted) {
+    res.status(500).json({ error: 'Like was not persisted', profileId, persisted: false });
+    return;
+  }
 
-  const match = isMatch
-    ? buildMatch(viewerUid, profileId, demoCandidatePool().find((profile) => profile.id === profileId))
-    : null;
+  const reciprocalSnap = await db
+    .collection('users')
+    .doc(profileId)
+    .collection(PRIVATE_COLLECTION)
+    .doc('interactions')
+    .get()
+    .catch(() => null);
+  if (!reciprocalSnap) {
+    res.status(500).json({ error: 'Could not verify reciprocal like', profileId, persisted: false });
+    return;
+  }
 
-  res.json({ success: true, isMatch, match });
+  const reciprocalLikes = reciprocalSnap.data()?.likes;
+  const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
+  const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+    .find((profile) => profile.uid === profileId || profile.id === profileId);
+  let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
+  if (!tastePersisted) {
+    tastePersisted = await persistDiscoveryTasteState(viewerUid, 'like', candidate);
+    if (!tastePersisted) {
+      res.status(500).json({ error: 'Like taste state was not persisted', profileId, persisted: false });
+      return;
+    }
+  }
+
+  const match = isMatch ? buildMatch(viewerUid, profileId, candidate) : null;
+  if (match) {
+    const matchPersisted = await db.collection('matches').doc(match.id).set(match, { merge: true }).then(() => true).catch(() => false);
+    const conversationPersisted = await db.collection('conversations').doc(match.id).set({
+      id: match.id,
+      participants: [viewerUid, profileId],
+      messages: [],
+      createdAt: match.createdAt,
+    }, { merge: true }).then(() => true).catch(() => false);
+    if (!matchPersisted || !conversationPersisted) {
+      res.status(500).json({ error: 'Match was not persisted', profileId, persisted: false });
+      return;
+    }
+  }
+
+  res.json({ success: true, isMatch, match, persisted: true, tastePersisted });
 });
 
 router.post('/pass', async (req: AuthenticatedRequest, res) => {
-  const viewerUid = req.uid ?? DEFAULT_VIEWER.uid;
+  const viewerUid = req.uid;
   const { profileId } = req.body ?? {};
+  if (!viewerUid) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
   if (typeof profileId !== 'string' || !profileId) {
     res.status(400).json({ error: 'Missing profileId' });
     return;
   }
   const db = getOptionalAdminFirestore();
-  if (db) {
-    await db
-      .collection('users')
-      .doc(viewerUid)
-      .collection(PRIVATE_COLLECTION)
-      .doc('interactions')
-      .set({
-        passes: FieldValue.arrayUnion(profileId),
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true })
-      .catch(() => null);
-    const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
-      .find((profile) => profile.uid === profileId || profile.id === profileId);
-    if (req.body?.tasteEventAlreadyRecorded !== true) {
-      await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
+  if (!db) {
+    res.status(503).json({ error: 'Discovery interaction persistence unavailable', persisted: false });
+    return;
+  }
+
+  const interactionPersisted = await db
+    .collection('users')
+    .doc(viewerUid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('interactions')
+    .set({
+      passes: FieldValue.arrayUnion(profileId),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    .then(() => true)
+    .catch(() => false);
+  if (!interactionPersisted) {
+    res.status(500).json({ error: 'Pass was not persisted', profileId, persisted: false });
+    return;
+  }
+
+  const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+    .find((profile) => profile.uid === profileId || profile.id === profileId);
+  let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
+  if (!tastePersisted) {
+    tastePersisted = await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
+    if (!tastePersisted) {
+      res.status(500).json({ error: 'Pass taste state was not persisted', profileId, persisted: false });
+      return;
     }
   }
-  res.json({ success: true, profileId });
+
+  res.json({ success: true, profileId, persisted: true, tastePersisted });
 });
 
 async function loadViewer(uid: string | undefined): Promise<Profile> {
@@ -376,9 +410,9 @@ async function persistDiscoveryTasteState(
   viewerUid: string,
   name: Extract<EventName, 'like' | 'pass'>,
   candidate: Profile | undefined,
-) {
+): Promise<boolean> {
   const db = getOptionalAdminFirestore();
-  if (!db) return;
+  if (!db) return false;
   const previous = await loadTasteState(viewerUid);
   const next = applyEvent(previous, {
     name,
@@ -387,13 +421,14 @@ async function persistDiscoveryTasteState(
     candidateFeatures: candidate ? profileToFeatureTags(candidate) : [],
     occurredAt: Date.now(),
   });
-  await db
+  return await db
     .collection('users')
     .doc(viewerUid)
     .collection(PRIVATE_COLLECTION)
     .doc('taste_state')
     .set(serializeTasteState(next), { merge: false })
-    .catch(() => null);
+    .then(() => true)
+    .catch(() => false);
 }
 
 async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[]> {
