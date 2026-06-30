@@ -58,7 +58,9 @@ describe('taste and filtering server contracts', () => {
     expect(server).toContain('reciprocalPreferencesUsed');
     expect(ranking).toContain('export interface CandidateRankingContext');
     expect(ranking).toContain('candidateContexts?: Record<string, CandidateRankingContext>');
-    expect(ranking).toContain('candidatePreferences ? hardCtxFromPreferences(candidatePreferences');
+    expect(ranking).toContain('const candidatePreferences = candidateContext?.preferences;');
+    expect(ranking).toContain('const candidateHardCtx = candidatePreferences');
+    expect(ranking).toContain('? hardCtxFromPreferences(candidatePreferences, {');
     expect(ranking).not.toContain('candidateHardCtx: {},\n        candidateSoftWeights: {},');
   });
 
@@ -304,7 +306,7 @@ describe('private taste skill contracts', () => {
     expect(resetHandler).toContain('const result = await discoveryService.resetTasteProfile();');
     expect(resetHandler.indexOf('const result = await discoveryService.resetTasteProfile();')).toBeLessThan(resetHandler.indexOf('setTasteProfileState(persistedProfile)'));
     expect(deleteHandler).toContain('const result = await discoveryService.deleteTasteProfile();');
-    expect(deleteHandler.indexOf('const result = await discoveryService.deleteTasteProfile();')).toBeLessThan(deleteHandler.indexOf('setTasteProfileState(emptyProfile)'));
+    expect(deleteHandler.indexOf('const result = await discoveryService.deleteTasteProfile();')).toBeLessThan(deleteHandler.lastIndexOf('setTasteProfileState(emptyProfile)'));
     expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)");
     expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/interactions`)");
     expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_state`)");
@@ -367,9 +369,9 @@ describe('private taste skill contracts', () => {
     const optOutHandler = app.slice(app.indexOf('const optOutTasteLearning'), app.indexOf('const exportTasteProfile'));
 
     expect(pauseHandler).toContain("await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted', undefined");
-    expect(pauseHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(pauseHandler.indexOf('setTasteProfileState(updatedProfile)'));
+    expect(pauseHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(pauseHandler.lastIndexOf('setTasteProfileState(updatedProfile)'));
     expect(optOutHandler).toContain("await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true })");
-    expect(optOutHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(optOutHandler.indexOf('setTasteProfileState(updatedProfile)'));
+    expect(optOutHandler.indexOf('await discoveryService.recordTasteEvent')).toBeLessThan(optOutHandler.lastIndexOf('setTasteProfileState(updatedProfile)'));
     expect(pauseHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
     expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
     expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_state`)');

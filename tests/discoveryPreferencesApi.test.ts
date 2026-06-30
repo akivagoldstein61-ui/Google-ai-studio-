@@ -55,7 +55,10 @@ describe('discovery preference API contracts', () => {
     expect(server).toContain("res.setHeader('Cache-Control', 'no-store, max-age=0');\n\n  if (!db) {");
     expect(server).toContain('res.status(503).json({');
     expect(server).toContain("error: 'Discovery preference persistence unavailable'");
-    expect(server).toContain('const persisted = await db');
+    expect(server).toContain('const batch = db.batch();');
+    expect(server).toContain("batch.set(userPrivate.doc('discovery_preferences'), {");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_events').collection('events').doc(), {");
+    expect(server).toContain('const persisted = await batch.commit()');
     expect(server).toContain('.then(() => true)');
     expect(server).toContain('.catch(() => false)');
     expect(server).toContain('if (!persisted) {');

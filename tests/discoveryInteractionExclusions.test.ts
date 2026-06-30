@@ -87,18 +87,19 @@ describe('discovery interaction exclusion contracts', () => {
 
   it('verifies reciprocal likes before committing match records with the action batch', () => {
     const server = readSource('server/discoveryRoutes.ts');
-    const reciprocalReadIndex = server.indexOf('const reciprocalSnap = await db');
-    const firstBatchIndex = server.indexOf('const batch = db.batch();');
+    const likeRoute = server.slice(server.indexOf("router.post('/like'"), server.indexOf("router.post('/pass'"));
+    const reciprocalReadIndex = likeRoute.indexOf('const reciprocalSnap = await db');
+    const firstBatchIndex = likeRoute.indexOf('const batch = db.batch();');
 
     expect(reciprocalReadIndex).toBeGreaterThanOrEqual(0);
     expect(firstBatchIndex).toBeGreaterThanOrEqual(0);
     expect(reciprocalReadIndex).toBeLessThan(firstBatchIndex);
-    expect(server).toContain("res.status(500).json({ error: 'Could not verify reciprocal like', profileId, persisted: false })");
-    expect(server).toContain("batch.set(db.collection('matches').doc(match.id), match, { merge: true });");
-    expect(server).toContain("batch.set(db.collection('conversations').doc(match.id), {");
-    expect(server).toContain("res.status(500).json({ error: 'Discovery like was not fully persisted', profileId, persisted: false })");
-    expect(server).not.toContain("const matchPersisted = await db.collection('matches')");
-    expect(server).not.toContain("const conversationPersisted = await db.collection('conversations')");
+    expect(likeRoute).toContain("res.status(500).json({ error: 'Could not verify reciprocal like', profileId, persisted: false })");
+    expect(likeRoute).toContain("batch.set(db.collection('matches').doc(match.id), match, { merge: true });");
+    expect(likeRoute).toContain("batch.set(db.collection('conversations').doc(match.id), {");
+    expect(likeRoute).toContain("res.status(500).json({ error: 'Discovery like was not fully persisted', profileId, persisted: false })");
+    expect(likeRoute).not.toContain("const matchPersisted = await db.collection('matches')");
+    expect(likeRoute).not.toContain("const conversationPersisted = await db.collection('conversations')");
   });
 
   it('reports explicit taste preparation failures before discovery actions write anything', () => {
