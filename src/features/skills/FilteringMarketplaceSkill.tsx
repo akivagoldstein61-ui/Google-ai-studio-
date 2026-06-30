@@ -123,10 +123,13 @@ function softWeightsFromPreferences(preferences: DiscoveryPreferences): Partial<
  * soft preferences only re-rank. No hidden overrides.
  */
 const LiveFiltering: React.FC = () => {
-  const { user, preferences, setPreferences, exploreProfiles, trackEvent } = useApp();
+  const { user, preferences, setPreferences, dailyPicks, exploreProfiles, trackEvent } = useApp();
   const [draft, setDraft] = useState<DiscoveryPreferences>(preferences);
   const [saving, setSaving] = useState(false);
-  const candidatePool = exploreProfiles.length > 0 ? exploreProfiles : MOCK_PROFILES;
+  const candidatePool = useMemo(() => {
+    const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);
+    return live.length > 0 ? live : MOCK_PROFILES;
+  }, [dailyPicks, exploreProfiles]);
 
   useEffect(() => {
     setDraft(preferences);
