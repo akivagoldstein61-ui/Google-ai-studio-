@@ -51,6 +51,7 @@ export interface DiscoveryPreferences {
     shared_interests?: number;
     same_city?: number;
     similar_observance?: number;
+    similar_age?: number;
     values_alignment?: number;
     pacing_alignment?: number;
   };

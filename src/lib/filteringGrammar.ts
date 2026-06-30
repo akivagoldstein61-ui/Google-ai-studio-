@@ -314,8 +314,12 @@ function discoveryPreferencesToSoftWeights(
   return {
     shared_interests: preferences.softPreferenceWeights?.shared_interests ??
       (preferences.softPreferences.includes('shared_interests') ? 0.5 : undefined),
-    same_city: preferences.softPreferenceWeights?.same_city,
-    shared_observance_label: preferences.softPreferenceWeights?.similar_observance,
+    same_city: preferences.softPreferenceWeights?.same_city ??
+      (preferences.softPreferences.includes('same_city') ? 0.5 : undefined),
+    shared_observance_label: preferences.softPreferenceWeights?.similar_observance ??
+      (preferences.softPreferences.includes('similar_observance') ? 0.5 : undefined),
+    similar_age: preferences.softPreferenceWeights?.similar_age ??
+      (preferences.softPreferences.includes('similar_age') ? 0.5 : undefined),
   };
 }
 
