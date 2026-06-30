@@ -291,9 +291,26 @@ describe('private taste skill contracts', () => {
     expect(resetHandler.indexOf('const result = await discoveryService.resetTasteProfile();')).toBeLessThan(resetHandler.indexOf('setTasteProfileState(persistedProfile)'));
     expect(deleteHandler).toContain('const result = await discoveryService.deleteTasteProfile();');
     expect(deleteHandler.indexOf('const result = await discoveryService.deleteTasteProfile();')).toBeLessThan(deleteHandler.indexOf('setTasteProfileState(emptyProfile)'));
-    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)>");
-    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/interactions`)>");
-    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_state`)>");
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)");
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/interactions`)");
+    expect(resetHandler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_state`)");
+  });
+
+  it('taste profile saves are server-batched and acknowledged before live client state changes', () => {
+    const server = readSource('server/tasteRoutes.ts');
+    const service = readSource('src/services/discoveryService.ts');
+    const app = readSource('src/context/AppContext.tsx');
+    const handler = app.slice(app.indexOf('const setTasteProfile'), app.indexOf('const findKnownProfile'));
+
+    expect(service).toContain('async saveTasteProfile(profile: TasteProfileDraft)');
+    expect(service).toContain("throw new Error('Taste profile was not persisted')");
+    expect(server).toContain("router.post('/profile'");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_profile'), profile, { merge: false });");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_state'), serializedTasteState, { merge: false });");
+    expect(server).toContain("res.status(500).json({ error: 'Taste profile was not persisted', persisted: false })");
+    expect(handler).toContain('const result = await discoveryService.saveTasteProfile(normalized);');
+    expect(handler.indexOf('const result = await discoveryService.saveTasteProfile(normalized);')).toBeLessThan(handler.indexOf('setTasteProfileState(persistedProfile)'));
+    expect(handler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)");
   });
 
   it('pause and opt-out controls wait for the persisted server event in live mode', () => {
@@ -308,7 +325,8 @@ describe('private taste skill contracts', () => {
     expect(pauseHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
     expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_profile`)');
     expect(optOutHandler).not.toContain('setDoc(doc(db, `users/${user.uid}/private/taste_state`)');
-    expect(app).not.toContain('.catch(() => null);');
+    expect(pauseHandler).not.toContain('.catch(() => null)');
+    expect(optOutHandler).not.toContain('.catch(() => null)');
   });
 
   it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
