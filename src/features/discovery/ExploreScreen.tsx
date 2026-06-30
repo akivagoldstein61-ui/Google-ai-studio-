@@ -9,9 +9,13 @@ import { SkillContextPanel } from '@/features/skills/components/SkillContextPane
 import { violatesHardFilters } from '@/lib/filteringGrammar';
 
 export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> = ({ onSelect }) => {
-  const { exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
+  const { dailyPicks, exploreProfiles, preferences, setPreferences, resetTasteProfile } = useApp();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const filterCandidatePool = useMemo(
+    () => uniqueProfiles([...dailyPicks, ...exploreProfiles]),
+    [dailyPicks, exploreProfiles],
+  );
 
   return (
     <div className="h-full flex flex-col px-6 py-4 space-y-6 overflow-hidden">
@@ -90,9 +94,12 @@ export const ExploreScreen: React.FC<{ onSelect: (profile: Profile) => void }> =
         {showFilters && (
           <FilterDrawer
             preferences={preferences}
-            profiles={exploreProfiles}
+            profiles={filterCandidatePool}
             onClose={() => setShowFilters(false)}
-            onApply={(prefs) => { setPreferences(prefs); setShowFilters(false); }}
+            onApply={async (prefs) => {
+              await setPreferences(prefs);
+              setShowFilters(false);
+            }}
             onResetTaste={resetTasteProfile}
           />
         )}
@@ -145,6 +152,16 @@ function clampAgeRange(range: [number, number]): [number, number] {
   return [min, max];
 }
 
+function uniqueProfiles(profiles: Profile[]): Profile[] {
+  const seen = new Set<string>();
+  return profiles.filter(profile => {
+    const key = profile.uid ?? profile.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function poolImpact(profiles: Profile[], prefs: DiscoveryPreferences) {
   const total = profiles.length;
   const admitted = profiles.filter(profile => !violatesHardFilters(profile, prefs).violates).length;
@@ -159,10 +176,12 @@ const FilterDrawer: React.FC<{
   preferences: DiscoveryPreferences,
   profiles: Profile[],
   onClose: () => void,
-  onApply: (prefs: DiscoveryPreferences) => void,
+  onApply: (prefs: DiscoveryPreferences) => Promise<void> | void,
   onResetTaste: () => void
 }> = ({ preferences, profiles, onClose, onApply, onResetTaste }) => {
   const [localPrefs, setLocalPrefs] = useState(preferences);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const impact = useMemo(() => poolImpact(profiles, localPrefs), [profiles, localPrefs]);
 
   const updateAgeBound = (index: 0 | 1, value: number) => {
@@ -203,6 +222,25 @@ const FilterDrawer: React.FC<{
         [id]: clamp01(value),
       },
     });
+  };
+
+  const handleApply = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onApply({
+        ...localPrefs,
+        ageRange: clampAgeRange(localPrefs.ageRange),
+        poolImpact: {
+          ...(localPrefs.poolImpact ?? {}),
+          current_pool: impact.percent < 35 ? 'very_high' : impact.percent < 55 ? 'high' : impact.percent < 75 ? 'medium' : 'low',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to save discovery filters', error);
+      setSaveError('Could not save filters. Please try again.');
+      setSaving(false);
+    }
   };
 
   return (
@@ -383,18 +421,17 @@ const FilterDrawer: React.FC<{
             <Sparkles size={12} />
             <span>Based on your settings - Human Control</span>
           </div>
+          {saveError && (
+            <p className="text-center text-[11px] font-bold text-red-700" role="alert">
+              {saveError}
+            </p>
+          )}
           <Button
-            className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all"
-            onClick={() => onApply({
-              ...localPrefs,
-              ageRange: clampAgeRange(localPrefs.ageRange),
-              poolImpact: {
-                ...(localPrefs.poolImpact ?? {}),
-                current_pool: impact.percent < 35 ? 'very_high' : impact.percent < 55 ? 'high' : impact.percent < 75 ? 'medium' : 'low',
-              },
-            })}
+            className="w-full h-16 text-lg font-bold rounded-[24px] bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={saving}
+            onClick={handleApply}
           >
-            Apply Filters
+            {saving ? 'Saving...' : 'Apply Filters'}
           </Button>
         </div>
       </motion.div>
