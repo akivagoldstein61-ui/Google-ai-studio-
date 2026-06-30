@@ -237,6 +237,9 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
   const candidateFeaturesCaptured = candidateFeatures.length;
   const previousState = await loadTasteState(req.uid);
   const profile = await loadTasteProfile(req.uid);
+  const requestedOptedOut = name === 'taste_pause' && typeof req.body?.optedOut === 'boolean'
+    ? req.body.optedOut
+    : undefined;
   const event: TasteEvent = {
     name,
     class: EVENT_CLASS_BY_NAME[name],
@@ -249,8 +252,14 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
 
   const stateForEvent: TasteState = {
     ...previousState,
-    learningPaused: name === 'taste_consent_granted' ? false : (profile.learning.paused || previousState.learningPaused),
-    optedOut: name === 'taste_consent_granted' ? false : (profile.learning.optedOut || previousState.optedOut),
+    learningPaused: name === 'taste_consent_granted'
+      ? false
+      : name === 'taste_pause'
+        ? true
+        : (profile.learning.paused || previousState.learningPaused),
+    optedOut: name === 'taste_consent_granted'
+      ? false
+      : (requestedOptedOut ?? profile.learning.optedOut || previousState.optedOut),
   };
   const nextState = applyEvent(stateForEvent, event);
 
@@ -278,9 +287,7 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
 
   if (name === 'taste_pause') {
     const paused = typeof req.body?.paused === 'boolean' ? req.body.paused : true;
-    const optedOut = typeof req.body?.optedOut === 'boolean'
-      ? req.body.optedOut
-      : profile.learning.optedOut;
+    const optedOut = requestedOptedOut ?? profile.learning.optedOut;
 
     batch.set(userPrivate.doc('taste_profile'), {
       learning: {
