@@ -14,7 +14,6 @@ import {
 import { estimateDistanceKm } from '@/lib/integratedRanking';
 import { implicitAffinity } from '@/lib/learnedTaste';
 import { profileToFeatureTags } from '@/lib/tastePersistence';
-import { MOCK_PROFILES } from '@/data/mockProfiles';
 import { useApp } from '@/context/AppContext';
 import type { DiscoveryPreferences, Profile, RecommendationMode } from '@/types';
 
@@ -127,10 +126,10 @@ const LiveFiltering: React.FC = () => {
   const [draft, setDraft] = useState<DiscoveryPreferences>(preferences);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const candidatePool = useMemo(() => {
-    const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);
-    return live.length > 0 ? live : MOCK_PROFILES;
-  }, [dailyPicks, exploreProfiles]);
+  const candidatePool = useMemo(
+    () => uniqueProfiles([...dailyPicks, ...exploreProfiles]),
+    [dailyPicks, exploreProfiles],
+  );
 
   useEffect(() => {
     setDraft(preferences);
@@ -322,6 +321,11 @@ const LiveFiltering: React.FC = () => {
               <p className="text-[10px] text-white/55">
                 {poolImpact.admitted} admitted, {poolImpact.excluded} excluded from {poolImpact.total}. Impact: {poolImpact.tier.replace('_', ' ')}.
               </p>
+              {candidatePool.length === 0 && (
+                <p className="text-[9px] text-amber-100 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
+                  No live candidates are loaded, so this preview is reporting an empty discovery pool instead of seed data.
+                </p>
+              )}
               <p className="text-[9px] text-white/40 italic">Daily Picks stay strict. Explore can disclose spillover only when a setting, such as age, is not a dealbreaker.</p>
             </div>
 
@@ -378,16 +382,38 @@ function ScoreBar({ value, color = 'bg-amber-400' }: { value: number; color?: st
   );
 }
 
+function SkillHeader({ onBack }: { onBack: () => void }) {
+  return (
+    <header className="sticky top-0 z-10 bg-[#FDFCFB]/95 backdrop-blur-sm px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
+      <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
+        <ChevronLeft size={20} />
+      </button>
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-lime-100 text-lime-700 rounded-full flex items-center justify-center border border-lime-200">
+          <ShoppingBag size={16} />
+        </div>
+        <div className="space-y-0.5">
+          <h1 className="text-lg font-serif italic">Filtering & Marketplace</h1>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Grammar, Reciprocal Ranking & Fairness</p>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user, preferences, dailyPicks, exploreProfiles, tasteState } = useApp();
-  const currentCandidatePool = useMemo(() => {
-    const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);
-    return live.length > 0 ? live : MOCK_PROFILES;
-  }, [dailyPicks, exploreProfiles]);
+  const currentCandidatePool = useMemo(
+    () => uniqueProfiles([...dailyPicks, ...exploreProfiles]),
+    [dailyPicks, exploreProfiles],
+  );
   const [selectedCandidateId, setSelectedCandidateId] = useState('');
   const [requireVerified, setRequireVerified] = useState(false);
   const [requireShabbat, setRequireShabbat] = useState(false);
   const [maxAge, setMaxAge] = useState(preferences.ageRange[1]);
+  const [candidateAgeMs, setCandidateAgeMs] = useState(200);
+  const [imp7d, setImp7d] = useState(5);
+  const [imp24h, setImp24h] = useState(10);
 
   useEffect(() => {
     setMaxAge(preferences.ageRange[1]);
@@ -400,11 +426,30 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
     }
   }, [currentCandidatePool, selectedCandidateId]);
 
-  const candidate = currentCandidatePool.find((profile) => profileKey(profile) === selectedCandidateId) ??
-    currentCandidatePool[0] ??
-    MOCK_PROFILES[0];
-  const viewer = user ?? MOCK_PROFILES.find((profile) => profileKey(profile) !== profileKey(candidate)) ?? candidate;
-  const comparisonProfile = currentCandidatePool.find((profile) => profileKey(profile) !== profileKey(candidate)) ?? viewer;
+  const candidate = currentCandidatePool.find((profile) => profileKey(profile) === selectedCandidateId) ?? currentCandidatePool[0];
+
+  if (!user || !candidate) {
+    return (
+      <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926]">
+        <SkillHeader onBack={onBack} />
+        <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+          <LiveFiltering />
+          <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-3">
+            <div className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle size={16} />
+              <h2 className="text-sm font-bold uppercase tracking-widest">No live candidates available</h2>
+            </div>
+            <p className="text-xs text-[#6B5E52] leading-relaxed">
+              The inspector needs daily picks or explore results from the live discovery API. It will not substitute seed profiles for an authenticated live pool.
+            </p>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  const viewer = user;
+  const comparisonProfile = currentCandidatePool.find((profile) => profileKey(profile) !== profileKey(candidate)) ?? candidate;
   const inspectorMaxAge = Math.max(preferences.ageRange[0], maxAge);
   const candidateDistanceKm = estimateDistanceKm(viewer, candidate);
 
@@ -444,10 +489,6 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
   });
   const reciprocal = reciprocalScore(viewerScore.score, candidateScore.score);
 
-  const [candidateAgeMs, setCandidateAgeMs] = useState(200);
-  const [imp7d, setImp7d] = useState(5);
-  const [imp24h, setImp24h] = useState(10);
-
   const fairness: FairnessState = {
     candidateAccountAgeMs: candidateAgeMs * 60 * 60 * 1000,
     impressionsLast7d: imp7d,
@@ -458,20 +499,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926]">
-      <header className="sticky top-0 z-10 bg-[#FDFCFB]/95 backdrop-blur-sm px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
-        <button onClick={onBack} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all">
-          <ChevronLeft size={20} />
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-lime-100 text-lime-700 rounded-full flex items-center justify-center border border-lime-200">
-            <ShoppingBag size={16} />
-          </div>
-          <div className="space-y-0.5">
-            <h1 className="text-lg font-serif italic">Filtering & Marketplace</h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Grammar, Reciprocal Ranking & Fairness</p>
-          </div>
-        </div>
-      </header>
+      <SkillHeader onBack={onBack} />
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
         <LiveFiltering />
@@ -522,7 +550,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
               </div>
               <div className="p-3 bg-[#F7F2EE] rounded-xl">
                 <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Pool source</p>
-                <p className="text-[#2D2926] font-bold mt-1">{dailyPicks.length + exploreProfiles.length > 0 ? 'Live discovery' : 'Fallback seed'}</p>
+                <p className="text-[#2D2926] font-bold mt-1">Live discovery</p>
               </div>
             </div>
 
