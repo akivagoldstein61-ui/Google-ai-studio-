@@ -287,6 +287,9 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
   const candidateFeaturesCaptured = candidateFeatures.length;
   const previousState = await loadTasteState(req.uid);
   const profile = await loadTasteProfile(req.uid);
+  const derivedProfile = req.body?.profile !== undefined
+    ? normalizeTasteProfile(req.body.profile)
+    : null;
   const requestedOptedOut = name === 'taste_pause' && typeof req.body?.optedOut === 'boolean'
     ? req.body.optedOut
     : undefined;
@@ -312,6 +315,7 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
       : ((requestedOptedOut ?? profile.learning.optedOut) || previousState.optedOut),
   };
   const nextState = applyEvent(stateForEvent, event);
+  const serializedTasteState = serializeTasteState(nextState);
 
   const batch = db.batch();
   const userPrivate = db.collection('users').doc(req.uid).collection(PRIVATE_COLLECTION);
@@ -333,9 +337,11 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
     }, { merge: true });
   }
 
-  batch.set(userPrivate.doc('taste_state'), serializeTasteState(nextState), { merge: false });
+  batch.set(userPrivate.doc('taste_state'), serializedTasteState, { merge: false });
 
-  if (name === 'taste_pause') {
+  if (derivedProfile) {
+    batch.set(userPrivate.doc('taste_profile'), derivedProfile, { merge: false });
+  } else if (name === 'taste_pause') {
     const paused = typeof req.body?.paused === 'boolean' ? req.body.paused : true;
     const optedOut = requestedOptedOut ?? profile.learning.optedOut;
 
@@ -346,9 +352,7 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
         lastUpdatedAt: new Date().toISOString(),
       },
     }, { merge: true });
-  }
-
-  if (name === 'taste_consent_granted') {
+  } else if (name === 'taste_consent_granted') {
     batch.set(userPrivate.doc('taste_profile'), {
       learning: {
         paused: false,
@@ -372,6 +376,8 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
     eventClass: EVENT_CLASS_BY_NAME[name],
     stateUpdated: didTasteStateChange(previousState, nextState),
     candidateFeaturesCaptured,
+    profile: derivedProfile ?? undefined,
+    tasteState: serializedTasteState,
   });
 });
 
