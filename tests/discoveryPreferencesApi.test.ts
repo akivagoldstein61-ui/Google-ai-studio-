@@ -31,4 +31,31 @@ describe('discovery preference API contracts', () => {
     expect(appContext).toContain('normalizeDiscoveryPreferences(response?.preferences ?? normalized)');
     expect(appContext).not.toContain('private/discovery_preferences`), normalized');
   });
+
+  it('sanitizes malformed preference payloads before ranking can consume them', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+
+    expect(server).toContain('const VALID_GENDERS');
+    expect(server).toContain('const VALID_OBSERVANCE');
+    expect(server).toContain('const VALID_INTENTS');
+    expect(server).toContain('const VALID_RECOMMENDATION_MODES');
+    expect(server).toContain('const VALID_HARD_FILTERS');
+    expect(server).toContain('const VALID_SOFT_PREFERENCES');
+    expect(server).toContain('normalizeStringList(input.genderPreference');
+    expect(server).toContain('normalizeAgeRange(input.ageRange)');
+    expect(server).toContain('normalizeNumber(input.maxDistance, 0, MAX_DISTANCE_KM');
+    expect(server).toContain('normalizeSoftPreferenceWeights(input.softPreferenceWeights)');
+    expect(server).toContain('normalizePoolImpact(input.poolImpact)');
+    expect(server).not.toContain('...DEFAULT_DISCOVERY_PREFERENCES,\n    ...input,');
+  });
+
+  it('reports actual preference write success instead of only firestore availability', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+
+    expect(server).toContain('let persisted = false');
+    expect(server).toContain('.then(() => true)');
+    expect(server).toContain('.catch(() => false)');
+    expect(server).toContain('persisted,');
+    expect(server).not.toContain('persisted: Boolean(db)');
+  });
 });
