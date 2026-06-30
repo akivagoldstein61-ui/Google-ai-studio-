@@ -46,6 +46,6 @@ The older `kesher-bfas-assessment` package is retained only as historical/resear
 - Downstream AI may receive derived private report fields only, never raw answers.
 - Any future IPIP/BFAS work requires explicit research, licensing, localization, psychometric, and release-readiness review before member exposure.
 
-## Regeneration Note
+## Maintenance Note
 
-`scripts/build-shareable-skills.mjs` can rebuild this file from current `skills/*/SKILL.md` packages. If regenerated, verify that the BFAS package remains historical-only and that this live Kesher Reflection contract is preserved.
+This is a curated AI Studio reference derived from current `skills/*/SKILL.md` packages and operator docs. When skill packages are regenerated or the shareable bundle changes, update this file deliberately and preserve the live Kesher Reflection contract above.
