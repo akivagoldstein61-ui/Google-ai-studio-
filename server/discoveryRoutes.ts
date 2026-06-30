@@ -14,7 +14,6 @@ import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
 import { FieldValue, getOptionalAdminFirestore } from './firebaseAdmin.ts';
 
 const router = express.Router();
-const outboundLikes = new Set<string>();
 const PRIVATE_COLLECTION = 'private';
 const LEGACY_RECOMMENDATION_MODE = 'chemistry' + '_first';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -35,6 +34,7 @@ const VALID_POOL_IMPACT_TIERS = new Set(['low', 'medium', 'high', 'very_high']);
 
 type CandidatePoolOptions = {
   includeInteracted?: boolean;
+  allowDemoFallback?: boolean;
 };
 
 type DiscoveryInteractionExclusionState = {
@@ -150,7 +150,19 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
   const viewer = await loadViewer(req.uid);
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
-  const candidates = await loadCandidatePool(req.uid);
+  const candidates = await loadCandidatePool(req.uid, {
+    allowDemoFallback: req.authContext?.mode === 'local-dev-mock',
+  });
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  if (!candidates) {
+    res.status(503).json({
+      error: 'Discovery candidate persistence unavailable',
+      items: [],
+      persisted: false,
+    });
+    return;
+  }
+
   const candidateContexts = await loadCandidateRankingContexts(candidates);
   const items = selectDailyPicks({
     viewer,
@@ -162,7 +174,6 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
   });
   const exposureImpressionsRecorded = await recordDiscoveryImpressions(items);
 
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.json({
     generatedAt: new Date().toISOString(),
     items,
@@ -183,7 +194,19 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
   const viewer = await loadViewer(req.uid);
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
-  const candidates = await loadCandidatePool(req.uid);
+  const candidates = await loadCandidatePool(req.uid, {
+    allowDemoFallback: req.authContext?.mode === 'local-dev-mock',
+  });
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  if (!candidates) {
+    res.status(503).json({
+      error: 'Discovery candidate persistence unavailable',
+      items: [],
+      persisted: false,
+    });
+    return;
+  }
+
   const candidateContexts = await loadCandidateRankingContexts(candidates);
   const items = selectExploreProfiles({
     viewer,
@@ -255,7 +278,8 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
 
   const reciprocalLikes = reciprocalSnap.data()?.likes;
   const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
-  const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+  const candidatePool = await loadCandidatePool(viewerUid, { includeInteracted: true });
+  const candidate = (candidatePool ?? [])
     .find((profile) => profile.uid === profileId || profile.id === profileId);
   let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
   if (!tastePersisted) {
@@ -317,7 +341,8 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+  const candidatePool = await loadCandidatePool(viewerUid, { includeInteracted: true });
+  const candidate = (candidatePool ?? [])
     .find((profile) => profile.uid === profileId || profile.id === profileId);
   let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
   if (!tastePersisted) {
@@ -431,9 +456,9 @@ async function persistDiscoveryTasteState(
     .catch(() => false);
 }
 
-async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[]> {
+async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[] | null> {
   const db = getOptionalAdminFirestore();
-  if (!db) return demoCandidatePool();
+  if (!db) return options.allowDemoFallback ? demoCandidatePool() : null;
   const [snap, exclusions, interactionExclusions] = await Promise.all([
     db.collection('users').limit(100).get().catch(() => null),
     loadSystemExclusions(viewerUid),
@@ -441,11 +466,12 @@ async function loadCandidatePool(viewerUid: string | undefined, options: Candida
       ? Promise.resolve(emptyInteractionExclusionState())
       : loadInteractionExclusions(viewerUid),
   ]);
-  const profiles = snap?.docs
+  if (!snap) return options.allowDemoFallback ? demoCandidatePool() : null;
+  const profiles = snap.docs
     .filter((doc) => doc.id !== viewerUid)
     .map((doc) => normalizeProfile(doc.id, doc.data()))
-    .filter((profile): profile is Profile => Boolean(profile)) ?? [];
-  if (profiles.length === 0) return demoCandidatePool();
+    .filter((profile): profile is Profile => Boolean(profile));
+  if (profiles.length === 0) return options.allowDemoFallback ? demoCandidatePool() : [];
   return profiles.filter((profile) =>
     !violatesSystemExclusions(profile, exclusions).violates &&
     !excludesInteractedCandidate(profile, interactionExclusions)
