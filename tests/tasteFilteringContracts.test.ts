@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { applyEvent, emptyTasteState, implicitAffinity } from '../src/lib/learnedTaste';
+import { estimateDistanceKm, selectDailyPicks, selectExploreProfiles } from '../src/lib/integratedRanking';
 import { profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence';
-import type { Profile } from '../src/types';
+import type { DiscoveryPreferences, Profile } from '../src/types';
 
 const readSource = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
@@ -47,6 +48,19 @@ describe('taste and filtering server contracts', () => {
     expect(ranking).toContain('candidateContexts?: Record<string, CandidateRankingContext>');
     expect(ranking).toContain('candidatePreferences ? hardCtxFromPreferences(candidatePreferences');
     expect(ranking).not.toContain('candidateHardCtx: {},\n        candidateSoftWeights: {},');
+  });
+
+  it('server discovery loads candidate exposure fairness rather than using one fixed multiplier state', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+    const ranking = readSource('src/lib/integratedRanking.ts');
+
+    expect(server).toContain('loadOptionalFairnessState(uid)');
+    expect(server).toContain("doc('discovery_exposure')");
+    expect(server).toContain('exposureFairnessUsed');
+    expect(server).toContain('context.fairness');
+    expect(ranking).toContain('fairness?: FairnessState');
+    expect(ranking).toContain('fairness: candidateContext?.fairness ?? neutralFairnessState(candidate)');
+    expect(ranking).not.toContain('candidateAccountAgeMs: 14 * 24 * 60 * 60 * 1000,\n          impressionsLast7d: 10,\n          impressionsLast24h: 1');
   });
 });
 
@@ -99,6 +113,61 @@ describe('canonical filtering preference contracts', () => {
     expect(source).not.toContain("'Urban'");
     expect(source).not.toContain("'Tech-focused'");
     expect(source).toContain('hardFilters: Array.from(hardFilters)');
+  });
+
+  it('max distance filters daily picks and labels Explore spillover from real distance estimates', () => {
+    const viewer = profile({ id: 'viewer', uid: 'viewer', gender: 'male', city: 'Tel Aviv' });
+    const near = profile({ id: 'near', uid: 'near', city: 'Tel Aviv' });
+    const far = profile({ id: 'far', uid: 'far', city: 'Jerusalem' });
+    const prefs = preferences({ maxDistance: 10, dealbreakers: { distance: true } });
+
+    expect(estimateDistanceKm(viewer, far)).toBeGreaterThan(10);
+    expect(selectDailyPicks({
+      viewer,
+      candidates: [far, near],
+      preferences: prefs,
+      tasteState: emptyTasteState(),
+    }).map((item) => item.profile.id)).toEqual(['near']);
+
+    const exploratory = selectExploreProfiles({
+      viewer,
+      candidates: [far, near],
+      preferences: preferences({ maxDistance: 10, dealbreakers: { distance: false } }),
+      tasteState: emptyTasteState(),
+      allowDisclosedSpillover: true,
+    });
+    expect(exploratory.find((item) => item.profile.id === 'far')?.spilloverReason).toBe('outside_distance');
+  });
+
+  it('candidate exposure fairness context changes ranking order', () => {
+    const viewer = profile({ id: 'viewer', uid: 'viewer', gender: 'male', city: 'Tel Aviv' });
+    const saturated = profile({ id: 'saturated', uid: 'saturated', city: 'Tel Aviv', tags: ['Hiking', 'Family'] });
+    const starved = profile({ id: 'starved', uid: 'starved', city: 'Tel Aviv', tags: ['Hiking', 'Family'] });
+    const ranked = selectDailyPicks({
+      viewer,
+      candidates: [saturated, starved],
+      preferences: preferences({ maxDistance: 100 }),
+      tasteState: emptyTasteState(),
+      candidateContexts: {
+        saturated: {
+          fairness: {
+            candidateAccountAgeMs: 30 * 24 * 60 * 60 * 1000,
+            impressionsLast7d: 200,
+            impressionsLast24h: 600,
+          },
+        },
+        starved: {
+          fairness: {
+            candidateAccountAgeMs: 30 * 24 * 60 * 60 * 1000,
+            impressionsLast7d: 0,
+            impressionsLast24h: 0,
+          },
+        },
+      },
+    });
+
+    expect(ranked.map((item) => item.profile.id)).toEqual(['starved', 'saturated']);
+    expect(ranked[0].score).toBeGreaterThan(ranked[1].score);
   });
 });
 
@@ -220,3 +289,52 @@ describe('canonical learned-taste behavior', () => {
     });
   });
 });
+
+function profile(overrides: Partial<Profile>): Profile {
+  return {
+    id: 'profile',
+    uid: 'profile',
+    displayName: 'Profile',
+    age: 27,
+    gender: 'female',
+    city: 'Tel Aviv',
+    photos: [],
+    bio: '',
+    observance: 'traditional',
+    intent: 'serious_relationship',
+    prompts: [],
+    isVerified: true,
+    isPremium: false,
+    tags: ['Hiking', 'Family'],
+    ...overrides,
+  };
+}
+
+function preferences(overrides: Partial<DiscoveryPreferences> = {}): DiscoveryPreferences {
+  return {
+    genderPreference: ['female'],
+    ageRange: [22, 35],
+    maxDistance: 50,
+    observancePreference: ['traditional', 'masorti', 'secular', 'dati', 'modern_orthodox'],
+    intentPreference: ['serious_relationship'],
+    hardFilters: ['verified'],
+    softPreferences: ['shared_interests', 'same_city', 'similar_age'],
+    recommendationMode: 'balanced',
+    dealbreakers: {
+      age: true,
+      distance: true,
+      gender: true,
+      intent: true,
+      observance: true,
+      verified: true,
+      ...overrides.dealbreakers,
+    },
+    softPreferenceWeights: {
+      shared_interests: 0.6,
+      same_city: 0.25,
+      similar_age: 0.35,
+      ...overrides.softPreferenceWeights,
+    },
+    ...overrides,
+  };
+}
