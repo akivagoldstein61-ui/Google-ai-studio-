@@ -45,11 +45,9 @@ const SERVER_API_MODE = env.VITE_SERVER_API_MODE || 'static UI only';
 const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_URL = new URL('/skills', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
-const PERSONALITY_PROTOTYPE_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
+const PERSONALITY_JOURNEY_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
-// SKILLS is the visible registry for this prototype surface. Count every
-// visible module, not only entries with a skillId, so /prototype mirrors
-// everything reviewers can open in /skills.
+
 const SKILL_MODULE_COUNT = SKILLS.length;
 const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.status !== 'planned').length;
 const PRODUCT_GATE_COUNT = PRODUCT_COMPLETION_GATES.length;
@@ -63,7 +61,7 @@ const CURRENT_ENV =
 
 const rows: Array<{ label: string; value: React.ReactNode }> = [
   {
-    label: 'Stable Vercel prototype URL',
+    label: 'Stable Vercel app URL',
     value: (
       <a href={STABLE_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {STABLE_PROTOTYPE_URL}
@@ -100,16 +98,16 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     ),
   },
   {
-    label: 'Personality prototype journey',
+    label: 'Personality journey',
     value: (
-      <a href={PERSONALITY_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
-        {PERSONALITY_PROTOTYPE_URL}
+      <a href={PERSONALITY_JOURNEY_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
+        {PERSONALITY_JOURNEY_URL}
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
     ),
   },
   {
-    label: 'Prototype skills zip',
+    label: 'Personality skills zip',
     value: (
       <a href={SKILLS_ZIP_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {SKILLS_ZIP_URL}
@@ -152,7 +150,7 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
   { label: 'Neon mode', value: NEON_MODE },
   {
     label: 'Firebase auth-domain note',
-    value: 'Only authorized domains can use Firebase sign-in. Preview/Netlify reviewers should use demo mode when needed.',
+    value: 'Only authorized domains can use Firebase sign-in. Preview/Netlify reviewers can use review mode when needed.',
   },
   { label: 'Server/API mode', value: SERVER_API_MODE },
   { label: 'Last verified smoke-test timestamp', value: LAST_SMOKE_AT },
@@ -198,11 +196,11 @@ export const PrototypeScreen: React.FC = () => {
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
             <Info className="w-4 h-4" />
-            Prototype deployment status
+            Deployment status
           </div>
-          <h1 className="text-3xl font-serif italic">Kesher /prototype status</h1>
+          <h1 className="text-3xl font-serif italic">Kesher status</h1>
           <p className="text-sm text-[#6B5E52]">
-            This page confirms what commit and environment are currently running on the stable prototype URL.
+            This page confirms what commit and environment are currently running on the stable Vercel app URL.
           </p>
           <p className="text-xs font-mono text-[#2D2926]" data-testid="prototype-commit-marker">
             Commit marker: {visibleCommitSha}
@@ -264,7 +262,7 @@ export const PrototypeScreen: React.FC = () => {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-[#6B5E52]">Loading server fingerprint…</p>
+            <p className="text-sm text-[#6B5E52]">Loading server fingerprint...</p>
           )}
         </section>
 
@@ -286,13 +284,13 @@ export const PrototypeScreen: React.FC = () => {
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 space-y-3 text-sm text-[#6B5E52]">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#8C7E6E]">
             <Server className="w-4 h-4" />
-            Known limitations
+            Environment notes
           </div>
           <ul className="list-disc pl-5 space-y-2">
-            <li>Demo mode is for viewability and uses mock/local-only state (no Firestore writes).</li>
+            <li>Review mode is for viewability and uses mock/local-only state where a real account is not signed in.</li>
             <li>Netlify is configured as a static mirror and does not run Express API routes unless Functions are added.</li>
-            <li>Preview deployments may not be Firebase-auth authorized; reviewers should use demo mode when sign-in is blocked.</li>
-            <li>Production personality-sensitive features remain gated and must not be auto-enabled from previews.</li>
+            <li>Preview deployments may not be Firebase-auth authorized; reviewers can use review mode when sign-in is blocked.</li>
+            <li>Personality reports are private by default and exclude raw-answer export, public trait scores, and compatibility-score claims.</li>
           </ul>
         </section>
 
@@ -305,14 +303,14 @@ export const PrototypeScreen: React.FC = () => {
             Explore all {SKILL_MODULE_COUNT} registered skill modules powering Kesher's trust-forward personality system.
           </p>
           <p className="text-xs text-white/55">
-            {OPERATIONAL_SKILL_COUNT} operational or gated skill pages are visible from the hub, with {PRODUCT_GATE_COUNT} final-product gates now tracked as launch readiness evidence.
+            {OPERATIONAL_SKILL_COUNT} operational or gated skill pages are visible from the hub, with {PRODUCT_GATE_COUNT} final-product gates tracked as launch readiness evidence.
           </p>
           <a
             href="/prototype/personality"
             data-testid="prototype-personality-link"
             className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white/15 transition-all mr-3"
           >
-            Open Personality Prototype
+            Open Personality Journey
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <a
@@ -331,7 +329,7 @@ export const PrototypeScreen: React.FC = () => {
             Product completion readiness
           </div>
           <p className="text-sm text-[#6B5E52]">
-            The implementation plan is now part of the app registry: added skills, deepened skills,
+            The implementation plan is part of the app registry: added skills, deepened skills,
             required plugins, test gates, and launch blockers are visible in `/skills` and `/admin/ai-ops`.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
@@ -351,11 +349,11 @@ export const PrototypeScreen: React.FC = () => {
         <section className="bg-white rounded-2xl border border-[#F3EFEA] p-6 text-xs text-[#8C7E6E] flex flex-wrap items-center gap-2">
           <GitBranch className="w-4 h-4" />
           <span>Vercel env: {env.VITE_VERCEL_ENV || 'n/a'}</span>
-          <span>•</span>
+          <span>|</span>
           <span>Vercel target env: {env.VITE_VERCEL_TARGET_ENV || 'n/a'}</span>
-          <span>•</span>
+          <span>|</span>
           <span>PR ID: {env.VITE_VERCEL_GIT_PULL_REQUEST_ID || 'n/a'}</span>
-          <span>•</span>
+          <span>|</span>
           <Link2 className="w-3.5 h-3.5" />
           <a href={STABLE_PROTOTYPE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
             open stable app
