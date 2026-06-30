@@ -111,7 +111,8 @@ function optionalNumber(value: unknown): number | undefined {
 }
 
 function isTasteEventName(value: unknown): value is EventName {
-  return typeof value === 'string' && value in EVENT_CLASS_BY_NAME;
+  return typeof value === 'string'
+    && Object.prototype.hasOwnProperty.call(EVENT_CLASS_BY_NAME, value);
 }
 
 function normalizeSurface(value: unknown): TasteEvent['surface'] | undefined {
