@@ -13,6 +13,8 @@ import {
 import {
   type TasteState,
   type TasteEvent,
+  type EventName,
+  type EventClass,
   applyEvent,
   emptyTasteState,
 } from '@/lib/learnedTaste';
@@ -25,6 +27,11 @@ type TasteInteractions = {
   passes: string[];
   moreLikeThis: string[];
   lessLikeThis: string[];
+};
+
+type TasteSignalOptions = {
+  value?: number;
+  surface?: TasteEvent['surface'];
 };
 
 interface AppState {
@@ -54,6 +61,7 @@ interface AppState {
   passProfile: (profileId: string) => void;
   moreLikeThis: (profileId: string) => void;
   lessLikeThis: (profileId: string) => void;
+  recordTasteSignal: (name: EventName, profileId: string, options?: TasteSignalOptions) => void;
   resetTasteProfile: () => void;
   setTasteProfile: (profile: TasteProfileDraft) => void;
   pauseTasteLearning: (paused: boolean) => Promise<void>;
@@ -155,6 +163,29 @@ function normalizeTasteInteractions(raw: any): TasteInteractions {
     moreLikeThis: stringList(input.moreLikeThis),
     lessLikeThis: stringList(input.lessLikeThis),
   };
+}
+
+function eventClassForTasteSignal(name: EventName): EventClass {
+  switch (name) {
+    case 'onboarding_completed':
+    case 'hard_filter_edited':
+    case 'soft_preference_edited':
+    case 'taste_consent_granted':
+    case 'taste_reset':
+    case 'taste_pause':
+      return 'policy_consent';
+    case 'profile_open':
+    case 'photo_carousel_depth':
+    case 'prompt_expanded':
+    case 'long_dwell':
+    case 'reply_received':
+      return 'high_signal_implicit';
+    case 'surface_seen':
+    case 'session_stage':
+      return 'context';
+    default:
+      return 'explicit_preference';
+  }
 }
 
 function emptyTasteStateForProfile(profile: TasteProfileDraft = cloneDefaultTasteProfile()): TasteState {
@@ -516,11 +547,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const findKnownProfile = (profileId: string) => [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
+    .find(p => p.id === profileId || p.uid === profileId);
+
   const likeProfile = async (profileId: string): Promise<boolean> => {
     if (!user) return false;
 
-    const profile = [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
-      .find(p => p.id === profileId || p.uid === profileId);
+    const profile = findKnownProfile(profileId);
     if (!profile) {
       return false;
     }
@@ -595,8 +628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const passProfile = async (profileId: string) => {
     if (!user) return;
 
-    const profile = [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
-      .find(p => p.id === profileId || p.uid === profileId);
+    const profile = findKnownProfile(profileId);
     if (profile) {
       setInteractions(prev => ({
         ...prev,
@@ -626,8 +658,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const moreLikeThis = async (profileId: string) => {
     if (!user) return;
-    const profile = [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
-      .find(p => p.id === profileId || p.uid === profileId);
+    const profile = findKnownProfile(profileId);
     if (!profile) return;
 
     const newInteractions = {
@@ -663,8 +694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const lessLikeThis = async (profileId: string) => {
     if (!user) return;
-    const profile = [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
-      .find(p => p.id === profileId || p.uid === profileId);
+    const profile = findKnownProfile(profileId);
     if (!profile) return;
 
     const newInteractions = {
@@ -695,6 +725,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (error) {
       console.error('Failed to update taste profile:', error);
+    }
+  };
+
+  const recordTasteSignal = (name: EventName, profileId: string, options: TasteSignalOptions = {}) => {
+    if (!user) return;
+    const profile = findKnownProfile(profileId);
+    if (!profile) return;
+
+    applyTasteEvent(user.uid, {
+      name,
+      class: eventClassForTasteSignal(name),
+      candidateId: profile.uid ?? profileId,
+      candidateFeatures: profileToFeatureTags(profile),
+      value: options.value,
+      surface: options.surface,
+      occurredAt: Date.now(),
+    });
+
+    if (!isLocalOnlyMode) {
+      discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options).catch(() => null);
     }
   };
 
@@ -926,6 +976,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       passProfile,
       moreLikeThis,
       lessLikeThis,
+      recordTasteSignal,
       resetTasteProfile,
       setTasteProfile,
       pauseTasteLearning,
