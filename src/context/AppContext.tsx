@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Profile, DiscoveryPreferences, Match, Conversation, Message, TasteProfileDraft } from '@/types';
 import { MOCK_PROFILES, MOCK_CONVERSATIONS } from '../data/mockProfiles';
 import { auth, db } from '../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isPrototypeDemoMode } from '@/lib/prototypeMode';
 import {
   hasLocalMockAuthSession,
@@ -11,10 +11,13 @@ import {
   setLocalMockAuthSession,
 } from '@/services/authHeaders';
 import {
-  type TasteState, type TasteEvent, applyEvent, implicitAffinity, emptyTasteState,
+  type TasteState,
+  type TasteEvent,
+  applyEvent,
+  emptyTasteState,
 } from '@/lib/learnedTaste';
 import { serializeTasteState, deserializeTasteState, cloneTasteState, profileToFeatureTags } from '@/lib/tastePersistence';
-import { violatesHardFilters, directionalScore, type HardFilterContext } from '@/lib/filteringGrammar';
+import { selectDailyPicks, selectExploreProfiles } from '@/lib/integratedRanking';
 import { discoveryService } from '@/services/discoveryService';
 
 interface AppState {
@@ -34,7 +37,6 @@ interface AppState {
   loading: boolean;
   isDemoMode: boolean;
   isLocalMockAuth: boolean;
-
   interactions: {
     likes: string[];
     passes: string[];
@@ -45,7 +47,7 @@ interface AppState {
   setLanguage: (lang: 'en' | 'he') => void;
   setUser: (user: Profile | null) => void;
   setOnboarding: (isOnboarding: boolean) => void;
-  setPreferences: (prefs: DiscoveryPreferences) => void;
+  setPreferences: (prefs: DiscoveryPreferences) => Promise<void>;
   likeProfile: (profileId: string) => Promise<boolean>;
   passProfile: (profileId: string) => void;
   moreLikeThis: (profileId: string) => void;
@@ -100,7 +102,7 @@ const EMPTY_TASTE_PROFILE: TasteProfileDraft = {
   weights: {
     values_weight: 0.5,
     stability_weight: 0.5,
-    pacing_weight: 0.5
+    pacing_weight: 0.5,
   },
   learning: {
     paused: true,
@@ -110,8 +112,9 @@ const EMPTY_TASTE_PROFILE: TasteProfileDraft = {
   provenance: {},
   lockedItems: [],
   removedItems: [],
-  explanation: ''
+  explanation: '',
 };
+
 const LEGACY_RECOMMENDATION_MODE = 'chemistry' + '_first';
 
 function cloneDefaultTasteProfile(): TasteProfileDraft {
@@ -190,6 +193,34 @@ function normalizeDiscoveryPreferences(raw: any): DiscoveryPreferences {
   };
 }
 
+function localCandidatePool(viewer: Profile): Profile[] {
+  return MOCK_PROFILES.filter((profile) => profile.id !== viewer.id && profile.uid !== viewer.uid);
+}
+
+function rankLocalDiscovery(
+  viewer: Profile,
+  prefs: DiscoveryPreferences,
+  taste: TasteState,
+): { daily: Profile[]; explore: Profile[] } {
+  const candidates = localCandidatePool(viewer);
+  return {
+    daily: selectDailyPicks({
+      viewer,
+      candidates,
+      preferences: prefs,
+      tasteState: taste,
+      limit: 5,
+    }).map((item) => item.profile),
+    explore: selectExploreProfiles({
+      viewer,
+      candidates,
+      preferences: prefs,
+      tasteState: taste,
+      allowDisclosedSpillover: true,
+    }).map((item) => item.profile),
+  };
+}
+
 const DEMO_USER: Profile = {
   ...MOCK_PROFILES[1],
   id: 'demo-user',
@@ -237,7 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isDemoMode = isPrototypeDemoMode();
   const [isLocalMockAuth, setIsLocalMockAuth] = useState(() => hasLocalMockAuthSession());
   const isLocalOnlyMode = isDemoMode || isLocalMockAuth;
-  const localUser = isDemoMode ? DEMO_USER : LOCAL_DEV_USER;
+  const localUser = useMemo(() => (isDemoMode ? DEMO_USER : LOCAL_DEV_USER), [isDemoMode]);
   const [user, setUser] = useState<Profile | null>(() => (isLocalOnlyMode ? localUser : null));
   const [isOnboarding, setOnboarding] = useState(!isLocalOnlyMode);
   const [language, setLanguage] = useState<'en' | 'he'>('en');
@@ -248,24 +279,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tasteProfile, setTasteProfileState] = useState<TasteProfileDraft>(() => cloneDefaultTasteProfile());
   const [tasteState, setTasteStateRaw] = useState<TasteState>(() => emptyTasteStateForProfile());
   const [isPremium, setIsPremium] = useState(isLocalOnlyMode);
-
-  const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
-    setTasteStateRaw(prev => {
-      const next = applyEvent(cloneTasteState(prev), ev);
-      // Defer Firestore write out of the render cycle
-      if (!isLocalOnlyMode && uid) {
-        setTimeout(() => {
-          setDoc(doc(db, `users/${uid}/private/taste_state`), serializeTasteState(next))
-            .catch((e: unknown) => console.error('Error saving taste_state:', e));
-        }, 0);
-      }
-      return next;
-    });
-  };
+  const initialLocalDiscovery = rankLocalDiscovery(localUser, DEFAULT_PREFERENCES, emptyTasteStateForProfile());
   const [matches, setMatches] = useState<Match[]>(isLocalOnlyMode ? DEMO_MATCHES : []);
   const [conversations, setConversations] = useState<Conversation[]>(isLocalOnlyMode ? DEMO_CONVERSATIONS : []);
-  const [dailyPicks, setDailyPicks] = useState<Profile[]>(isLocalOnlyMode ? MOCK_PROFILES.slice(0, 5) : []);
-  const [exploreProfiles, setExploreProfiles] = useState<Profile[]>(isLocalOnlyMode ? MOCK_PROFILES : []);
+  const [dailyPicks, setDailyPicks] = useState<Profile[]>(isLocalOnlyMode ? initialLocalDiscovery.daily : []);
+  const [exploreProfiles, setExploreProfiles] = useState<Profile[]>(isLocalOnlyMode ? initialLocalDiscovery.explore : []);
 
   const [interactions, setInteractions] = useState<{
     likes: string[];
@@ -278,16 +296,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         likes: ['Profile with tags: Traditional, History, Beach and observance: traditional', 'Profile with tags: Masorti, Dogs, Foodie and observance: masorti'],
         passes: ['Profile with tags: Secular, Art, Spontaneous and observance: secular'],
         moreLikeThis: ['Profile with tags: Introverted, Thoughtful'],
-        lessLikeThis: ['Profile with tags: Extroverted']
+        lessLikeThis: ['Profile with tags: Extroverted'],
       };
     }
     return {
       likes: [],
       passes: [],
       moreLikeThis: [],
-      lessLikeThis: []
+      lessLikeThis: [],
     };
   });
+
+  const refreshLocalDiscovery = (
+    nextPrefs: DiscoveryPreferences,
+    nextTaste: TasteState = tasteState,
+    nextViewer: Profile | null = user ?? localUser,
+  ) => {
+    if (!nextViewer) return;
+    const ranked = rankLocalDiscovery(nextViewer, nextPrefs, nextTaste);
+    setDailyPicks(ranked.daily);
+    setExploreProfiles(ranked.explore);
+  };
+
+  const refreshRemoteDiscovery = async () => {
+    const [dailyResponse, exploreResponse] = await Promise.all([
+      discoveryService.getDailyPicks().catch(() => null),
+      discoveryService.getExploreProfiles().catch(() => null),
+    ]);
+    const apiDailyPicks = discoveryItemsToProfiles(dailyResponse);
+    const apiExploreProfiles = discoveryItemsToProfiles(exploreResponse);
+    setDailyPicks(apiDailyPicks.length > 0 ? apiDailyPicks.slice(0, 5) : []);
+    setExploreProfiles(apiExploreProfiles.length > 0 ? apiExploreProfiles : []);
+  };
+
+  const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
+    setTasteStateRaw(prev => {
+      const next = applyEvent(cloneTasteState(prev), ev);
+      if (isLocalOnlyMode && user) {
+        const nextPrefs = preferences;
+        setTimeout(() => refreshLocalDiscovery(nextPrefs, next, user), 0);
+      }
+      if (!isLocalOnlyMode && uid) {
+        setTimeout(() => {
+          setDoc(doc(db, `users/${uid}/private/taste_state`), serializeTasteState(next))
+            .catch((e: unknown) => console.error('Error saving taste_state:', e));
+        }, 0);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (isLocalOnlyMode) {
@@ -298,8 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsPremium(true);
       setMatches(DEMO_MATCHES);
       setConversations(DEMO_CONVERSATIONS);
-      setDailyPicks(MOCK_PROFILES.slice(0, 5));
-      setExploreProfiles(MOCK_PROFILES);
+      refreshLocalDiscovery(preferences, tasteState, localUser);
       setLoading(false);
       return;
     }
@@ -336,10 +392,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             const prefDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/discovery_preferences`));
-            let currentPrefs = DEFAULT_PREFERENCES;
             if (prefDoc.exists()) {
-              currentPrefs = normalizeDiscoveryPreferences(prefDoc.data());
-              setPreferencesState(currentPrefs);
+              setPreferencesState(normalizeDiscoveryPreferences(prefDoc.data()));
             }
 
             try {
@@ -354,20 +408,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const fetchedConversations = conversationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
               setConversations(fetchedConversations);
 
-              const [tasteResponse, dailyResponse, exploreResponse] = await Promise.all([
-                discoveryService.getTasteProfile().catch(() => null),
-                discoveryService.getDailyPicks().catch(() => null),
-                discoveryService.getExploreProfiles().catch(() => null),
-              ]);
+              const tasteResponse = await discoveryService.getTasteProfile().catch(() => null);
               if (tasteResponse?.profile) {
                 setTasteProfileState(normalizeTasteProfile(tasteResponse.profile));
               }
-
-              const apiDailyPicks = discoveryItemsToProfiles(dailyResponse);
-              const apiExploreProfiles = discoveryItemsToProfiles(exploreResponse);
-              setDailyPicks(apiDailyPicks.length > 0 ? apiDailyPicks.slice(0, 5) : MOCK_PROFILES.slice(0, 5));
-              setExploreProfiles(apiExploreProfiles.length > 0 ? apiExploreProfiles : MOCK_PROFILES);
-
+              await refreshRemoteDiscovery();
             } catch (error) {
               console.error('Error fetching data:', error);
             }
@@ -412,6 +457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const normalized = normalizeDiscoveryPreferences(prefs);
     setPreferencesState(normalized);
     if (isLocalOnlyMode || !user) {
+      refreshLocalDiscovery(normalized);
       return;
     }
 
@@ -419,6 +465,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, `users/${user.uid}/private/discovery_preferences`), normalized);
       await discoveryService.recordTasteEvent('hard_filter_edited').catch(() => null);
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving preferences:', error);
     }
@@ -454,7 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setInteractions(prev => ({
       ...prev,
-      likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
+      likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
     }));
     applyTasteEvent(user.uid, {
       name: 'like', class: 'explicit_preference',
@@ -527,7 +574,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (profile) {
       setInteractions(prev => ({
         ...prev,
-        passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
+        passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
       }));
       applyTasteEvent(user.uid, {
         name: 'pass', class: 'explicit_preference',
@@ -559,7 +606,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newInteractions = {
       ...interactions,
-      moreLikeThis: [...interactions.moreLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
+      moreLikeThis: [...interactions.moreLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
     };
     setInteractions(newInteractions);
     applyTasteEvent(user.uid, {
@@ -580,7 +627,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, `users/${user.uid}/private/interactions`), {
-        moreLikeThis: [...interactions.moreLikeThis, profileId]
+        moreLikeThis: [...interactions.moreLikeThis, profileId],
       }, { merge: true });
 
       const { aiService } = await import('../services/aiService');
@@ -601,7 +648,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newInteractions = {
       ...interactions,
-      lessLikeThis: [...interactions.lessLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`]
+      lessLikeThis: [...interactions.lessLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
     };
     setInteractions(newInteractions);
     applyTasteEvent(user.uid, {
@@ -622,7 +669,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, `users/${user.uid}/private/interactions`), {
-        lessLikeThis: [...interactions.lessLikeThis, profileId]
+        lessLikeThis: [...interactions.lessLikeThis, profileId],
       }, { merge: true });
 
       const { aiService } = await import('../services/aiService');
@@ -643,16 +690,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       likes: [],
       passes: [],
       moreLikeThis: [],
-      lessLikeThis: []
+      lessLikeThis: [],
     };
     setInteractions(emptyInteractions);
 
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteStateRaw(freshTasteState);
-
-    if (isLocalOnlyMode || !user) {
+    if (isLocalOnlyMode) {
+      refreshLocalDiscovery(preferences, freshTasteState);
       return;
     }
+
+    if (!user) return;
 
     try {
       const { doc, setDoc } = await import('firebase/firestore');
@@ -660,6 +709,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(doc(db, `users/${user.uid}/private/interactions`), emptyInteractions);
       await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(freshTasteState));
       await discoveryService.resetTasteProfile().catch(() => null);
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error resetting taste profile in Firestore:', error);
     }
@@ -732,18 +782,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTasteProfile = async () => {
     const emptyProfile = cloneDefaultTasteProfile();
+    const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteProfileState(emptyProfile);
-    setTasteStateRaw(emptyTasteStateForProfile(emptyProfile));
+    setTasteStateRaw(freshTasteState);
     setInteractions({
       likes: [],
       passes: [],
       moreLikeThis: [],
       lessLikeThis: [],
     });
+    if (isLocalOnlyMode) {
+      refreshLocalDiscovery(preferences, freshTasteState);
+      return;
+    }
 
-    if (isLocalOnlyMode || !user) return;
+    if (!user) return;
     try {
       await discoveryService.deleteTasteProfile();
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error deleting taste profile:', error);
     }
@@ -756,7 +812,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       senderId: user.uid,
       text,
       createdAt: new Date().toISOString(),
-      aiAssisted
+      aiAssisted,
     };
 
     setConversations(prev => prev.map(c =>
@@ -772,7 +828,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { doc, updateDoc, arrayUnion } = await import('firebase/firestore');
       await updateDoc(doc(db, 'conversations', conversationId), {
-        messages: arrayUnion(newMessage)
+        messages: arrayUnion(newMessage),
       });
     } catch (error) {
       console.error('Error saving message:', error);
@@ -789,8 +845,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsPremium(true);
     setMatches(DEMO_MATCHES);
     setConversations(DEMO_CONVERSATIONS);
-    setDailyPicks(MOCK_PROFILES.slice(0, 5));
-    setExploreProfiles(MOCK_PROFILES);
+    const ranked = rankLocalDiscovery(LOCAL_DEV_USER, preferences, tasteState);
+    setDailyPicks(ranked.daily);
+    setExploreProfiles(ranked.explore);
     setLoading(false);
   };
 
@@ -860,7 +917,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       signOut,
       verifyAge,
       acceptTerms,
-      trackEvent
+      trackEvent,
     }}>
       {children}
     </AppContext.Provider>
