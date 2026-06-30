@@ -1,5 +1,5 @@
 import { auth } from '@/firebase';
-import type { DiscoveryPreferences } from '@/types';
+import type { DiscoveryPreferences, TasteProfileDraft } from '@/types';
 
 type TasteEventPayload = {
   paused?: boolean;
@@ -33,6 +33,17 @@ async function apiFetch(path: string, init: RequestInit = {}) {
 export const discoveryService = {
   getTasteProfile() {
     return apiFetch('/api/taste/profile');
+  },
+
+  async saveTasteProfile(profile: TasteProfileDraft) {
+    const result = await apiFetch('/api/taste/profile', {
+      method: 'POST',
+      body: JSON.stringify({ profile }),
+    });
+    if (result?.persisted !== true) {
+      throw new Error('Taste profile was not persisted');
+    }
+    return result;
   },
 
   getTasteInteractions() {
