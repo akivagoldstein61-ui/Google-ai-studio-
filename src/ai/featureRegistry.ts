@@ -429,9 +429,9 @@ export const AI_FEATURE_REGISTRY: AIFeatureMetadata[] = [
     requires_citation_ui: false,
     requires_human_confirmation: false,
     risk_level: 'medium',
-    data_inputs: ['bfas_percentiles'],
+    data_inputs: ['private_personality_report'],
     excluded_data: ['raw_answers'],
-    notes: 'Translates deterministic BFAS percentiles into a warm, Hebrew-first user profile.',
+    notes: 'Translates the deterministic Kesher private personality report into a warm, Hebrew-first user profile.',
     capability_exception: false,
   },
   {

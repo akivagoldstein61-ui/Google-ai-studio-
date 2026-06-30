@@ -2,13 +2,9 @@
  * Personality Service — instrument-agnostic types.
  *
  * Kesher does NOT compute personality scores from user behavior, photos,
- * messages, or LLM inference. The only path that may ever populate these
- * fields is an explicit, validated psychometric instrument administered
- * with the user's informed consent and proper licensing (e.g. BFAS, BFI-2).
- *
- * Until that licensing + measurement validation lands, this module is a
- * shell: it exposes types and a status enum, but the runtime service
- * refuses to score. See ./personalityService.ts.
+ * messages, or LLM inference. The active production path is the original
+ * Kesher reflection in ./scoring.ts: deterministic, private by default,
+ * non-clinical, and not a compatibility predictor.
  */
 
 /** Discriminator for which instrument produced the scores. Open-ended on
@@ -16,6 +12,7 @@
  *  change. The empty string sentinel is "no instrument administered". */
 export type InstrumentType =
   | "none"
+  | "kesher_reflection"
   | "bfas"
   | "bfi2"
   | "ipip_bfas_100"

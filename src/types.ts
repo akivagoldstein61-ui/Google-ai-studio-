@@ -2,6 +2,8 @@
  * Kesher App Types
  */
 
+import type { PersonalityAssessmentReport } from './personality/scoring';
+
 export type ReligiousObservance = 'secular' | 'traditional' | 'masorti' | 'dati' | 'modern_orthodox' | 'ultra_orthodox';
 export type Intent = 'marriage_minded' | 'serious_relationship' | 'open_to_possibilities';
 export type Gender = 'male' | 'female' | 'non_binary';
@@ -24,7 +26,7 @@ export interface Profile {
   isPremium: boolean;
   tags: string[];
   lastActive?: string;
-  personalityScores?: Record<string, number>;
+  personalityScores?: PersonalityAssessmentReport;
   role?: string;
 }
 

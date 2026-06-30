@@ -27,6 +27,10 @@ import {
 } from './trustHubCopy';
 import { assertNonEmptyDraft } from '../services/messageCoachInput';
 import { personalityService } from '../personality/personalityService';
+import {
+  KESHER_PERSONALITY_ITEMS,
+  PERSONALITY_INSTRUMENT_VERSION,
+} from '../personality/scoring';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -323,12 +327,28 @@ describe('AI feature registry — no LLM personality scoring features', () => {
   });
 });
 
-describe('Personality service shell', () => {
-  it('reports not_validated by default', () => {
-    expect(personalityService.getStatus()).toBe('not_validated');
+describe('Personality service', () => {
+  it('reports the deterministic Kesher reflection as active', () => {
+    expect(personalityService.getStatus()).toBe('active');
   });
 
-  it('refuses to submit instrument responses', async () => {
+  it('scores only the active Kesher reflection instrument', async () => {
+    const record = await personalityService.submitInstrumentResponses({
+      user_id: 'user-1',
+      instrument_type: 'kesher_reflection',
+      instrument_version: PERSONALITY_INSTRUMENT_VERSION,
+      locale: 'he-IL',
+      responses: Object.fromEntries(KESHER_PERSONALITY_ITEMS.map((item) => [item.id, 4])),
+    });
+
+    expect(record.instrument_type).toBe('kesher_reflection');
+    expect(record.visibility_status).toBe('private');
+    expect(record.score_metadata.complete).toBe(true);
+    expect(record.score_metadata.response_vector_hash).toBeTruthy();
+    expect(await personalityService.getRecord('user-1')).toEqual(record);
+  });
+
+  it('rejects unsupported personality instruments', async () => {
     await expect(
       personalityService.submitInstrumentResponses({
         instrument_type: 'bfi2',
@@ -336,10 +356,6 @@ describe('Personality service shell', () => {
         locale: 'he-IL',
         responses: { q1: 3 },
       })
-    ).rejects.toThrow(/not active/i);
-  });
-
-  it('returns null for getRecord while inactive', async () => {
-    expect(await personalityService.getRecord('user-1')).toBeNull();
+    ).rejects.toThrow(/unsupported personality instrument/i);
   });
 });

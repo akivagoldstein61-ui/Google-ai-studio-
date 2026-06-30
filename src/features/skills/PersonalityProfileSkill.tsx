@@ -68,7 +68,7 @@ const ALLOWED_AI_INPUTS = [
 ];
 
 const FORBIDDEN_AI_INPUTS = [
-  'Raw BFAS answer text',
+  'Raw Kesher reflection answer text',
   'Exact numeric scores',
   'Private messages or chat history',
   'Private taste internals',
@@ -78,7 +78,7 @@ const FORBIDDEN_AI_INPUTS = [
 
 /**
  * LIVE interactive reflection — runs the real /api/ai/personality-profile route
- * against the signed-in user's deterministic BFAS scores and renders the warm,
+ * against the signed-in user's deterministic Kesher private report and renders the warm,
  * Hebrew-first reflection. Falls back gracefully; never invents content.
  */
 const LiveReflection: React.FC = () => {
@@ -120,14 +120,14 @@ const LiveReflection: React.FC = () => {
           </p>
         ) : !hasScores ? (
           <p className="text-sm text-white/70 italic leading-relaxed">
-            Take the optional personality assessment first — then this card turns your scores into a warm,
+            Take the optional personality assessment first — then this card turns your private report into a warm,
             private reflection. Your raw answers never leave your device's private store.
           </p>
         ) : !attempted ? (
           <div className="space-y-3">
             <p className="text-sm text-white/70 italic leading-relaxed">
-              Generate a private reflection from your assessment. The AI receives only derived percentile bands —
-              never raw answers or exact scores.
+              Generate a private reflection from your assessment. The AI receives only derived private-report fields —
+              never raw answers, private messages, or hidden ranking signals.
             </p>
             <Button
               onClick={generate}
@@ -230,7 +230,7 @@ export const PersonalityProfileSkill: React.FC<{ onBack: () => void }> = ({ onBa
             <span className="text-[10px] font-bold uppercase tracking-widest">What this is</span>
           </div>
           <p className="text-xs text-teal-800 leading-relaxed">
-            Translates deterministic BFAS domain and aspect scores into warm, private, user-visible reflection cards.
+            Translates deterministic Kesher domain and aspect bands into warm, private, user-visible reflection cards.
             The AI receives <strong>only derived percentile bands</strong> — never raw answers, exact scores, or private data.
           </p>
           <p className="text-[9px] text-teal-700 italic">

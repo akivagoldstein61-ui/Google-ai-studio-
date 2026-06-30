@@ -3,6 +3,7 @@ import {
   WHY_MATCH_FORBIDDEN_SIGNALS,
   containsBannedPhrase,
 } from './dataClassification.ts';
+import { assertNoForbiddenPersonalityFields } from '@/personality/privacy';
 
 // Re-export for backward compatibility (schemas.ts imports these from outputValidators)
 export { WHY_MATCH_ALLOWED_SIGNALS, WHY_MATCH_FORBIDDEN_SIGNALS } from './dataClassification.ts';
@@ -78,6 +79,7 @@ export function getProhibitedLanguageViolations(text: string) {
 
 function validateStringFields(obj: any) {
   if (!obj) return;
+  assertNoForbiddenPersonalityFields(obj);
   for (const key in obj) {
     if (key === "signals_used" || key === "signals_not_used") continue;
     if (typeof obj[key] === "string") {

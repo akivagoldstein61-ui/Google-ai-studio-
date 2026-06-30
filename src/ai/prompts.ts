@@ -91,15 +91,16 @@ Return a JSON object with:
 
   MOD_SUMMARIZER: (reports: any[]) => `Summarize these user reports for a moderator: ${sanitize.reports(reports)}`,
 
-  PERSONALITY_INTERPRETER: (percentiles: any) => `Translate these deterministic BFAS percentiles into a warm, Hebrew-first user profile.
-User BFAS percentiles: ${JSON.stringify(percentiles)}
+  PERSONALITY_INTERPRETER: (privateReport: any) => `Translate this deterministic Kesher private personality report into a warm, Hebrew-first user profile.
+Private personality report: ${JSON.stringify(privateReport)}
 
 CRITICAL RULES:
 - NEVER use clinical, diagnostic, or pathology language (e.g., "diagnosis", "disorder", "ADHD", "narcissist", "bipolar", "toxic").
 - NEVER use deterministic compatibility claims (e.g., "doomed", "incompatible").
 - NEVER use ranking or tier language (e.g., "alpha", "beta", "high value").
+- NEVER reveal raw answers, hidden weights, private taste data, private messages, or exact location.
 - Frame everything as reflective tendencies, not fixed destiny.
-- Focus on how these traits manifest in dating and relationships.
+- Focus on communication, pacing, and self-reflection in dating.
 
 Output a personality_profile JSON.`,
 
