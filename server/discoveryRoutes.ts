@@ -131,7 +131,9 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
     const reciprocalLikes = reciprocalSnap?.data()?.likes;
     const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
     const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
-    await persistDiscoveryTasteState(viewerUid, 'like', candidate);
+    if (req.body?.tasteEventAlreadyRecorded !== true) {
+      await persistDiscoveryTasteState(viewerUid, 'like', candidate);
+    }
     const match = isMatch ? buildMatch(viewerUid, profileId, candidate) : null;
     if (match) {
       await db.collection('matches').doc(match.id).set(match, { merge: true }).catch(() => null);
@@ -179,7 +181,9 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
       }, { merge: true })
       .catch(() => null);
     const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
-    await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
+    if (req.body?.tasteEventAlreadyRecorded !== true) {
+      await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
+    }
   }
   res.json({ success: true, profileId });
 });
