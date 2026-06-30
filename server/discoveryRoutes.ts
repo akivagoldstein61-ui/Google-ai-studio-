@@ -244,7 +244,7 @@ async function loadOptionalTasteState(uid: string): Promise<TasteState | undefin
 async function loadCandidateRankingContexts(candidates: Profile[]): Promise<Record<string, CandidateRankingContext>> {
   const db = getOptionalAdminFirestore();
   if (!db || candidates.length === 0) return {};
-  const entries = await Promise.all(candidates.map(async (candidate) => {
+  const entries = await Promise.all(candidates.map<Promise<readonly [string, CandidateRankingContext] | null>>(async (candidate) => {
     const uid = candidate.uid || candidate.id;
     const [preferences, tasteState] = await Promise.all([
       loadOptionalPreferences(uid),
@@ -253,7 +253,7 @@ async function loadCandidateRankingContexts(candidates: Profile[]): Promise<Reco
     if (!preferences && !tasteState) return null;
     return [uid, { preferences, tasteState }] as const;
   }));
-  return Object.fromEntries(entries.filter((entry): entry is readonly [string, CandidateRankingContext] => Boolean(entry)));
+  return Object.fromEntries(entries.filter((entry): entry is readonly [string, CandidateRankingContext] => entry !== null));
 }
 
 async function persistDiscoveryTasteState(
