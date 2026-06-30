@@ -21,10 +21,18 @@ describe('taste and filtering server contracts', () => {
     expect(source).toContain('candidateFeaturesCaptured');
   });
 
-  it('client discovery actions are marked to avoid double weighting after taste event recording', () => {
-    const source = readSource('src/services/discoveryService.ts');
+  it('live like/pass actions let the discovery action persist explicit taste exactly once', () => {
+    const service = readSource('src/services/discoveryService.ts');
+    const app = readSource('src/context/AppContext.tsx');
 
-    expect(source).toContain("body: JSON.stringify({ profileId, tasteEventAlreadyRecorded: true })");
+    expect(service).toContain("body: JSON.stringify({ profileId })");
+    expect(service).not.toContain("body: JSON.stringify({ profileId, tasteEventAlreadyRecorded: true })");
+    expect(app).toContain('const result = await discoveryService.likeProfile');
+    expect(app).toContain('const result = await discoveryService.passProfile');
+    expect(app).toContain('result?.persisted !== true || result?.tastePersisted !== true');
+    expect(app).toContain('}, { persistRemote: false });');
+    expect(app).not.toContain("await discoveryService.recordTasteEvent('like'");
+    expect(app).not.toContain("await discoveryService.recordTasteEvent('pass'");
   });
 
   it('direct discovery API calls still update learned taste when no client marker is present', () => {
