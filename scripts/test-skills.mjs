@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SKILLS_DIR = 'skills';
-const EXPECTED_SKILL_COUNT = 43;
+const EXPECTED_SKILL_COUNT = 44;
 
 const skillDirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -38,15 +38,22 @@ if (!existsSync('public/prototype/skills.html')) {
   failures.push('public/prototype/skills.html is missing');
 } else {
   const html = readFileSync('public/prototype/skills.html', 'utf8');
-  const staticCards = (html.match(/class="skill"/g) || []).length;
-  if (staticCards !== EXPECTED_SKILL_COUNT) {
-    failures.push(`public/prototype/skills.html has ${staticCards} skill cards`);
+  const requiredSnippets = [
+    'Kesher Personality Skills',
+    'kesher-reflection-v1',
+    'kesher-aspect-key-v1',
+    'Raw answers exported: no',
+    'Compatibility score: no',
+    '/prototype/personality',
+  ];
+  for (const snippet of requiredSnippets) {
+    if (!html.includes(snippet)) {
+      failures.push(`public/prototype/skills.html is missing required snippet: ${snippet}`);
+    }
   }
 }
 
-if (!existsSync('public/downloads/kesher-personality-skills.zip')) {
-  failures.push('public/downloads/kesher-personality-skills.zip is missing');
-} else if (statSync('public/downloads/kesher-personality-skills.zip').size === 0) {
+if (existsSync('public/downloads/kesher-personality-skills.zip') && statSync('public/downloads/kesher-personality-skills.zip').size === 0) {
   failures.push('public/downloads/kesher-personality-skills.zip is empty');
 }
 
@@ -56,4 +63,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`✅ test:skills: ${EXPECTED_SKILL_COUNT} skills validated with shareable artifacts.`);
+console.log(`✅ test:skills: ${EXPECTED_SKILL_COUNT} skills validated with live Kesher Reflection artifacts.`);

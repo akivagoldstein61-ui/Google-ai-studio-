@@ -250,6 +250,26 @@ const NEGATION_PREFIXES = [
   /\*\s/,    // JSDoc / block comment lines
 ];
 
+const PERSONALITY_GUARDRAIL_LINES = new Map([
+  ["src/personality/privacy.ts", [
+    '"compatibility_score",',
+    '"soulmate_score",',
+    '"marriage_probability",',
+    '"desirability_score",',
+    '"public_trait_rank",',
+    '"auto_send",',
+    '"diagnosis",',
+    '"hidden_personality_rank",',
+  ]],
+  ["src/personality/whyMatch.ts", [
+    '"hidden_personality_rank",',
+  ]],
+  ["src/personality/zodSchemas.ts", [
+    'auto_send_allowed: z.literal(false),',
+    '"ai_auto_send",',
+  ]],
+]);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -275,6 +295,11 @@ function isAllowedInstrumentSource(relPath, id, line) {
   return relPath === "src/personality/ipipBfas.ts" &&
     id === "FP-08" &&
     line.includes("Am not bothered by disorder.");
+}
+
+function isAllowedPersonalityGuardrailSource(relPath, line) {
+  const allowedLines = PERSONALITY_GUARDRAIL_LINES.get(relPath);
+  return Boolean(allowedLines?.includes(line.trim()));
 }
 
 function* walkFiles(dir) {
@@ -306,13 +331,14 @@ for (const filePath of walkFiles(ROOT)) {
   }
 
   const lines = content.split("\n");
-  const relPath = relative(ROOT, filePath);
+  const relPath = relative(ROOT, filePath).replace(/\\/g, "/");
 
   for (const { id, rule, patterns } of FORBIDDEN) {
     for (const pattern of patterns) {
       lines.forEach((line, idx) => {
         if (isNegationContext(line)) return;
         if (isAllowedInstrumentSource(relPath, id, line)) return;
+        if (isAllowedPersonalityGuardrailSource(relPath, line)) return;
         if (pattern instanceof RegExp ? pattern.test(line) : line.includes(pattern)) {
           findings.push({ id, rule, file: relPath, line: idx + 1, text: line.trim() });
         }

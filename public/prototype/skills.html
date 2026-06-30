@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kesher Personality Skills Prototype</title>
+    <title>Kesher Personality Skills</title>
     <style>
       :root {
         color-scheme: light;
@@ -32,9 +32,10 @@
         margin-bottom: 24px;
       }
       h1 { margin: 0 0 12px; font-family: Georgia, serif; font-style: italic; font-size: clamp(2rem, 5vw, 4rem); }
-      h2 { margin: 8px 0; font-size: 1rem; }
+      h2 { margin: 0 0 8px; font-size: 1rem; }
       p { line-height: 1.6; color: inherit; }
-      .summary { color: rgba(255,255,255,.72); max-width: 760px; }
+      a { color: inherit; }
+      .summary { color: rgba(255,255,255,.72); max-width: 780px; }
       .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
       .button {
         display: inline-flex;
@@ -66,326 +67,65 @@
         <p class="eyebrow">Shareable skills bundle</p>
         <h1>Kesher Personality Skills</h1>
         <p class="summary">
-          43 implementable skills for the Kesher personality prototype. The public prototype uses
-          reflection, tendencies, possible strengths/friction, and release gates. It does not ship public rankings,
-          public exact values, predictions, or production personality activation.
+          Live Kesher personality capabilities for private reflection, visibility, permissioned sharing,
+          why-this-match explanation, consent, safety review, and release governance. The member-facing
+          assessment uses the original Kesher Reflection instrument with deterministic scoring and private-by-default reports.
         </p>
         <div class="actions">
           <a class="button" href="/skills">Open Skills Hub</a>
-          <a class="button secondary" href="/prototype/personality">Open IPIP-BFAS Journey</a>
-          <a class="button secondary" href="/downloads/kesher-personality-skills.zip" download>Download Skills Zip</a>
+          <a class="button secondary" href="/prototype/personality">Open Personality Journey</a>
         </div>
       </header>
+
       <div class="meta">
-        <span class="pill">Skill count: 43</span>
-        <span class="pill">Generated: 2026-05-25T23:19:36.583Z</span>
-        <span class="pill">Source: repo skills/ folder</span>
+        <span class="pill">Assessment: kesher-reflection-v1</span>
+        <span class="pill">Scoring: kesher-aspect-key-v1</span>
+        <span class="pill">Raw answers exported: no</span>
+        <span class="pill">Compatibility score: no</span>
       </div>
+
       <section class="grid">
-
-          <article class="skill">
-            <p class="eyebrow">google-ai-studio-app-builder</p>
-            <h2>google-ai-studio-app-builder</h2>
-            <p>Build, deploy, and harden full-stack AI applications using Google AI Studio. Use when prototyping with Build mode, designing prompt-to-code apps, integrating Firebase AI Logic, deploying to Cloud Run, or following the 7-day hardening plan from prototype to MVP.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/google-ai-studio-app-builder">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-ai-evaluation-observability</p>
-            <h2>kesher-ai-evaluation-observability</h2>
-            <p>Add Kesher AI evals, red-team prompts, latency budgets, output-quality dashboards, route health, and release-blocking model governance.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-ai-evaluation-observability">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-ai-feature-modules</p>
-            <h2>kesher-ai-feature-modules</h2>
-            <p>All 11 AI feature modules for the Kesher dating app. Use when implementing, evaluating, or deploying a specific feature module such as bio coaching, values phrasing, taste profiles, daily picks, match explanations, anti-burnout, moderation, scam detection, report intake, AI disclosure, or personality coaching.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-ai-feature-modules">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-ai-governance</p>
-            <h2>kesher-ai-governance</h2>
-            <p>Implement Kesher AI feature allocation, system boundaries, registry governance, model routing, human-in-the-loop triggers, and safety policy enforcement. Use when changing AI feature registry entries, model route choices, trust hub copy, policy checks, or governance docs.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-ai-governance">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-bfas-assessment</p>
-            <h2>kesher-bfas-assessment</h2>
-            <p>Implement and review Kesher's opt-in English IPIP-BFAS 100 / Big Five Aspects assessment prototype, deterministic scoring, answer handling, consent copy, reset/delete behavior, and non-clinical dating-style framing. Use when changing PersonalityAssessment, personality score types, onboarding assessment flows, prototype scoring, persistence for answers or bands, or tests for BFAS scoring and assessment privacy.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-bfas-assessment">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-calm-ux</p>
-            <h2>kesher-calm-ux</h2>
-            <p>Design premium calm UX for the Kesher dating app. Use when designing screens, user flows, onboarding, profile builders, matching interfaces, safety tools, Hebrew-first RTL layouts, accessibility standards, and anti-casino dating mechanics.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-calm-ux">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-compatibility-reflection</p>
-            <h2>kesher-compatibility-reflection</h2>
-            <p>Implement and review Kesher's mutual-consent compatibility reflection engine, pair insight schemas, consent gates, whitelisted shared inputs, and no-score safety validation. Use when changing compatibility-reflection API routes, PairInsightReportSchema, compatibility prompts, match-sheet reflection UI, consent checks, or tests for forbidden compatibility language.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-compatibility-reflection">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-consent-ux</p>
-            <h2>kesher-consent-ux</h2>
-            <p>Design and review Kesher consent UX for personality, AI, sharing, private taste, and Trust Hub flows. Use when changing consent gates, sensitive toggles, grants/revocation copy, consent history, onboarding or settings consent surfaces, or anti-dark-pattern behavior.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-consent-ux">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-dark-pattern-audit</p>
-            <h2>kesher-dark-pattern-audit</h2>
-            <p>Audit Kesher consent, privacy, personality, premium, onboarding, and sharing UI for dark patterns and coercive mechanics. Use when reviewing sensitive toggles, consent flows, revocation, account deletion, premium boundaries, or discovery pacing.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-dark-pattern-audit">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-data-rights-retention</p>
-            <h2>kesher-data-rights-retention</h2>
-            <p>Implement Kesher export, correction, deletion, retention windows, evidence separation, and privacy-rights audit trails.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-data-rights-retention">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-explainable-ai</p>
-            <h2>kesher-explainable-ai</h2>
-            <p>Implement Kesher trust language, explanation provenance, and transparency for AI recommendations. Use when generating safe explanations, source chips, signal allowlists, fallback templates, or management controls for why-match and recommendation surfaces.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-explainable-ai">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-filtering-marketplace</p>
-            <h2>kesher-filtering-marketplace</h2>
-            <p>Implement Kesher filtering grammar, discovery marketplace mechanics, reciprocal recommendation ordering, Daily Picks versus Explore distinctions, hard and soft filters, exposure fairness, and anti-starvation safeguards.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-filtering-marketplace">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-gemini-integration</p>
-            <h2>kesher-gemini-integration</h2>
-            <p>Integrate Gemini AI into Kesher with structured outputs, function calling, grounding, system instructions, server-side proxy architecture, trust-preserving interaction patterns, and safe fallback behavior.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-gemini-integration">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-grounded-search</p>
-            <h2>kesher-grounded-search</h2>
-            <p>Use Google Search grounding in Kesher for cited safety Q&amp;A, event discovery, curated URL context, source rendering, and freshness-sensitive prototype flows without turning search into people-finding or background-check tooling.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-grounded-search">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-high-thinking-routing</p>
-            <h2>kesher-high-thinking-routing</h2>
-            <p>Route Kesher Gemini thinking-mode work. Use when deciding when to enable high-thinking controls, configuring thinking budgets, designing fast-plus-thinking patterns, or planning A/B tests for reasoning-heavy AI features.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-high-thinking-routing">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-identity-verification</p>
-            <h2>kesher-identity-verification</h2>
-            <p>Implement Kesher production auth, profile verification signals, anti-impersonation review, pause/reactivation, and account rights flows.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-identity-verification">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-image-analysis</p>
-            <h2>kesher-image-analysis</h2>
-            <p>Implement trust-forward image analysis for Kesher photo readiness, accessibility alt text, moderation assistance, appeal support, tiered human review, and protected-trait/attractiveness safety boundaries.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-image-analysis">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-israeli-privacy</p>
-            <h2>kesher-israeli-privacy</h2>
-            <p>Review Kesher implementation choices against Israeli privacy-sensitive data guardrails for personality, observance, relationship intent, compatibility reflection, AI inference, export, correction, deletion, and transfer-abroad risk. Use for implementation review only, not legal advice.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-israeli-privacy">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-learned-taste</p>
-            <h2>kesher-learned-taste</h2>
-            <p>Implement Kesher implicit and explicit preference learning, taste profiles, event capture, taste weights, and hybrid on-device/server recommendation architecture while preserving privacy and user controls.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-learned-taste">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-low-latency-ai</p>
-            <h2>kesher-low-latency-ai</h2>
-            <p>Design server-side AI proxy architecture for low-latency Kesher responses. Use when implementing model routing matrices, latency targets, streaming patterns, feature registry routing, and policy-aware AI request handling.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-low-latency-ai">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-maps-date-planner</p>
-            <h2>kesher-maps-date-planner</h2>
-            <p>Build Google Maps-grounded Kesher date planning with venue suggestions, fairness previews, observance-aware scheduling, safe-venue defaults, accessibility-conscious planning, citation UI, and user-reviewed sending.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-maps-date-planner">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-match-lifecycle</p>
-            <h2>kesher-match-lifecycle</h2>
-            <p>Implement Kesher like/pass/match/chat lifecycle state machines, history, and safe transitions across block, report, unmatch, pause, and delete.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-match-lifecycle">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-notifications</p>
-            <h2>kesher-notifications</h2>
-            <p>Implement Kesher notification preferences and delivery for matches, messages, safety events, date reminders, and consent/share changes.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-notifications">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-pacing-coach</p>
-            <h2>kesher-pacing-coach</h2>
-            <p>Implement and review Kesher's anti-burnout pacing coach, including swipe/session signals, gentle dismissible interventions, PacingInterventionSchema, prompt safety, and non-manipulative UX. Use when changing pacing_coach registry entries, pacing-intervention routes, discovery session tracking, or break/reflection UI.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-pacing-coach">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-permissioned-sharing</p>
-            <h2>kesher-permissioned-sharing</h2>
-            <p>Implement and review Kesher's permissioned personality sharing flows: previewable share cards, recipient/scope selection, expiry, revoke, audit copy, and mutual-consent disclosure. Use when building personality share-card UI, share/revoke APIs, privacy settings, trust hub controls, or data models for temporary personality access.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-permissioned-sharing">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-delivery</p>
-            <h2>kesher-personality-delivery</h2>
-            <p>Coordinate implementation, verification, review, CI, deployment, and platform parity for Kesher personality features using the appropriate repo, browser, CI, review, deploy, database, and native-app plugins. Use after or during personality feature work when planning tasks, running checks, opening browser flows, preparing GitHub/CircleCI/CodeRabbit review, or considering Netlify/Vercel/Cloudflare/Neon/Expo/iOS/macOS delivery.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-delivery">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-engine</p>
-            <h2>kesher-personality-engine</h2>
-            <p>Implement Kesher personality measurement, deterministic scoring, private reflection reports, mutual-consent discussion prompts, and provenance-labeled match explanations using Big Five or BFAS-style structures without deterministic fit claims.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-engine">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-ocean</p>
-            <h2>kesher-personality-ocean</h2>
-            <p>Implement Kesher OCEAN/Big Five personality reflection with Jewish observance context and Hebrew-first localization. Use when generating culturally aware reflection cards, consent-scoped discovery experiments, or non-deterministic personality interpretation.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-ocean">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-profile</p>
-            <h2>kesher-personality-profile</h2>
-            <p>Implement and review Kesher's private personality profile interpreter, including Gemini structured output, Hebrew-first insight cards, fallback rendering, provenance, and user controls. Use when changing personality-profile routes, PersonalityProfileScreen, PersonalitySummarySchema, personality prompts, output validators, or AI Trust Hub copy for personality insights.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-profile">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-research</p>
-            <h2>kesher-personality-research</h2>
-            <p>Convert Kesher personality PDF dossiers and research findings into implementable, evidence-labeled product and engineering guidance. Use when grounding Kesher BFAS/Big Five measurement, instrument licensing, Hebrew feasibility, Israeli privacy, consent, visibility, permissioned sharing, Gemini/Vertex runtime governance, validation gates, repository delivery, or trust-forward personality feature decisions from the PDF corpus.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-research">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-visibility</p>
-            <h2>kesher-personality-visibility</h2>
-            <p>Design and implement Kesher's personality visibility model across browse, profile, match, settings, and chat surfaces. Use when deciding what personality-derived data can appear publicly, privately, or after mutual consent; when changing profile cards, ProfileDetail, DailyPicks, AITrustHub, PrivateTasteProfile, Settings, or visibility copy.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-visibility">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-personality-why-match</p>
-            <h2>kesher-personality-why-match</h2>
-            <p>Implement and review personality-safe &quot;Why This Match&quot; explanations for Kesher using whitelisted visible signals, structured Gemini output, uncertainty notes, and leakage prevention. Use when changing explain-match routes, WhyThisMatchPayloadSchema, output validators, DailyPicks/ProfileCard explanation UI, or reason-code generation for personality-aware recommendations.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-personality-why-match">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-privacy-preserving-recommendation</p>
-            <h2>kesher-privacy-preserving-recommendation</h2>
-            <p>Implement Kesher recommendation architecture with silent personalization, safe explanations, permissioned personality boundaries, anti-leakage controls, and release gates before any personality-informed ordering.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-privacy-preserving-recommendation">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-private-recommendations</p>
-            <h2>kesher-private-recommendations</h2>
-            <p>Implement Kesher permissioned sharing, private taste profiles, privacy-preserving recommendations, staged disclosure, consent flows, and sensitive-data exclusion schemas without leaking private recommender state.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-recommendations">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-private-taste</p>
-            <h2>kesher-private-taste</h2>
-            <p>Implement and review Kesher's owner-only private taste learning for personality-aware recommendations, including consent, event minimization, editable/resettable taste profile UI, recommender inputs, and no-leak explanations. Use when changing taste_profile routes, PrivateTasteProfile, recommendation feedback, more/less-like-this controls, taste schemas, or private recommendation copy.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-private-taste">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-psychometric-validation</p>
-            <h2>kesher-psychometric-validation</h2>
-            <p>Gate Kesher personality assessment, scoring, interpretation, ranking, and compatibility claims through psychometric validation requirements. Use when changing assessment items, scoring, Hebrew/English adaptation, reliability claims, invariance, ranking use, or release readiness.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-psychometric-validation">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-release-readiness</p>
-            <h2>kesher-release-readiness</h2>
-            <p>Implement Kesher CI, smoke tests, deployment checklist, rollback, preview verification, monitoring, and launch blocker tracking.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-release-readiness">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-subscription-entitlements</p>
-            <h2>kesher-subscription-entitlements</h2>
-            <p>Implement Kesher subscriptions, premium gates, quotas, billing webhooks, refunds, and abuse-resistant trials.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-subscription-entitlements">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-system-prompt</p>
-            <h2>kesher-system-prompt</h2>
-            <p>Use the Kesher OS strategic framework for deep research, product evaluation, architecture design, execution planning, run modes, evaluation rubrics, product principles, platform role assignments, and connector design.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-system-prompt">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-trust-safety-ops</p>
-            <h2>kesher-trust-safety-ops</h2>
-            <p>Build Kesher trust and safety operations, including report queue, moderation summaries, scam triage, photo checks, appeals, escalation, and audit logs.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-trust-safety-ops">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">kesher-voice-integration</p>
-            <h2>kesher-voice-integration</h2>
-            <p>Implement Kesher voice features with push-to-talk Gemini Live sessions, ephemeral token authentication, transcript visibility, accessibility support, and no emotional companion or auto-send behavior.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/kesher-voice-integration">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">sparkmatch-dating-app-skill</p>
-            <h2>sparkmatch-dating-app-skill</h2>
-            <p>Reference dating-app architecture skill for comparing Kesher prototype decisions against swipe-flow, real-time chat, matching, moderation, and subscription patterns without importing hot-or-not mechanics.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/sparkmatch-dating-app-skill">Open source folder</a>
-          </article>
-
-          <article class="skill">
-            <p class="eyebrow">video-generator</p>
-            <h2>video-generator</h2>
-            <p>Create shareable Kesher prototype walkthrough videos, stakeholder demos, cinematic explainers, and review assets while preserving privacy, consent, and no-impersonation boundaries.</p>
-            <a href="https://github.com/akivagoldstein61-ui/Google-ai-studio-/tree/main/skills/video-generator">Open source folder</a>
-          </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-personality-assessment</p>
+          <h2>Private assessment</h2>
+          <p>Administers all 20 Kesher-authored reflection items and produces a private, non-clinical report after completion.</p>
+          <a href="/skills/personality-assessment">Open skill</a>
+        </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-personality-profile</p>
+          <h2>Private profile</h2>
+          <p>Renders domain and aspect bands as self-reflection, without public trait scores, rankings, or hidden recommendation leakage.</p>
+          <a href="/settings/personality">Open profile</a>
+        </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-personality-visibility</p>
+          <h2>Visibility controls</h2>
+          <p>Lets members keep personality data private by default and selectively share scoped reflection text only with consent.</p>
+          <a href="/settings/personality-visibility">Open controls</a>
+        </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-permissioned-sharing</p>
+          <h2>Permissioned sharing</h2>
+          <p>Supports previewable, revocable share cards that exclude raw answers, exact values, private taste, and hidden ordering signals.</p>
+          <a href="/skills/permissioned-sharing">Open skill</a>
+        </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-personality-why-match</p>
+          <h2>Why this match</h2>
+          <p>Explains matches from visible, allowed signals while preventing personality-answer leakage and deterministic fit claims.</p>
+          <a href="/skills/why-this-match">Open skill</a>
+        </article>
+        <article class="skill">
+          <p class="eyebrow">kesher-compatibility-reflection</p>
+          <h2>Mutual reflection</h2>
+          <p>Creates discussion prompts only after both people opt in; it never creates a compatibility score or prediction.</p>
+          <a href="/skills/compatibility-reflection">Open skill</a>
+        </article>
       </section>
+
       <footer>
-        English IPIP-BFAS scoring is prototype-only. Hebrew validation, privacy review, and release gates remain required before production activation.
+        Personality data remains private by default. Kesher Reflection is for self-understanding and conversation, not diagnosis,
+        public ranking, or compatibility prediction.
       </footer>
     </main>
   </body>

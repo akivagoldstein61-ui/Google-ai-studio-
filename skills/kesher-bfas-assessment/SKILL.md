@@ -1,46 +1,40 @@
 ---
 name: kesher-bfas-assessment
-description: Implement and review Kesher's opt-in English IPIP-BFAS 100 / Big Five Aspects assessment prototype, deterministic scoring, answer handling, consent copy, reset/delete behavior, and non-clinical dating-style framing. Use when changing PersonalityAssessment, personality score types, onboarding assessment flows, prototype scoring, persistence for answers or bands, or tests for BFAS scoring and assessment privacy.
+description: Historical reference for the older IPIP-BFAS / Big Five Aspects assessment work. Do not use this as the live Kesher member-facing assessment. Use kesher-personality-assessment for current implementation, scoring, consent, export, reset/delete, and privacy checks.
 ---
 
-# Kesher BFAS Assessment
+# Kesher BFAS Assessment Reference
 
-Use this skill to implement personality measurement as a user-owned reflection tool, not a matchmaking oracle.
+This skill is retained only for historical and research context. The live Kesher product path is the original Kesher Reflection instrument defined in:
 
-## Workflow
+- `skills/kesher-personality-assessment/SKILL.md`
+- `src/personality/scoring.ts`
+- `src/components/onboarding/PersonalityAssessment.tsx`
+- `src/features/settings/PersonalityProfileScreen.tsx`
+- `server/trustRoutes.ts`
 
-1. Locate the assessment surface before editing:
-   - `src/components/onboarding/PersonalityAssessment.tsx`
-   - `src/components/onboarding/ProfileBuilder.tsx`
-   - `src/features/onboarding/OnboardingFlow.tsx`
-   - `src/ai/types.ts`
-   - `src/types.ts`
-   - `src/services/trustService.ts`
-2. Keep scoring deterministic. Do not use Gemini or any LLM to score answers. LLMs may only interpret already-computed bands in downstream skills.
-3. For this prototype, use the official English IPIP-BFAS 100 item/key spine with stable IDs, reverse-key metadata, domain/aspect mapping, and `ipip_bfas_100` scoring-version output.
-4. Keep Hebrew scoring disabled until localization validation is complete. Hebrew UI may explain the status, but translated Hebrew items are not scored.
-5. Store raw answers and derived scores as private, user-owned data. Do not expose raw answers, exact BFAS/aspect values, or hidden weights in discovery, match explanations, or share cards.
-6. Make opt-in, reset, export, and delete controls visible wherever the user can view the profile. Reset clears answers/scores and regenerated summaries; delete removes personality data subject to legal/safety retention rules.
-7. Validate copy: no diagnosis, therapy framing, fixed identity labels, fit ratings, certainty claims, or personality-based gatekeeping.
+Do not revive IPIP-BFAS as the member-facing path without a separate approved research, licensing, localization, psychometric, and release-readiness review.
 
-## Scoring Contract
+## Current Routing Rule
 
-- Score each item from 1 to 5.
-- Reverse-key items with `6 - value`.
-- Aggregate by domain and aspect separately.
-- Convert averages to private display bands/tendencies only. Do not present exact values publicly.
-- Version the scoring algorithm and questionnaire. Persist the version with each completed session.
-- Never call approximate 0-100 values "validated percentiles" without a real norm table.
+- Live assessment changes must use `$kesher-personality-assessment`.
+- Live scoring must use `kesher-reflection-v1` and `kesher-aspect-key-v1`.
+- IPIP/BFAS code or copy may appear only where it is explicitly labeled as historical or research reference.
+- Public, onboarding, settings, sharing, export, and Vercel review surfaces must not present IPIP-BFAS as the active assessment.
 
-Read `references/assessment-contract.md` when changing questionnaire length, score storage, or the distinction between approximation and percentile.
+## Guardrails Preserved From The BFAS Work
 
-## Acceptance Checks
+These constraints still apply to the live Kesher Reflection path:
 
-- Incomplete assessments cannot be submitted.
-- Reverse-keyed items change scores in the expected direction.
-- The UI says the assessment is private, reflective, editable/resettable, and non-clinical.
-- Reset/delete actions route through authenticated server or trust-service paths.
-- Downstream AI receives derived bands/summaries only, never raw answers.
-- `npm run check` or the narrowest TypeScript/test command passes.
+1. Keep scoring deterministic. Do not use Gemini or any LLM to score answers.
+2. Do not expose raw answers, exact public scores, hidden weights, or private taste internals.
+3. Make opt-in, reset, export, and delete controls visible wherever the user can view the personality profile.
+4. Validate copy: no diagnosis, therapy framing, fixed identity labels, fit ratings, certainty claims, or personality-based gatekeeping.
+5. Downstream AI receives derived private report fields only, never raw answers.
 
-Use `$kesher-personality-delivery` for browser validation, GitHub/CI review, or deployment workflow after implementation.
+## Acceptance Checks For Any File That Touches This Reference
+
+- The changed surface clearly identifies BFAS/IPIP as historical or research-only.
+- No member-facing route, static Vercel page, or generated skills page tells users to take an IPIP-BFAS journey.
+- The live assessment contract remains owned by `$kesher-personality-assessment`.
+- `npm test`, `npm run lint`, and `npm run build` pass for broad changes.
