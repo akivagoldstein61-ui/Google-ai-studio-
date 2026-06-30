@@ -58,9 +58,9 @@ interface AppState {
   setOnboarding: (isOnboarding: boolean) => void;
   setPreferences: (prefs: DiscoveryPreferences) => Promise<void>;
   likeProfile: (profileId: string) => Promise<boolean>;
-  passProfile: (profileId: string) => void;
-  moreLikeThis: (profileId: string) => void;
-  lessLikeThis: (profileId: string) => void;
+  passProfile: (profileId: string) => Promise<void>;
+  moreLikeThis: (profileId: string) => Promise<void>;
+  lessLikeThis: (profileId: string) => Promise<void>;
   recordTasteSignal: (name: EventName, profileId: string, options?: TasteSignalOptions) => void;
   resetTasteProfile: () => Promise<void>;
   setTasteProfile: (profile: TasteProfileDraft) => Promise<void>;
@@ -566,18 +566,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
 
-    setInteractions(prev => ({
-      ...prev,
-      likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
-    }));
-    applyTasteEvent(user.uid, {
-      name: 'like', class: 'explicit_preference',
-      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
-      occurredAt: Date.now(),
-    });
-    discoveryService.recordTasteEvent('like', profileId).catch(() => null);
-
     if (isLocalOnlyMode) {
+      setInteractions(prev => ({
+        ...prev,
+        likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
+      }));
+      applyTasteEvent(user.uid, {
+        name: 'like', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
       const isMatch = profile.id === MOCK_PROFILES[0]?.id;
@@ -604,7 +602,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
+      await discoveryService.recordTasteEvent('like', profile.uid ?? profileId);
       const result = await discoveryService.likeProfile(profile.uid ?? profileId);
+      setInteractions(prev => ({
+        ...prev,
+        likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
+      }));
+      applyTasteEvent(user.uid, {
+        name: 'like', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
 
@@ -624,20 +632,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ]);
         return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving like:', error);
+      throw error;
     }
-
-    setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
-    setDailyPicks(prev => prev.filter(p => p.id !== profileId));
-    return false;
   };
 
-  const passProfile = async (profileId: string) => {
+  const passProfile = async (profileId: string): Promise<void> => {
     if (!user) return;
 
     const profile = findKnownProfile(profileId);
-    if (profile) {
+    if (!profile) return;
+
+    if (isLocalOnlyMode) {
       setInteractions(prev => ({
         ...prev,
         passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
@@ -647,24 +655,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
         occurredAt: Date.now(),
       });
-    }
-
-    setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
-    setDailyPicks(prev => prev.filter(p => p.id !== profileId));
-
-    if (isLocalOnlyMode || !profile) {
+      setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
+      setDailyPicks(prev => prev.filter(p => p.id !== profileId));
       return;
     }
 
     try {
+      await discoveryService.recordTasteEvent('pass', profile.uid ?? profileId);
       await discoveryService.passProfile(profile.uid ?? profileId);
-      await discoveryService.recordTasteEvent('pass', profileId).catch(() => null);
+      setInteractions(prev => ({
+        ...prev,
+        passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
+      }));
+      applyTasteEvent(user.uid, {
+        name: 'pass', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
+      setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
+      setDailyPicks(prev => prev.filter(p => p.id !== profileId));
     } catch (error) {
       console.error('Error saving pass:', error);
+      throw error;
     }
   };
 
-  const moreLikeThis = async (profileId: string) => {
+  const moreLikeThis = async (profileId: string): Promise<void> => {
     if (!user) return;
     const profile = findKnownProfile(profileId);
     if (!profile) return;
@@ -673,15 +689,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...interactions,
       moreLikeThis: [...interactions.moreLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
     };
-    setInteractions(newInteractions);
-    applyTasteEvent(user.uid, {
-      name: 'more_like_this', class: 'explicit_preference',
-      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
-      occurredAt: Date.now(),
-    });
-    discoveryService.recordTasteEvent('more_like_this', profileId).catch(() => null);
 
     if (isLocalOnlyMode) {
+      setInteractions(newInteractions);
+      applyTasteEvent(user.uid, {
+        name: 'more_like_this', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
       setTasteProfileState(prev => ({
         ...prev,
         soft_preferences: Array.from(new Set([...(prev.soft_preferences ?? []), ...profile.tags.slice(0, 2)])),
@@ -690,17 +705,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
+      await discoveryService.recordTasteEvent('more_like_this', profile.uid ?? profileId);
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
         await setTasteProfile(normalizeTasteProfile(newProfile));
       }
+      setInteractions(newInteractions);
+      applyTasteEvent(user.uid, {
+        name: 'more_like_this', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
     } catch (error) {
       console.error('Failed to update taste profile:', error);
+      throw error;
     }
   };
 
-  const lessLikeThis = async (profileId: string) => {
+  const lessLikeThis = async (profileId: string): Promise<void> => {
     if (!user) return;
     const profile = findKnownProfile(profileId);
     if (!profile) return;
@@ -709,15 +732,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...interactions,
       lessLikeThis: [...interactions.lessLikeThis, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
     };
-    setInteractions(newInteractions);
-    applyTasteEvent(user.uid, {
-      name: 'less_like_this', class: 'explicit_preference',
-      candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
-      occurredAt: Date.now(),
-    });
-    discoveryService.recordTasteEvent('less_like_this', profileId).catch(() => null);
 
     if (isLocalOnlyMode) {
+      setInteractions(newInteractions);
+      applyTasteEvent(user.uid, {
+        name: 'less_like_this', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
       setTasteProfileState(prev => ({
         ...prev,
         things_to_avoid: Array.from(new Set([...(prev.things_to_avoid ?? []), ...profile.tags.slice(0, 2)])),
@@ -726,13 +748,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
+      await discoveryService.recordTasteEvent('less_like_this', profile.uid ?? profileId);
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
         await setTasteProfile(normalizeTasteProfile(newProfile));
       }
+      setInteractions(newInteractions);
+      applyTasteEvent(user.uid, {
+        name: 'less_like_this', class: 'explicit_preference',
+        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+        occurredAt: Date.now(),
+      });
     } catch (error) {
       console.error('Failed to update taste profile:', error);
+      throw error;
     }
   };
 
