@@ -3,7 +3,7 @@ import { MOCK_PROFILES } from '../src/data/mockProfiles.ts';
 import type { DiscoveryPreferences, Match, Profile } from '../src/types.ts';
 import { applyEvent, emptyTasteState, type EventName, type TasteState } from '../src/lib/learnedTaste.ts';
 import { deserializeTasteState, profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence.ts';
-import { selectDailyPicks, selectExploreProfiles } from '../src/lib/integratedRanking.ts';
+import { selectDailyPicks, selectExploreProfiles, type CandidateRankingContext } from '../src/lib/integratedRanking.ts';
 import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
 import { FieldValue, getOptionalAdminFirestore } from './firebaseAdmin.ts';
 
@@ -61,11 +61,13 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
   const candidates = await loadCandidatePool(req.uid);
+  const candidateContexts = await loadCandidateRankingContexts(candidates);
   const items = selectDailyPicks({
     viewer,
     candidates,
     preferences,
     tasteState,
+    candidateContexts,
     limit: 5,
   });
 
@@ -77,6 +79,7 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
       finiteDailyPickLimit: 5,
       hiddenOverrideUsed: false,
       paidPlacementUsed: false,
+      reciprocalPreferencesUsed: Object.keys(candidateContexts).length > 0,
     },
   });
 });
@@ -86,17 +89,20 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
   const candidates = await loadCandidatePool(req.uid);
+  const candidateContexts = await loadCandidateRankingContexts(candidates);
   const items = selectExploreProfiles({
     viewer,
     candidates,
     preferences,
     tasteState,
+    candidateContexts,
     allowDisclosedSpillover: true,
   });
 
   res.json({
     generatedAt: new Date().toISOString(),
     items,
+    reciprocalPreferencesUsed: Object.keys(candidateContexts).length > 0,
     spilloverDisclosure: 'Explore may show clearly labeled age or distance breadth only when those settings are not dealbreakers.',
   });
 });
@@ -201,8 +207,12 @@ async function loadViewer(uid: string | undefined): Promise<Profile> {
 
 async function loadPreferences(uid: string | undefined): Promise<DiscoveryPreferences> {
   if (!uid) return DEFAULT_DISCOVERY_PREFERENCES;
+  return await loadOptionalPreferences(uid) ?? DEFAULT_DISCOVERY_PREFERENCES;
+}
+
+async function loadOptionalPreferences(uid: string): Promise<DiscoveryPreferences | undefined> {
   const db = getOptionalAdminFirestore();
-  if (!db) return DEFAULT_DISCOVERY_PREFERENCES;
+  if (!db) return undefined;
   const snap = await db
     .collection('users')
     .doc(uid)
@@ -210,13 +220,17 @@ async function loadPreferences(uid: string | undefined): Promise<DiscoveryPrefer
     .doc('discovery_preferences')
     .get()
     .catch(() => null);
-  return normalizePreferences(snap?.exists ? snap.data() : null);
+  return snap?.exists ? normalizePreferences(snap.data()) : undefined;
 }
 
 async function loadTasteState(uid: string | undefined): Promise<TasteState> {
   if (!uid) return emptyTasteState();
+  return await loadOptionalTasteState(uid) ?? emptyTasteState();
+}
+
+async function loadOptionalTasteState(uid: string): Promise<TasteState | undefined> {
   const db = getOptionalAdminFirestore();
-  if (!db) return emptyTasteState();
+  if (!db) return undefined;
   const snap = await db
     .collection('users')
     .doc(uid)
@@ -224,7 +238,22 @@ async function loadTasteState(uid: string | undefined): Promise<TasteState> {
     .doc('taste_state')
     .get()
     .catch(() => null);
-  return snap?.exists ? deserializeTasteState(snap.data()) : emptyTasteState();
+  return snap?.exists ? deserializeTasteState(snap.data()) : undefined;
+}
+
+async function loadCandidateRankingContexts(candidates: Profile[]): Promise<Record<string, CandidateRankingContext>> {
+  const db = getOptionalAdminFirestore();
+  if (!db || candidates.length === 0) return {};
+  const entries = await Promise.all(candidates.map(async (candidate) => {
+    const uid = candidate.uid || candidate.id;
+    const [preferences, tasteState] = await Promise.all([
+      loadOptionalPreferences(uid),
+      loadOptionalTasteState(uid),
+    ]);
+    if (!preferences && !tasteState) return null;
+    return [uid, { preferences, tasteState }] as const;
+  }));
+  return Object.fromEntries(entries.filter((entry): entry is readonly [string, CandidateRankingContext] => Boolean(entry)));
 }
 
 async function persistDiscoveryTasteState(
