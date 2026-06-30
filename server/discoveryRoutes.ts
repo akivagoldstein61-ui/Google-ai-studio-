@@ -2,6 +2,7 @@ import express from 'express';
 import { MOCK_PROFILES } from '../src/data/mockProfiles.ts';
 import type { DiscoveryPreferences, Match, Profile } from '../src/types.ts';
 import { applyEvent, emptyTasteState, type EventName, type TasteState } from '../src/lib/learnedTaste.ts';
+import type { FairnessState } from '../src/lib/filteringGrammar.ts';
 import { deserializeTasteState, profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence.ts';
 import { selectDailyPicks, selectExploreProfiles, type CandidateRankingContext } from '../src/lib/integratedRanking.ts';
 import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
@@ -79,7 +80,8 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
       finiteDailyPickLimit: 5,
       hiddenOverrideUsed: false,
       paidPlacementUsed: false,
-      reciprocalPreferencesUsed: Object.keys(candidateContexts).length > 0,
+      reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
+      exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
     },
   });
 });
@@ -102,7 +104,8 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
   res.json({
     generatedAt: new Date().toISOString(),
     items,
-    reciprocalPreferencesUsed: Object.keys(candidateContexts).length > 0,
+    reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
+    exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
     spilloverDisclosure: 'Explore may show clearly labeled age or distance breadth only when those settings are not dealbreakers.',
   });
 });
@@ -241,17 +244,31 @@ async function loadOptionalTasteState(uid: string): Promise<TasteState | undefin
   return snap?.exists ? deserializeTasteState(snap.data()) : undefined;
 }
 
+async function loadOptionalFairnessState(uid: string): Promise<FairnessState | undefined> {
+  const db = getOptionalAdminFirestore();
+  if (!db) return undefined;
+  const snap = await db
+    .collection('users')
+    .doc(uid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('discovery_exposure')
+    .get()
+    .catch(() => null);
+  return snap?.exists ? normalizeFairnessState(snap.data()) : undefined;
+}
+
 async function loadCandidateRankingContexts(candidates: Profile[]): Promise<Record<string, CandidateRankingContext>> {
   const db = getOptionalAdminFirestore();
   if (!db || candidates.length === 0) return {};
   const entries = await Promise.all(candidates.map<Promise<readonly [string, CandidateRankingContext] | null>>(async (candidate) => {
     const uid = candidate.uid || candidate.id;
-    const [preferences, tasteState] = await Promise.all([
+    const [preferences, tasteState, fairness] = await Promise.all([
       loadOptionalPreferences(uid),
       loadOptionalTasteState(uid),
+      loadOptionalFairnessState(uid),
     ]);
-    if (!preferences && !tasteState) return null;
-    return [uid, { preferences, tasteState }] as const;
+    if (!preferences && !tasteState && !fairness) return null;
+    return [uid, { preferences, tasteState, fairness }] as const;
   }));
   return Object.fromEntries(entries.filter((entry): entry is readonly [string, CandidateRankingContext] => entry !== null));
 }
@@ -312,6 +329,42 @@ function normalizePreferences(raw: unknown): DiscoveryPreferences {
       ...(input.softPreferenceWeights && typeof input.softPreferenceWeights === 'object' ? input.softPreferenceWeights : {}),
     },
   };
+}
+
+function normalizeFairnessState(raw: unknown): FairnessState | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const input = raw as Record<string, any>;
+  const accountAgeMs = readNumber(input.candidateAccountAgeMs);
+  const createdAtMs = timestampToMs(input.createdAt) ?? timestampToMs(input.accountCreatedAt);
+  const candidateAccountAgeMs = accountAgeMs ?? (createdAtMs != null ? Math.max(0, Date.now() - createdAtMs) : undefined);
+  const impressionsLast7d = readNumber(input.impressionsLast7d);
+  const impressionsLast24h = readNumber(input.impressionsLast24h);
+  if (candidateAccountAgeMs == null || impressionsLast7d == null || impressionsLast24h == null) return undefined;
+  return {
+    candidateAccountAgeMs,
+    impressionsLast7d,
+    impressionsLast24h,
+  };
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function timestampToMs(value: unknown): number | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const maybeTimestamp = value as { toMillis?: () => number; seconds?: number };
+  if (typeof maybeTimestamp.toMillis === 'function') {
+    const ms = maybeTimestamp.toMillis();
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+  if (typeof maybeTimestamp.seconds === 'number') return maybeTimestamp.seconds * 1000;
+  return undefined;
 }
 
 function normalizeProfile(id: string, raw: any, fallback?: Profile): Profile {
