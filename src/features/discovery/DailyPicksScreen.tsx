@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { aiService } from '@/services/aiService';
 import { SkillRecommendationRail } from '@/features/skills/components/SkillRecommendationRail';
 
+type DailyAction = 'like' | 'pass' | 'more' | 'less';
+
 export const DailyPicksScreen: React.FC<{ 
   onSelect: (profile: Profile) => void,
   onMatch: (profile: Profile) => void
@@ -23,6 +25,8 @@ export const DailyPicksScreen: React.FC<{
   const [introAttempted, setIntroAttempted] = useState(false);
   const [pacingData, setPacingData] = useState<{ message_he: string, reflection_prompt_he: string } | null>(null);
   const [pacingAttempted, setPacingAttempted] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSaving, setActionSaving] = useState<DailyAction | null>(null);
   const sessionStartedAtRef = useRef<number | null>(null);
   const decisionTimestampsRef = useRef<number[]>([]);
 
@@ -32,6 +36,7 @@ export const DailyPicksScreen: React.FC<{
     decisionTimestampsRef.current = [];
     setPacingData(null);
     setPacingAttempted(false);
+    setActionError(null);
     setShowIntro(false);
     trackEvent('daily_picks_session_started', { userId: user?.id, picksCount: dailyPicks.length });
   };
@@ -128,41 +133,79 @@ export const DailyPicksScreen: React.FC<{
     }
   }, [currentIndex, currentProfile, user, showIntro]);
 
+  const advanceAfterSavedDecision = (nextDirection: number) => {
+    recordDailyDecision();
+    setDirection(nextDirection);
+    setTimeout(() => {
+      setCurrentIndex(prev => prev + 1);
+      setDirection(0);
+      setExplanation(null);
+    }, 300);
+  };
+
   const handleLike = async () => {
-    if (!currentProfile) return;
-    recordDailyDecision();
-    setDirection(1);
-    const isMatch = await likeProfile(currentProfile.id);
-    if (isMatch) {
-      onMatch(currentProfile);
+    if (!currentProfile || actionSaving) return;
+    setActionError(null);
+    setActionSaving('like');
+    try {
+      const isMatch = await likeProfile(currentProfile.id);
+      if (isMatch) {
+        onMatch(currentProfile);
+      }
+      advanceAfterSavedDecision(1);
+    } catch (error) {
+      console.error('Failed to save daily pick like', error);
+      setDirection(0);
+      setActionError('Could not save your choice. Please try again.');
+    } finally {
+      setActionSaving(null);
     }
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+  };
+
+  const handlePass = async () => {
+    if (!currentProfile || actionSaving) return;
+    setActionError(null);
+    setActionSaving('pass');
+    try {
+      await passProfile(currentProfile.id);
+      advanceAfterSavedDecision(-1);
+    } catch (error) {
+      console.error('Failed to save daily pick pass', error);
       setDirection(0);
-      setExplanation(null);
-    }, 300);
+      setActionError('Could not save your choice. Please try again.');
+    } finally {
+      setActionSaving(null);
+    }
   };
 
-  const handlePass = () => {
-    if (!currentProfile) return;
-    recordDailyDecision();
-    setDirection(-1);
-    passProfile(currentProfile.id);
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
-      setDirection(0);
-      setExplanation(null);
-    }, 300);
-  };
-
-  const handleMoreLikeThis = (e: React.MouseEvent) => {
+  const handleMoreLikeThis = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (currentProfile) moreLikeThis(currentProfile.id);
+    if (!currentProfile || actionSaving) return;
+    setActionError(null);
+    setActionSaving('more');
+    try {
+      await moreLikeThis(currentProfile.id);
+    } catch (error) {
+      console.error('Failed to save more-like-this signal', error);
+      setActionError('Could not update your taste learning. Please try again.');
+    } finally {
+      setActionSaving(null);
+    }
   };
 
-  const handleLessLikeThis = (e: React.MouseEvent) => {
+  const handleLessLikeThis = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (currentProfile) lessLikeThis(currentProfile.id);
+    if (!currentProfile || actionSaving) return;
+    setActionError(null);
+    setActionSaving('less');
+    try {
+      await lessLikeThis(currentProfile.id);
+    } catch (error) {
+      console.error('Failed to save less-like-this signal', error);
+      setActionError('Could not update your taste learning. Please try again.');
+    } finally {
+      setActionSaving(null);
+    }
   };
 
   if (showIntro) {
@@ -284,6 +327,12 @@ export const DailyPicksScreen: React.FC<{
         limit={3}
       />
 
+      {actionError && (
+        <p role="alert" className="text-[11px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-2xl px-3 py-2">
+          {actionError}
+        </p>
+      )}
+
       <div className="flex-1 relative">
         <AnimatePresence mode="wait">
           <motion.div
@@ -333,14 +382,16 @@ export const DailyPicksScreen: React.FC<{
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={handleLessLikeThis}
-                      className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/60 hover:text-white"
+                      disabled={Boolean(actionSaving)}
+                      className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/60 hover:text-white disabled:opacity-40"
                       title="Less like this"
                     >
                       <X size={12} />
                     </button>
                     <button 
                       onClick={handleMoreLikeThis}
-                      className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/60 hover:text-white"
+                      disabled={Boolean(actionSaving)}
+                      className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/60 hover:text-white disabled:opacity-40"
                       title="More like this"
                     >
                       <Heart size={12} />
@@ -399,13 +450,15 @@ export const DailyPicksScreen: React.FC<{
       <div className="flex justify-center gap-6 pb-4">
         <button 
           onClick={handlePass}
-          className="w-20 h-20 bg-white border border-[#F3EFEA] rounded-full flex items-center justify-center text-[#8C7E6E] shadow-lg shadow-black/5 hover:bg-[#F7F2EE] transition-all active:scale-90"
+          disabled={Boolean(actionSaving)}
+          className="w-20 h-20 bg-white border border-[#F3EFEA] rounded-full flex items-center justify-center text-[#8C7E6E] shadow-lg shadow-black/5 hover:bg-[#F7F2EE] transition-all active:scale-90 disabled:opacity-60"
         >
           <X size={32} />
         </button>
         <button 
           onClick={handleLike}
-          className="w-20 h-20 bg-[#2D2926] rounded-full flex items-center justify-center text-[#D4AF37] shadow-xl shadow-black/10 hover:bg-[#1A1816] transition-all active:scale-90"
+          disabled={Boolean(actionSaving)}
+          className="w-20 h-20 bg-[#2D2926] rounded-full flex items-center justify-center text-[#D4AF37] shadow-xl shadow-black/10 hover:bg-[#1A1816] transition-all active:scale-90 disabled:opacity-60"
         >
           <Heart size={32} fill="currentColor" />
         </button>
