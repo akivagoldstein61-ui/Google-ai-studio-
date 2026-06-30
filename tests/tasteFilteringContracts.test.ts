@@ -232,6 +232,16 @@ describe('private taste skill contracts', () => {
     expect(server).toContain('learningPaused: true');
   });
 
+  it('client taste reset preserves pause and opt-out consent state', () => {
+    const source = readSource('src/context/AppContext.tsx');
+
+    expect(source).toContain('const emptyProfile = normalizeTasteProfile({');
+    expect(source).toContain('paused: tasteProfile.learning.paused');
+    expect(source).toContain('optedOut: tasteProfile.learning.optedOut');
+    expect(source).toContain('emptyTasteStateForProfile(emptyProfile)');
+    expect(source).not.toContain('const emptyProfile = cloneDefaultTasteProfile();\n    setTasteProfileState(emptyProfile);\n\n    const emptyInteractions');
+  });
+
   it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
     const source = readSource('src/features/skills/PrivateTasteSkill.tsx');
 
