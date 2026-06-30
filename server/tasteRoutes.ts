@@ -259,7 +259,7 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
         : (profile.learning.paused || previousState.learningPaused),
     optedOut: name === 'taste_consent_granted'
       ? false
-      : (requestedOptedOut ?? profile.learning.optedOut || previousState.optedOut),
+      : ((requestedOptedOut ?? profile.learning.optedOut) || previousState.optedOut),
   };
   const nextState = applyEvent(stateForEvent, event);
 
