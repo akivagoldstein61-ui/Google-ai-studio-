@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Activity, Check, X, Info, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import React, { useMemo, useState } from 'react';
+import { ChevronLeft, Activity, Check, X, Info, Sparkles, Loader2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 import {
   authority,
   signOf,
-  applyEvent,
   implicitAffinity,
-  emptyTasteState,
   FAST_HALFLIFE_MS,
   SLOW_HALFLIFE_MS,
+  type EventClass,
   type EventName,
   type TasteState,
 } from '@/lib/learnedTaste';
-import { cloneTasteState } from '@/lib/tastePersistence';
-import type { TasteProfileDraft } from '@/types';
+import { profileToFeatureTags } from '@/lib/tastePersistence';
+import type { Profile, TasteProfileDraft } from '@/types';
 
 const EVENT_CLASS_COLORS: Record<string, string> = {
   policy_consent: 'bg-slate-50 text-slate-700 border-slate-200',
@@ -24,11 +22,11 @@ const EVENT_CLASS_COLORS: Record<string, string> = {
   context: 'bg-gray-50 text-gray-700 border-gray-200',
 };
 
-type DemoEventRow = { name: EventName; label: string; classLabel: string };
-const DEMO_EVENTS: DemoEventRow[] = [
+type EventRow = { name: EventName; label: string; classLabel: EventClass };
+const EVENT_ROWS: EventRow[] = [
   { name: 'more_like_this', label: 'More like this', classLabel: 'explicit_preference' },
   { name: 'like', label: 'Like', classLabel: 'explicit_preference' },
-  { name: 'reply_received', label: 'Reply received', classLabel: 'explicit_preference' },
+  { name: 'reply_received', label: 'Reply received', classLabel: 'high_signal_implicit' },
   { name: 'long_dwell', label: 'Long dwell (8 s)', classLabel: 'high_signal_implicit' },
   { name: 'profile_open', label: 'Profile open', classLabel: 'high_signal_implicit' },
   { name: 'pass', label: 'Pass', classLabel: 'explicit_preference' },
@@ -36,9 +34,14 @@ const DEMO_EVENTS: DemoEventRow[] = [
   { name: 'block', label: 'Block', classLabel: 'explicit_preference' },
 ];
 
-const CANDIDATE_FEATURES = ['intent_serious', 'observance_dati', 'tag_travel', 'tag_music'];
-
 type TasteListKey = 'soft_preferences' | 'things_to_avoid' | 'hard_dealbreakers';
+
+type FeatureSummary = {
+  feature: string;
+  direction: 'toward' | 'away';
+  strength: 'weak' | 'medium' | 'strong';
+  memory: 'fast' | 'slow';
+};
 
 function normalizeTasteProfileDraft(raw: any): TasteProfileDraft {
   const input = raw && typeof raw === 'object' ? raw : {};
@@ -109,6 +112,36 @@ function authorityBar(authorityValue: number) {
   );
 }
 
+function uniqueProfiles(profiles: Profile[]) {
+  const seen = new Set<string>();
+  return profiles.filter((profile) => {
+    const key = profile.uid ?? profile.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function strengthLabel(value: number): FeatureSummary['strength'] {
+  const abs = Math.abs(value);
+  if (abs >= 1) return 'strong';
+  if (abs >= 0.35) return 'medium';
+  return 'weak';
+}
+
+function summarizeTasteMap(map: Map<string, number>, memory: FeatureSummary['memory']): FeatureSummary[] {
+  return [...map.entries()]
+    .filter(([, value]) => Math.abs(value) >= 0.05)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .slice(0, 8)
+    .map(([feature, value]) => ({
+      feature,
+      memory,
+      direction: value >= 0 ? 'toward' : 'away',
+      strength: strengthLabel(value),
+    }));
+}
+
 const ChipList: React.FC<{ label: string; items: string[]; tone: 'toward' | 'away' }> = ({ label, items, tone }) => (
   <div className="space-y-1.5">
     <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">{label}</p>
@@ -122,12 +155,27 @@ const ChipList: React.FC<{ label: string; items: string[]; tone: 'toward' | 'awa
   </div>
 );
 
+const FeaturePill: React.FC<{ item: FeatureSummary }> = ({ item }) => (
+  <span className={`px-2 py-1 rounded-lg text-[10px] border ${item.direction === 'away' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-green-50 text-green-700 border-green-100'}`}>
+    {item.feature.replace(/_/g, ' ')} · {item.direction} · {item.strength}
+  </span>
+);
+
 /**
  * LIVE: grounds the learning model in the user's real captured signals and
  * persists recomputed category summaries to the owner-only taste profile.
  */
 const LiveLearnedSignals: React.FC = () => {
-  const { user, interactions, tasteProfile, setTasteProfile, trackEvent } = useApp();
+  const {
+    user,
+    interactions,
+    tasteProfile,
+    tasteState,
+    dailyPicks,
+    exploreProfiles,
+    setTasteProfile,
+    trackEvent,
+  } = useApp();
   const [loading, setLoading] = useState(false);
   const [attempted, setAttempted] = useState(false);
 
@@ -139,6 +187,25 @@ const LiveLearnedSignals: React.FC = () => {
   };
   const total = counts.likes + counts.passes + counts.more + counts.less;
   const learningPaused = tasteProfile.learning.paused || tasteProfile.learning.optedOut;
+
+  const liveCandidates = useMemo(
+    () => uniqueProfiles([...dailyPicks, ...exploreProfiles]).slice(0, 6),
+    [dailyPicks, exploreProfiles],
+  );
+
+  const candidateAffinities = useMemo(
+    () => liveCandidates
+      .map((candidate) => ({
+        candidate,
+        affinity: implicitAffinity(tasteState, profileToFeatureTags(candidate)),
+      }))
+      .sort((a, b) => Math.abs(b.affinity) - Math.abs(a.affinity)),
+    [liveCandidates, tasteState],
+  );
+
+  const fastSignals = useMemo(() => summarizeTasteMap(tasteState.fast, 'fast'), [tasteState]);
+  const slowSignals = useMemo(() => summarizeTasteMap(tasteState.slow, 'slow'), [tasteState]);
+  const hasVectorSignals = fastSignals.length + slowSignals.length > 0;
 
   const recompute = async () => {
     setLoading(true);
@@ -204,6 +271,59 @@ const LiveLearnedSignals: React.FC = () => {
               <p className="text-[9px] text-white/40 italic">If the model service returns no result, Kesher leaves your saved taste profile unchanged.</p>
             )}
             <p className="text-[9px] text-white/40 italic">Owner-only. Category-level leanings only - exact authority weights are never shown to anyone.</p>
+
+            <div className="bg-white border border-[#F3EFEA] rounded-[24px] p-5 space-y-4 text-[#2D2926]">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Live Taste State Inspector</h2>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">{liveCandidates.length} live candidates</span>
+              </div>
+              <p className="text-xs text-[#6B5E52] italic">
+                This reads your current fast/slow taste vectors and scores profiles already loaded from Daily Picks and Explore. It does not use demo features or write new events.
+              </p>
+
+              {hasVectorSignals ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3 bg-[#F7F2EE] rounded-2xl space-y-2 border border-[#E5DED5]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Fast memory signals</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {fastSignals.length > 0 ? fastSignals.map((item) => <FeaturePill key={`fast-${item.feature}`} item={item} />) : <span className="text-xs text-[#8C7E6E] italic">No fast-memory leanings yet</span>}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[#F7F2EE] rounded-2xl space-y-2 border border-[#E5DED5]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Slow memory signals</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {slowSignals.length > 0 ? slowSignals.map((item) => <FeaturePill key={`slow-${item.feature}`} item={item} />) : <span className="text-xs text-[#8C7E6E] italic">No slow-memory leanings yet</span>}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-[#F7F2EE] border border-[#E5DED5] rounded-2xl text-sm text-[#6B5E52] italic">
+                  No taste vector has been learned yet. Turn learning on, then interact with Daily Picks or Explore to populate this inspector.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Live candidate affinity</p>
+                {candidateAffinities.length > 0 ? candidateAffinities.map(({ candidate, affinity }) => (
+                  <div key={candidate.uid ?? candidate.id} className="p-3 bg-[#F7F2EE] border border-[#E5DED5] rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="font-bold text-[#2D2926]">{candidate.displayName}</span>
+                      <span className={`font-bold ${affinity > 0.1 ? 'text-green-700' : affinity < -0.1 ? 'text-red-700' : 'text-[#8C7E6E]'}`}>
+                        {affinity > 0.1 ? 'Toward' : affinity < -0.1 ? 'Away' : 'Neutral'}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-[#E5E0DB] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${affinity >= 0 ? 'bg-green-400' : 'bg-red-400'}`}
+                        style={{ width: `${Math.abs(affinity) * 100}%`, marginLeft: affinity >= 0 ? '50%' : `${50 - Math.abs(affinity) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-xs text-[#6B5E52] italic">Open Daily Picks or Explore to load candidates for live affinity inspection.</p>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -212,31 +332,6 @@ const LiveLearnedSignals: React.FC = () => {
 };
 
 export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [tasteState, setTasteState] = useState<TasteState>(emptyTasteState(Date.now()));
-  const [log, setLog] = useState<string[]>([]);
-
-  const fireEvent = (ev: DemoEventRow) => {
-    const next = cloneTasteState(tasteState);
-    applyEvent(next, {
-      name: ev.name,
-      class: ev.classLabel as any,
-      candidateFeatures: CANDIDATE_FEATURES,
-      value: ev.name === 'long_dwell' ? 8000 : undefined,
-      occurredAt: Date.now(),
-    });
-    setTasteState(next);
-    const sign = signOf(ev.name);
-    const authorityValue = authority(ev.name);
-    setLog(prev => [`${ev.label} (auth=${authorityValue.toFixed(2)}, sign=${sign > 0 ? '+' : sign < 0 ? '-' : '0'})`, ...prev.slice(0, 9)]);
-  };
-
-  const reset = () => {
-    setTasteState(emptyTasteState(Date.now()));
-    setLog([]);
-  };
-
-  const affinity = implicitAffinity(tasteState, CANDIDATE_FEATURES);
-
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2D2926]">
       <header className="sticky top-0 z-10 bg-[#FDFCFB]/95 backdrop-blur-sm px-6 py-4 flex items-center gap-4 border-b border-[#F3EFEA]">
@@ -281,7 +376,7 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 </tr>
               </thead>
               <tbody>
-                {DEMO_EVENTS.map(ev => {
+                {EVENT_ROWS.map(ev => {
                   const authorityValue = authority(ev.name);
                   const sign = signOf(ev.name);
                   return (
@@ -304,60 +399,6 @@ export const LearnedTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
               </tbody>
             </table>
           </div>
-        </section>
-
-        <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Taste State Sandbox</h2>
-            <Button variant="ghost" size="sm" onClick={reset} className="text-[10px] uppercase tracking-widest flex items-center gap-1">
-              <RotateCcw size={12} /> Reset
-            </Button>
-          </div>
-          <p className="text-xs text-[#6B5E52] italic">
-            This sandbox is isolated from your saved profile and exists only to show the update math on demo features: <code className="font-mono text-[9px]">{CANDIDATE_FEATURES.join(', ')}</code>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {DEMO_EVENTS.map(ev => (
-              <button
-                key={ev.name}
-                onClick={() => fireEvent(ev)}
-                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#F3EFEA] bg-[#F7F2EE] hover:border-green-300 hover:bg-green-50 transition-all"
-              >
-                {ev.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="p-4 bg-[#F7F2EE] rounded-2xl space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold">Implicit affinity (70% fast + 30% slow)</span>
-              <span className={`font-mono font-bold ${affinity > 0.1 ? 'text-green-700' : affinity < -0.1 ? 'text-red-700' : 'text-[#8C7E6E]'}`}>
-                {affinity.toFixed(3)}
-              </span>
-            </div>
-            <div className="h-2 bg-[#E5E0DB] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${affinity >= 0 ? 'bg-green-400' : 'bg-red-400'}`}
-                style={{ width: `${Math.abs(affinity) * 100}%`, marginLeft: affinity >= 0 ? '50%' : `${50 - Math.abs(affinity) * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[9px] text-[#8C7E6E]">
-              <span>Away -1</span>
-              <span>Neutral 0</span>
-              <span>Toward +1</span>
-            </div>
-          </div>
-
-          {log.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">Event log</p>
-              {log.map((entry, i) => (
-                <div key={i} className="text-[10px] font-mono text-[#6B5E52] p-2 bg-[#F7F2EE] rounded-lg">
-                  {entry}
-                </div>
-              ))}
-            </div>
-          )}
         </section>
 
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
