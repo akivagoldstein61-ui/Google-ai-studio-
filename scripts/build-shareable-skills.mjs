@@ -8,6 +8,7 @@ const HTML_OUT = 'public/prototype/skills.html';
 const ZIP_OUT = 'public/downloads/kesher-personality-skills.zip';
 const FULL_MD_OUT = 'kesher-skills-full.md';
 const AI_STUDIO_MD_OUT = 'docs/ai-studio/skills-reference.md';
+const EXPECTED_SKILL_COUNT = 44;
 
 const htmlEscape = (value) =>
   value
@@ -45,8 +46,8 @@ const skills = skillDirs.map((dir) => {
   };
 });
 
-if (skills.length !== 43) {
-  throw new Error(`Expected 43 shareable skills, found ${skills.length}`);
+if (skills.length !== EXPECTED_SKILL_COUNT) {
+  throw new Error(`Expected ${EXPECTED_SKILL_COUNT} shareable skills, found ${skills.length}`);
 }
 
 mkdirSync('public/prototype', { recursive: true });
