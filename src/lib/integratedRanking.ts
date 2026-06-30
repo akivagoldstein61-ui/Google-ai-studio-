@@ -7,7 +7,7 @@
  *
  * Produces, for a viewer + candidate pair:
  *   - admissible? (hard filters)
- *   - score (reciprocal × fairness)
+ *   - score (reciprocal x fairness)
  *   - evidence packet (safe to send to explanation generator)
  */
 
@@ -53,10 +53,15 @@ export interface RankingResult {
 export interface CandidateRankingContext {
   preferences?: DiscoveryPreferences;
   tasteState?: TasteState;
+  fairness?: FairnessState;
+  /** Candidate distance from the active viewer. Falls back to city estimate when absent. */
+  distanceKm?: number;
 }
 
 const NEW_USER_WINDOW_MS = 72 * 60 * 60 * 1000;
 const ACTIVE_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+type SpilloverReason = 'outside_age_range' | 'outside_distance';
 
 export function rank(input: RankingInput): RankingResult {
   const aff_v = implicitAffinity(input.viewerTaste, input.candidateFeatures);
@@ -107,9 +112,9 @@ export function rank(input: RankingInput): RankingResult {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EVIDENCE PACKET — strict whitelist
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// EVIDENCE PACKET - strict whitelist
+// -----------------------------------------------------------------------------
 
 function buildEvidence(input: RankingInput, viewerReasonCodes: string[]): EvidencePacket {
   const viewerTags = new Set(input.viewer.tags.map(t => t.toLowerCase()));
@@ -143,9 +148,9 @@ function emptyPacket(): EvidencePacket {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // BATCH RANKING (Daily Picks)
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 export function rankBatch(inputs: RankingInput[]): Array<RankingInput & { result: RankingResult }> {
   return inputs
@@ -158,7 +163,7 @@ export interface RankedProfile {
   profile: Profile;
   score: number;
   evidence: EvidencePacket;
-  spilloverReason?: 'outside_age_range' | 'outside_distance';
+  spilloverReason?: SpilloverReason;
 }
 
 export function buildEvidencePacket(input: {
@@ -215,20 +220,38 @@ function rankFromPreferences(input: {
 }): RankedProfile[] {
   return input.candidates
     .map((candidate): RankedProfile | null => {
+      const candidateContext = input.candidateContexts?.[candidate.uid] ?? input.candidateContexts?.[candidate.id];
+      const distanceKm = candidateContext?.distanceKm ?? estimateDistanceKm(input.viewer, candidate);
       const outsideAge = candidate.age < input.preferences.ageRange[0] ||
         candidate.age > input.preferences.ageRange[1];
+      const outsideDistance = distanceKm != null &&
+        input.preferences.maxDistance >= 0 &&
+        distanceKm > input.preferences.maxDistance;
       const ageIsDealbreaker = input.preferences.dealbreakers?.age ?? true;
+      const distanceIsDealbreaker = input.preferences.dealbreakers?.distance ?? true;
       if (outsideAge && ageIsDealbreaker) return null;
+      if (outsideDistance && distanceIsDealbreaker) return null;
 
-      const viewerHardCtx = hardCtxFromPreferences(input.preferences, outsideAge && !ageIsDealbreaker);
-      const candidateContext = input.candidateContexts?.[candidate.uid] ?? input.candidateContexts?.[candidate.id];
+      const viewerHardCtx = hardCtxFromPreferences(input.preferences, {
+        allowAgeSpillover: outsideAge && !ageIsDealbreaker,
+        allowDistanceSpillover: outsideDistance && !distanceIsDealbreaker,
+        candidateDistanceKm: distanceKm,
+      });
       const candidatePreferences = candidateContext?.preferences;
       const viewerOutsideCandidateAge = candidatePreferences
         ? input.viewer.age < candidatePreferences.ageRange[0] || input.viewer.age > candidatePreferences.ageRange[1]
         : false;
+      const viewerOutsideCandidateDistance = candidatePreferences && distanceKm != null
+        ? candidatePreferences.maxDistance >= 0 && distanceKm > candidatePreferences.maxDistance
+        : false;
       const candidateAgeIsDealbreaker = candidatePreferences?.dealbreakers?.age ?? true;
+      const candidateDistanceIsDealbreaker = candidatePreferences?.dealbreakers?.distance ?? true;
       const candidateHardCtx = candidatePreferences
-        ? hardCtxFromPreferences(candidatePreferences, viewerOutsideCandidateAge && !candidateAgeIsDealbreaker)
+        ? hardCtxFromPreferences(candidatePreferences, {
+            allowAgeSpillover: viewerOutsideCandidateAge && !candidateAgeIsDealbreaker,
+            allowDistanceSpillover: viewerOutsideCandidateDistance && !candidateDistanceIsDealbreaker,
+            candidateDistanceKm: distanceKm,
+          })
         : {};
       const candidateFeatures = profileToFeatureTags(candidate);
       const viewerFeatures = profileToFeatureTags(input.viewer);
@@ -243,18 +266,18 @@ function rankFromPreferences(input: {
         candidateTaste: candidateContext?.tasteState ?? emptyTasteStateForRanking(input.tasteState),
         candidateFeatures,
         viewerFeatures,
-        fairness: {
-          candidateAccountAgeMs: 14 * 24 * 60 * 60 * 1000,
-          impressionsLast7d: 10,
-          impressionsLast24h: 1,
-        },
+        fairness: candidateContext?.fairness ?? neutralFairnessState(candidate),
       });
       if (!result.admissible) return null;
       return {
         profile: candidate,
         score: result.finalScore,
         evidence: result.evidence,
-        spilloverReason: outsideAge ? 'outside_age_range' as const : undefined,
+        spilloverReason: outsideAge
+          ? 'outside_age_range'
+          : outsideDistance
+            ? 'outside_distance'
+            : undefined,
       };
     })
     .filter((item): item is RankedProfile => Boolean(item))
@@ -263,11 +286,16 @@ function rankFromPreferences(input: {
 
 function hardCtxFromPreferences(
   preferences: DiscoveryPreferences,
-  allowAgeSpillover: boolean,
+  options: {
+    allowAgeSpillover?: boolean;
+    allowDistanceSpillover?: boolean;
+    candidateDistanceKm?: number;
+  } = {},
 ): HardFilterContext {
   return {
-    ageRange: allowAgeSpillover ? undefined : preferences.ageRange,
-    maxDistanceKm: preferences.maxDistance,
+    ageRange: options.allowAgeSpillover ? undefined : preferences.ageRange,
+    maxDistanceKm: options.allowDistanceSpillover ? undefined : preferences.maxDistance,
+    candidateDistanceKm: options.candidateDistanceKm,
     genderPreference: preferences.genderPreference,
     intentPreference: preferences.intentPreference,
     verifiedOnly: preferences.dealbreakers?.verified ?? preferences.hardFilters.includes('verified'),
@@ -295,4 +323,73 @@ function emptyTasteStateForRanking(reference: TasteState): TasteState {
     learningPaused: false,
     optedOut: false,
   };
+}
+
+function neutralFairnessState(candidate: Profile): FairnessState {
+  const createdAt = parseDateMs((candidate as Profile & { createdAt?: string }).createdAt);
+  const candidateAccountAgeMs = createdAt != null
+    ? Math.max(0, Date.now() - createdAt)
+    : 14 * 24 * 60 * 60 * 1000;
+  return {
+    candidateAccountAgeMs,
+    impressionsLast7d: 10,
+    impressionsLast24h: 1,
+  };
+}
+
+const CITY_COORDINATES: Record<string, { lat: number; lon: number }> = {
+  'tel aviv': { lat: 32.0853, lon: 34.7818 },
+  jerusalem: { lat: 31.7683, lon: 35.2137 },
+  haifa: { lat: 32.7940, lon: 34.9896 },
+  raanana: { lat: 32.1848, lon: 34.8713 },
+  "ra'anana": { lat: 32.1848, lon: 34.8713 },
+  'local preview': { lat: 32.0853, lon: 34.7818 },
+  'preview mode': { lat: 32.0853, lon: 34.7818 },
+};
+
+export function estimateDistanceKm(viewer: Profile, candidate: Profile): number | undefined {
+  const explicitDistance = numericField(candidate, 'distanceKm') ?? numericField(candidate, 'distanceFromViewerKm');
+  if (explicitDistance != null) return explicitDistance;
+  if (viewer.city && candidate.city && normalizeCity(viewer.city) === normalizeCity(candidate.city)) return 0;
+  const viewerLocation = profileLocation(viewer);
+  const candidateLocation = profileLocation(candidate);
+  if (!viewerLocation || !candidateLocation) return undefined;
+  return Math.round(haversineKm(viewerLocation, candidateLocation));
+}
+
+function profileLocation(profile: Profile): { lat: number; lon: number } | undefined {
+  const lat = numericField(profile, 'latitude') ?? numericField(profile, 'lat');
+  const lon = numericField(profile, 'longitude') ?? numericField(profile, 'lng') ?? numericField(profile, 'lon');
+  if (lat != null && lon != null) return { lat, lon };
+  return CITY_COORDINATES[normalizeCity(profile.city)];
+}
+
+function numericField(source: Profile, key: string): number | undefined {
+  const value = (source as unknown as Record<string, unknown>)[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function normalizeCity(city: string): string {
+  return city.trim().toLowerCase();
+}
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const earthKm = 6371;
+  const dLat = toRadians(b.lat - a.lat);
+  const dLon = toRadians(b.lon - a.lon);
+  const lat1 = toRadians(a.lat);
+  const lat2 = toRadians(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * earthKm * Math.asin(Math.sqrt(h));
+}
+
+function toRadians(degrees: number): number {
+  return degrees * Math.PI / 180;
+}
+
+function parseDateMs(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
