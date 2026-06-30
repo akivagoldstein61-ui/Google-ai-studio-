@@ -46,7 +46,6 @@ const LAST_SMOKE_AT = env.VITE_LAST_SMOKE_TEST_AT || 'not available';
 const SKILLS_URL = new URL('/skills', STABLE_PROTOTYPE_URL).toString();
 const SKILLS_HUB_URL = new URL('/skills-hub', STABLE_PROTOTYPE_URL).toString();
 const PERSONALITY_JOURNEY_URL = new URL('/prototype/personality', STABLE_PROTOTYPE_URL).toString();
-const SKILLS_ZIP_URL = new URL('/downloads/kesher-personality-skills.zip', STABLE_PROTOTYPE_URL).toString();
 
 const SKILL_MODULE_COUNT = SKILLS.length;
 const OPERATIONAL_SKILL_COUNT = SKILLS.filter((skill) => skill.status !== 'planned').length;
@@ -102,15 +101,6 @@ const rows: Array<{ label: string; value: React.ReactNode }> = [
     value: (
       <a href={PERSONALITY_JOURNEY_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
         {PERSONALITY_JOURNEY_URL}
-        <ExternalLink className="w-3.5 h-3.5" />
-      </a>
-    ),
-  },
-  {
-    label: 'Personality skills zip',
-    value: (
-      <a href={SKILLS_ZIP_URL} target="_blank" rel="noopener noreferrer" className="text-[#C8956B] hover:underline inline-flex items-center gap-1">
-        {SKILLS_ZIP_URL}
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
     ),
