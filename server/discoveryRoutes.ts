@@ -22,6 +22,18 @@ const EXPOSURE_RETENTION_MS = 7 * DAY_MS;
 const EXPOSURE_EVENT_LIMIT = 200;
 const NEUTRAL_ACCOUNT_AGE_MS = 14 * DAY_MS;
 
+type CandidatePoolOptions = {
+  includeInteracted?: boolean;
+};
+
+type DiscoveryInteractionExclusionState = {
+  likedUserIds: Set<string>;
+  passedUserIds: Set<string>;
+  matchedUserIds: Set<string>;
+  hiddenUserIds: Set<string>;
+  dismissedUserIds: Set<string>;
+};
+
 const DEFAULT_VIEWER: Profile = {
   id: 'local-dev-user',
   uid: 'local-dev-user',
@@ -91,6 +103,7 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
       hiddenOverrideUsed: false,
       paidPlacementUsed: false,
       systemExclusionsApplied: Boolean(req.uid),
+      interactionExclusionsApplied: Boolean(req.uid),
       reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
       exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
       exposureImpressionsRecorded,
@@ -118,6 +131,7 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
     generatedAt: new Date().toISOString(),
     items,
     systemExclusionsApplied: Boolean(req.uid),
+    interactionExclusionsApplied: Boolean(req.uid),
     reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
     exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
     exposureImpressionsRecorded,
@@ -155,7 +169,8 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
       .catch(() => null);
     const reciprocalLikes = reciprocalSnap?.data()?.likes;
     const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
-    const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
+    const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+      .find((profile) => profile.uid === profileId || profile.id === profileId);
     if (req.body?.tasteEventAlreadyRecorded !== true) {
       await persistDiscoveryTasteState(viewerUid, 'like', candidate);
     }
@@ -205,7 +220,8 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
       .catch(() => null);
-    const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
+    const candidate = (await loadCandidatePool(viewerUid, { includeInteracted: true }))
+      .find((profile) => profile.uid === profileId || profile.id === profileId);
     if (req.body?.tasteEventAlreadyRecorded !== true) {
       await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
     }
@@ -312,19 +328,25 @@ async function persistDiscoveryTasteState(
     .catch(() => null);
 }
 
-async function loadCandidatePool(viewerUid: string | undefined): Promise<Profile[]> {
+async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[]> {
   const db = getOptionalAdminFirestore();
   if (!db) return demoCandidatePool();
-  const [snap, exclusions] = await Promise.all([
+  const [snap, exclusions, interactionExclusions] = await Promise.all([
     db.collection('users').limit(100).get().catch(() => null),
     loadSystemExclusions(viewerUid),
+    options.includeInteracted
+      ? Promise.resolve(emptyInteractionExclusionState())
+      : loadInteractionExclusions(viewerUid),
   ]);
   const profiles = snap?.docs
     .filter((doc) => doc.id !== viewerUid)
     .map((doc) => normalizeProfile(doc.id, doc.data()))
     .filter((profile): profile is Profile => Boolean(profile)) ?? [];
   if (profiles.length === 0) return demoCandidatePool();
-  return profiles.filter((profile) => !violatesSystemExclusions(profile, exclusions).violates);
+  return profiles.filter((profile) =>
+    !violatesSystemExclusions(profile, exclusions).violates &&
+    !excludesInteractedCandidate(profile, interactionExclusions)
+  );
 }
 
 async function loadSystemExclusions(uid: string | undefined): Promise<SystemExclusionState> {
@@ -336,6 +358,19 @@ async function loadSystemExclusions(uid: string | undefined): Promise<SystemExcl
     db.collection('users').doc(uid).collection(PRIVATE_COLLECTION).doc('safety').get().catch(() => null),
   ]);
   return normalizeSystemExclusions(docs.map((snap) => snap?.data()).filter(Boolean));
+}
+
+async function loadInteractionExclusions(uid: string | undefined): Promise<DiscoveryInteractionExclusionState> {
+  const db = getOptionalAdminFirestore();
+  if (!db || !uid) return emptyInteractionExclusionState();
+  const snap = await db
+    .collection('users')
+    .doc(uid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('interactions')
+    .get()
+    .catch(() => null);
+  return normalizeInteractionExclusions(snap?.data());
 }
 
 async function recordDiscoveryImpressions(items: RankedProfile[]): Promise<number> {
@@ -427,6 +462,44 @@ function normalizeSystemExclusions(docs: unknown[]): SystemExclusionState {
     addIds(state.suspectedBotIds, input.suspectedBotIds, input.suspectedBots, input.botUserIds);
   }
   return state;
+}
+
+function emptyInteractionExclusionState(): DiscoveryInteractionExclusionState {
+  return {
+    likedUserIds: new Set<string>(),
+    passedUserIds: new Set<string>(),
+    matchedUserIds: new Set<string>(),
+    hiddenUserIds: new Set<string>(),
+    dismissedUserIds: new Set<string>(),
+  };
+}
+
+function normalizeInteractionExclusions(raw: unknown): DiscoveryInteractionExclusionState {
+  const state = emptyInteractionExclusionState();
+  if (!raw || typeof raw !== 'object') return state;
+  const input = raw as Record<string, unknown>;
+  addIds(state.likedUserIds, input.likes, input.likedUserIds, input.outboundLikes, input.liked);
+  addIds(state.passedUserIds, input.passes, input.passUserIds, input.passedUserIds, input.skippedUserIds);
+  addIds(state.matchedUserIds, input.matches, input.matchUserIds, input.matchedUserIds, input.activeMatches);
+  addIds(state.hiddenUserIds, input.hiddenUserIds, input.hidden, input.mutedUserIds, input.muted);
+  addIds(state.dismissedUserIds, input.dismissedUserIds, input.dismissed, input.removedUserIds, input.removed);
+  return state;
+}
+
+function excludesInteractedCandidate(profile: Profile, state: DiscoveryInteractionExclusionState): boolean {
+  return hasProfileId(state.likedUserIds, profile) ||
+    hasProfileId(state.passedUserIds, profile) ||
+    hasProfileId(state.matchedUserIds, profile) ||
+    hasProfileId(state.hiddenUserIds, profile) ||
+    hasProfileId(state.dismissedUserIds, profile);
+}
+
+function hasProfileId(ids: Set<string>, profile: Profile): boolean {
+  return candidateProfileIds(profile).some((id) => ids.has(id));
+}
+
+function candidateProfileIds(profile: Profile): string[] {
+  return [profile.uid, profile.id].filter((id): id is string => typeof id === 'string' && id.length > 0);
 }
 
 function addIds(target: Set<string>, ...values: unknown[]) {
