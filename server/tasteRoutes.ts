@@ -175,6 +175,56 @@ router.get('/profile', async (req: AuthenticatedRequest, res) => {
   });
 });
 
+router.post('/profile', async (req: AuthenticatedRequest, res) => {
+  if (!req.uid) {
+    res.status(401).json({ error: 'Authentication required', persisted: false });
+    return;
+  }
+
+  const db = getOptionalAdminFirestore();
+  if (!db) {
+    res.status(503).json({ error: 'Taste profile persistence unavailable', persisted: false });
+    return;
+  }
+
+  const profile = normalizeTasteProfile(req.body?.profile ?? req.body);
+  const previousState = await loadTasteState(req.uid);
+  const stateWithProfileConsent: TasteState = {
+    ...previousState,
+    learningPaused: profile.learning.paused,
+    optedOut: profile.learning.optedOut,
+  };
+  const serializedTasteState = serializeTasteState(stateWithProfileConsent);
+  const userPrivate = db.collection('users').doc(req.uid).collection(PRIVATE_COLLECTION);
+  const batch = db.batch();
+
+  batch.set(userPrivate.doc('taste_profile'), profile, { merge: false });
+  batch.set(userPrivate.doc('taste_state'), serializedTasteState, { merge: false });
+  batch.set(userPrivate.doc('taste_events').collection('events').doc(), {
+    name: 'tag_edited',
+    eventClass: 'explicit_preference',
+    candidateId: null,
+    surface: null,
+    candidateFeaturesCaptured: 0,
+    occurredAt: new Date().toISOString(),
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Taste profile was not persisted', persisted: false });
+    return;
+  }
+
+  res.json({
+    success: true,
+    persisted: true,
+    userId: req.uid,
+    profile,
+    tasteState: serializedTasteState,
+  });
+});
+
 router.get('/interactions', async (req: AuthenticatedRequest, res) => {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   if (!req.uid) {
