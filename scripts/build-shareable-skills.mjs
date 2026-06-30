@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 
 const SKILLS_DIR = 'skills';
 const HTML_OUT = 'public/prototype/skills.html';
@@ -68,7 +68,7 @@ writeFileSync(HTML_OUT, `<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kesher Personality Skills Prototype</title>
+    <title>Kesher Personality Skills</title>
     <style>
       :root {
         color-scheme: light;
@@ -89,31 +89,13 @@ writeFileSync(HTML_OUT, `<!doctype html>
         color: var(--ink);
       }
       main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0; }
-      header {
-        background: #2d2926;
-        color: white;
-        border-radius: 24px;
-        padding: 32px;
-        margin-bottom: 24px;
-      }
+      header { background: #2d2926; color: white; border-radius: 24px; padding: 32px; margin-bottom: 24px; }
       h1 { margin: 0 0 12px; font-family: Georgia, serif; font-style: italic; font-size: clamp(2rem, 5vw, 4rem); }
       h2 { margin: 8px 0; font-size: 1rem; }
       p { line-height: 1.6; color: inherit; }
-      .summary { color: rgba(255,255,255,.72); max-width: 760px; }
+      .summary { color: rgba(255,255,255,.72); max-width: 780px; }
       .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-      .button {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 12px 18px;
-        background: var(--accent-2);
-        color: #2d2926;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        text-decoration: none;
-      }
+      .button { display: inline-flex; align-items: center; border-radius: 999px; padding: 12px 18px; background: var(--accent-2); color: #2d2926; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
       .button.secondary { background: rgba(255,255,255,.1); color: white; border: 1px solid rgba(255,255,255,.18); }
       .meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 24px; color: var(--muted); font-size: 12px; }
       .pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; background: white; }
@@ -131,26 +113,27 @@ writeFileSync(HTML_OUT, `<!doctype html>
         <p class="eyebrow">Shareable skills bundle</p>
         <h1>Kesher Personality Skills</h1>
         <p class="summary">
-          ${skills.length} implementable skills for the Kesher personality prototype. The public prototype uses
-          reflection, tendencies, possible strengths/friction, and release gates. It does not ship public rankings,
-          public exact values, predictions, or production personality activation.
+          ${skills.length} implementation skills for Kesher's trust-forward personality system. The member-facing
+          assessment is the original Kesher Reflection instrument with deterministic scoring, private reports,
+          safe exports, consent controls, and no compatibility-score claims.
         </p>
         <div class="actions">
           <a class="button" href="/skills">Open Skills Hub</a>
-          <a class="button secondary" href="/prototype/personality">Open IPIP-BFAS Journey</a>
+          <a class="button secondary" href="/prototype/personality">Open Personality Journey</a>
           <a class="button secondary" href="/downloads/kesher-personality-skills.zip" download>Download Skills Zip</a>
         </div>
       </header>
       <div class="meta">
         <span class="pill">Skill count: ${skills.length}</span>
         <span class="pill">Generated: ${generatedAt}</span>
-        <span class="pill">Source: repo skills/ folder</span>
+        <span class="pill">Assessment: kesher-reflection-v1</span>
+        <span class="pill">Raw answers exported: no</span>
       </div>
       <section class="grid">
 ${htmlCards}
       </section>
       <footer>
-        English IPIP-BFAS scoring is prototype-only. Hebrew validation, privacy review, and release gates remain required before production activation.
+        Personality data remains private by default. Kesher Reflection is for self-understanding and conversation, not diagnosis, public ranking, or compatibility prediction.
       </footer>
     </main>
   </body>
@@ -162,6 +145,8 @@ writeFileSync(FULL_MD_OUT, `# Kesher Personality Skills Bundle
 Generated: ${generatedAt}
 
 This shareable bundle contains ${skills.length} implementable skills from the canonical \`skills/\` folder.
+
+The live member-facing personality path is Kesher Reflection: original Kesher items, deterministic scoring, private report surfaces, safe export, reset/delete handling, and no compatibility-score claims.
 
 ${skills.map((skill) => `---
 
@@ -175,7 +160,7 @@ ${skill.content.trim()}
 
 writeFileSync(AI_STUDIO_MD_OUT, `# Kesher Skills Reference
 
-This document is a concise reference for all ${skills.length} Kesher skills. It can be pasted as a context document in Google AI Studio, used in the Vercel prototype review, or shared with implementation agents.
+This document is a concise reference for all ${skills.length} Kesher skills. It can be pasted as a context document in Google AI Studio, used in Vercel review, or shared with implementation agents.
 
 ${skills.map((skill, index) => `## Skill ${index + 1} — ${skill.name}
 
@@ -187,8 +172,9 @@ ${skill.description}
 ## Global Safety Contract
 
 - Use reflection, tendencies, possible strengths/friction, and uncertainty-aware copy.
-- Do not use public rankings, public exact values, hidden fit meters, certainty claims, or production activation from the prototype.
-- Keep English IPIP-BFAS scoring prototype-only; Hebrew validation remains pending.
+- Do not use public rankings, public exact values, hidden fit meters, certainty claims, or compatibility-score claims.
+- Keep raw personality answers out of exports, logs, match explanations, and public profile surfaces.
+- The active assessment path is Kesher Reflection (\`kesher-reflection-v1\`) with deterministic scoring (\`kesher-aspect-key-v1\`).
 `);
 
 rmSync(ZIP_OUT, { force: true });
