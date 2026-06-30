@@ -559,7 +559,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const findKnownProfile = (profileId: string) => [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES]
+  const findKnownProfile = (profileId: string) => (isLocalOnlyMode ? [...dailyPicks, ...exploreProfiles, ...MOCK_PROFILES] : [...dailyPicks, ...exploreProfiles])
     .find(p => p.id === profileId || p.uid === profileId);
 
   const likeProfile = async (profileId: string): Promise<boolean> => {
@@ -779,7 +779,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const profile = findKnownProfile(profileId);
     if (!profile) return;
 
-    applyTasteEvent(user.uid, {
+    const event: TasteEvent = {
       name,
       class: eventClassForTasteSignal(name),
       candidateId: profile.uid ?? profileId,
@@ -787,11 +787,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value: options.value,
       surface: options.surface,
       occurredAt: Date.now(),
-    });
+    };
 
-    if (!isLocalOnlyMode) {
-      discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options).catch(() => null);
+    if (isLocalOnlyMode) {
+      applyTasteEvent(user.uid, event);
+      return;
     }
+
+    discoveryService.recordTasteEvent(name, profile.uid ?? profileId, options)
+      .then(() => applyTasteEvent(user.uid, event, { persistRemote: false }))
+      .catch((error: unknown) => console.error('Error recording taste signal:', error));
   };
 
   const resetTasteProfile = async () => {
