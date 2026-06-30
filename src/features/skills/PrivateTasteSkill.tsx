@@ -48,7 +48,7 @@ function normalizeTasteProfileDraft(raw: any): TasteProfileDraft {
       pacing_weight: typeof weights.pacing_weight === 'number' ? weights.pacing_weight : 0.5,
     },
     learning: {
-      paused: input.learning?.paused === true,
+      paused: input.learning?.paused !== false,
       optedOut: input.learning?.optedOut === true,
       lastUpdatedAt: typeof input.learning?.lastUpdatedAt === 'string' ? input.learning.lastUpdatedAt : null,
     },
@@ -126,7 +126,8 @@ const SignalPills: React.FC<{ counts: Record<string, number> }> = ({ counts }) =
 );
 
 const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
-  const { user, interactions, tasteProfile, setTasteProfile, resetTasteProfile, trackEvent } = useApp();
+  const { user, interactions, tasteProfile: rawTasteProfile, setTasteProfile, resetTasteProfile, trackEvent } = useApp();
+  const tasteProfile = useMemo(() => normalizeTasteProfileDraft(rawTasteProfile), [rawTasteProfile]);
   const [loading, setLoading] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
@@ -190,9 +191,14 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   if (!enabled) {
     return (
       <section className="bg-white border border-dashed border-[#E5E0DB] rounded-[24px] p-6">
-        <div className="flex items-center gap-2 text-[#8C7E6E]">
-          <Sparkles size={16} />
-          <p className="text-xs italic">Enable personalization above to build, persist, and edit your private taste model.</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-[#8C7E6E]">
+            <Sparkles size={16} />
+            <p className="text-xs italic">Owner View Only. Enable personalization above to build, persist, and edit your private taste model.</p>
+          </div>
+          <Button onClick={handleReset} disabled={loading} variant="ghost" className="h-9 rounded-full text-[#6B5E52] hover:bg-[#F7F2EE] text-[10px] font-bold uppercase tracking-widest px-4 gap-1.5 disabled:opacity-50">
+            <RotateCcw size={12} /> Reset Owner Taste
+          </Button>
         </div>
       </section>
     );
@@ -262,7 +268,8 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
 };
 
 export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { tasteProfile, pauseTasteLearning, optOutTasteLearning, trackEvent } = useApp();
+  const { tasteProfile: rawTasteProfile, pauseTasteLearning, optOutTasteLearning, trackEvent } = useApp();
+  const tasteProfile = useMemo(() => normalizeTasteProfileDraft(rawTasteProfile), [rawTasteProfile]);
   const [showConsentGate, setShowConsentGate] = useState(false);
   const [isSavingConsent, setIsSavingConsent] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -272,7 +279,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
     ? 'Opted out'
     : tasteEnabled
       ? 'Active'
-      : 'Paused';
+      : 'Off by default';
   const activeProfileCount = useMemo(() => (
     tasteProfile.hard_dealbreakers.length + tasteProfile.soft_preferences.length + tasteProfile.things_to_avoid.length
   ), [tasteProfile]);

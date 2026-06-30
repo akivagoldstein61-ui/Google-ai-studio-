@@ -221,7 +221,7 @@ test('taste and discovery routes mount through the Express app', async () => {
     assert.equal(version.repository, 'akivagoldstein61-ui/Google-ai-studio-');
 
     const profile = await fetch(`${baseUrl}/api/taste/profile`).then((res) => res.json());
-    assert.equal(profile.profile.learning.paused, false);
+    assert.equal(profile.profile.learning.paused, true);
     assert.equal(profile.profile.learning.optedOut, false);
 
     const daily = await fetch(`${baseUrl}/api/discovery/daily-picks`).then((res) => res.json());

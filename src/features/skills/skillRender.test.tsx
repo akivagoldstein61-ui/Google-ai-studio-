@@ -24,13 +24,54 @@ import { PacingCoachSkill } from './PacingCoachSkill';
 
 const trackEvent = vi.fn();
 const resetTasteProfile = vi.fn();
+let tasteProfileState = {
+  hard_dealbreakers: [],
+  soft_preferences: [],
+  things_to_avoid: [],
+  weights: {
+    values_weight: 0.5,
+    stability_weight: 0.5,
+    pacing_weight: 0.5,
+  },
+  learning: {
+    paused: true,
+    optedOut: false,
+    lastUpdatedAt: null,
+  },
+  provenance: {},
+  lockedItems: [],
+  removedItems: [],
+  explanation: '',
+};
+const pauseTasteLearning = vi.fn(async (paused: boolean) => {
+  tasteProfileState = {
+    ...tasteProfileState,
+    learning: {
+      ...tasteProfileState.learning,
+      paused,
+      optedOut: paused ? tasteProfileState.learning.optedOut : false,
+    },
+  };
+});
+const optOutTasteLearning = vi.fn(async () => {
+  tasteProfileState = {
+    ...tasteProfileState,
+    learning: {
+      ...tasteProfileState.learning,
+      paused: true,
+      optedOut: true,
+    },
+  };
+});
 
 vi.mock('@/context/AppContext', () => ({
   useApp: () => ({
     user: null,
     dailyPicks: [],
     interactions: { likes: [], passes: [], moreLikeThis: [], lessLikeThis: [] },
-    tasteProfile: null,
+    tasteProfile: tasteProfileState,
+    pauseTasteLearning,
+    optOutTasteLearning,
     resetTasteProfile,
     trackEvent,
   }),
@@ -47,6 +88,25 @@ vi.mock('@/services/aiService', () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  tasteProfileState = {
+    hard_dealbreakers: [],
+    soft_preferences: [],
+    things_to_avoid: [],
+    weights: {
+      values_weight: 0.5,
+      stability_weight: 0.5,
+      pacing_weight: 0.5,
+    },
+    learning: {
+      paused: true,
+      optedOut: false,
+      lastUpdatedAt: null,
+    },
+    provenance: {},
+    lockedItems: [],
+    removedItems: [],
+    explanation: '',
+  };
 });
 
 const DIRS: SkillDir[] = ['rtl', 'ltr'];
@@ -98,7 +158,11 @@ describe('Private Taste skill privacy boundaries', () => {
     expect(scope.queryByText(/Active/i)).toBeNull();
 
     fireEvent.click(scope.getByRole('button', { name: /Enable Personalization/i }));
-    expect(scope.getByText(/Active/i)).toBeTruthy();
+    expect(pauseTasteLearning).toHaveBeenCalledWith(false);
+    cleanup();
+    const active = renderInDir(<PrivateTasteSkill onBack={vi.fn()} />, 'rtl');
+    const activeScope = within(active.container);
+    expect(activeScope.getByText(/Active/i)).toBeTruthy();
   });
 
   it('keeps reset reachable from an owner-only taste surface', () => {
