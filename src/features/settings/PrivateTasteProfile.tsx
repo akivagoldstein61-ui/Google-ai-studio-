@@ -7,6 +7,7 @@ import { aiService } from '@/services/aiService';
 import type { TasteProfileDraft } from '@/types';
 
 type TasteListKey = 'soft_preferences' | 'things_to_avoid' | 'hard_dealbreakers';
+type ProfileAction = 'save' | 'refresh' | 'pause' | 'optOut' | 'reset' | 'delete' | 'export';
 
 function emptyPrivateTasteProfile(paused = true): TasteProfileDraft {
   return {
@@ -227,6 +228,8 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
   const [editedProfile, setEditedProfile] = useState<TasteProfileDraft>(() => normalizeTasteProfileDraft(tasteProfile));
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ProfileAction | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -240,21 +243,40 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
 
   const signalCount = interactions.likes.length + interactions.passes.length + interactions.moreLikeThis.length + interactions.lessLikeThis.length;
   const learningPaused = tasteProfile.learning.paused || tasteProfile.learning.optedOut;
+  const isBusy = pendingAction !== null || isAnalyzing;
 
-  const handleReset = () => {
-    resetTasteProfile();
-    setEditedProfile(emptyPrivateTasteProfile(true));
-    setShowResetConfirm(false);
+  const runProfileAction = async <T,>(action: ProfileAction, failureMessage: string, work: () => Promise<T>) => {
+    setPendingAction(action);
+    setActionError(null);
+    try {
+      return await work();
+    } catch (error) {
+      console.error(failureMessage, error);
+      setActionError(failureMessage);
+      return undefined;
+    } finally {
+      setPendingAction(null);
+    }
   };
 
-  const handleSave = () => {
-    setTasteProfile(normalizeTasteProfileDraft(editedProfile));
-    setIsEditing(false);
+  const handleReset = async () => {
+    await runProfileAction('reset', 'Could not reset private taste profile. Please try again.', async () => {
+      await resetTasteProfile();
+      setShowResetConfirm(false);
+    });
+  };
+
+  const handleSave = async () => {
+    await runProfileAction('save', 'Could not save private taste profile. Please try again.', async () => {
+      await setTasteProfile(normalizeTasteProfileDraft(editedProfile));
+      setIsEditing(false);
+    });
   };
 
   const handleAnalyze = async () => {
     if (learningPaused) return;
     setIsAnalyzing(true);
+    setActionError(null);
     try {
       const newProfile = await aiService.analyzeTasteProfile(interactions, tasteProfile);
       if (newProfile) {
@@ -265,18 +287,19 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
             lastUpdatedAt: new Date().toISOString(),
           },
         });
-        setTasteProfile(mergedProfile);
+        await setTasteProfile(mergedProfile);
         setEditedProfile(mergedProfile);
       }
     } catch (error) {
       console.error('Taste profile analysis error:', error);
+      setActionError('Could not refresh private taste profile. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleExport = async () => {
-    const payload = await exportTasteProfile();
+    const payload = await runProfileAction('export', 'Could not export private taste profile. Please try again.', exportTasteProfile);
     if (!payload || typeof window === 'undefined') return;
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -285,6 +308,20 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
     link.download = `kesher-private-taste-profile-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handlePause = async () => {
+    await runProfileAction('pause', 'Could not update taste learning. Please try again.', async () => {
+      await pauseTasteLearning(!tasteProfile.learning.paused);
+    });
+  };
+
+  const handleOptOut = async () => {
+    await runProfileAction('optOut', 'Could not opt out of taste learning. Please try again.', optOutTasteLearning);
+  };
+
+  const handleDelete = async () => {
+    await runProfileAction('delete', 'Could not delete private taste profile. Please try again.', deleteTasteProfile);
   };
 
   return (
@@ -300,12 +337,12 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           </div>
         </div>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-[#D4AF37]" aria-label="Edit private taste profile">
+          <button onClick={() => setIsEditing(true)} disabled={isBusy} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-[#D4AF37] disabled:opacity-50" aria-label="Edit private taste profile">
             <Edit2 size={18} />
           </button>
         ) : (
-          <button onClick={handleSave} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-emerald-600" aria-label="Save private taste profile">
-            <Check size={18} />
+          <button onClick={handleSave} disabled={isBusy} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-emerald-600 disabled:opacity-50" aria-label="Save private taste profile">
+            {pendingAction === 'save' ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
           </button>
         )}
       </header>
@@ -323,6 +360,12 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 blur-3xl -mr-16 -mt-16" />
         </section>
 
+        {actionError && (
+          <p role="alert" className="p-3 rounded-2xl bg-red-50 border border-red-100 text-xs font-medium text-red-700">
+            {actionError}
+          </p>
+        )}
+
         <section className="space-y-6">
           <div className="flex justify-between items-center gap-4">
             <div>
@@ -335,7 +378,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
               variant="ghost"
               size="sm"
               onClick={handleAnalyze}
-              disabled={isAnalyzing || isEditing || learningPaused || signalCount === 0}
+              disabled={isBusy || isEditing || learningPaused || signalCount === 0}
               className="text-[#D4AF37] hover:text-[#B8962E] hover:bg-[#D4AF37]/5 rounded-full gap-2 font-bold uppercase tracking-[0.1em] text-[10px]"
             >
               {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
@@ -370,7 +413,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
               <input
                 type="range"
                 min="0" max="1" step="0.1"
-                disabled={!isEditing}
+                disabled={!isEditing || isBusy}
                 value={isEditing ? editedProfile.weights.values_weight : tasteProfile.weights.values_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
@@ -387,7 +430,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
               <input
                 type="range"
                 min="0" max="1" step="0.1"
-                disabled={!isEditing}
+                disabled={!isEditing || isBusy}
                 value={isEditing ? editedProfile.weights.pacing_weight : tasteProfile.weights.pacing_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
@@ -401,38 +444,43 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
 
         <section className="pt-4 space-y-3">
           <button
-            onClick={() => pauseTasteLearning(!tasteProfile.learning.paused)}
-            className="w-full p-4 flex items-center justify-center gap-2 text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm"
+            onClick={handlePause}
+            disabled={isBusy}
+            className="w-full p-4 flex items-center justify-center gap-2 text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm disabled:opacity-50"
           >
-            <Pause size={16} />
+            {pendingAction === 'pause' ? <Loader2 size={16} className="animate-spin" /> : <Pause size={16} />}
             {tasteProfile.learning.paused ? 'Resume Taste Learning' : 'Pause Taste Learning'}
           </button>
           <button
             onClick={handleExport}
-            className="w-full p-4 flex items-center justify-center gap-2 text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm"
+            disabled={isBusy}
+            className="w-full p-4 flex items-center justify-center gap-2 text-[#2D2926] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm disabled:opacity-50"
           >
-            <Download size={16} />
+            {pendingAction === 'export' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             Export Private Taste Profile
           </button>
           <button
-            onClick={optOutTasteLearning}
-            className="w-full p-4 flex items-center justify-center gap-2 text-[#8C7E6E] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm"
+            onClick={handleOptOut}
+            disabled={isBusy}
+            className="w-full p-4 flex items-center justify-center gap-2 text-[#8C7E6E] hover:bg-[#F7F2EE] rounded-[24px] transition-all font-bold text-sm disabled:opacity-50"
           >
-            <Shield size={16} />
+            {pendingAction === 'optOut' ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
             Opt Out of Taste Learning
           </button>
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="w-full p-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm"
+            disabled={isBusy}
+            className="w-full p-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm disabled:opacity-50"
           >
             <RefreshCw size={16} />
             Reset Taste Learning
           </button>
           <button
-            onClick={deleteTasteProfile}
-            className="w-full p-4 flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm"
+            onClick={handleDelete}
+            disabled={isBusy}
+            className="w-full p-4 flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm disabled:opacity-50"
           >
-            <Trash2 size={16} />
+            {pendingAction === 'delete' ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
             Delete Private Taste Profile
           </button>
         </section>
@@ -460,13 +508,15 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
                 <Button
                   className="w-full h-12 bg-[#2D2926] text-white font-bold rounded-full"
                   onClick={handleReset}
+                  disabled={isBusy}
                 >
-                  Yes, Reset
+                  {pendingAction === 'reset' ? 'Resetting...' : 'Yes, Reset'}
                 </Button>
                 <Button
                   variant="ghost"
                   className="w-full h-12 text-[#2D2926] font-bold rounded-full"
                   onClick={() => setShowResetConfirm(false)}
+                  disabled={isBusy}
                 >
                   Cancel
                 </Button>
