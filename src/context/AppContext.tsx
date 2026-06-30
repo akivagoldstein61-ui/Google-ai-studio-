@@ -20,6 +20,13 @@ import { serializeTasteState, deserializeTasteState, cloneTasteState, profileToF
 import { selectDailyPicks, selectExploreProfiles } from '@/lib/integratedRanking';
 import { discoveryService } from '@/services/discoveryService';
 
+type TasteInteractions = {
+  likes: string[];
+  passes: string[];
+  moreLikeThis: string[];
+  lessLikeThis: string[];
+};
+
 interface AppState {
   user: Profile | null;
   language: 'en' | 'he';
@@ -37,12 +44,7 @@ interface AppState {
   loading: boolean;
   isDemoMode: boolean;
   isLocalMockAuth: boolean;
-  interactions: {
-    likes: string[];
-    passes: string[];
-    moreLikeThis: string[];
-    lessLikeThis: string[];
-  };
+  interactions: TasteInteractions;
   signIn: () => Promise<void>;
   setLanguage: (lang: 'en' | 'he') => void;
   setUser: (user: Profile | null) => void;
@@ -119,6 +121,40 @@ const LEGACY_RECOMMENDATION_MODE = 'chemistry' + '_first';
 
 function cloneDefaultTasteProfile(): TasteProfileDraft {
   return JSON.parse(JSON.stringify(EMPTY_TASTE_PROFILE));
+}
+
+function createEmptyInteractions(): TasteInteractions {
+  return {
+    likes: [],
+    passes: [],
+    moreLikeThis: [],
+    lessLikeThis: [],
+  };
+}
+
+function createDemoInteractions(): TasteInteractions {
+  return {
+    likes: ['Profile with tags: Traditional, History, Beach and observance: traditional', 'Profile with tags: Masorti, Dogs, Foodie and observance: masorti'],
+    passes: ['Profile with tags: Secular, Art, Spontaneous and observance: secular'],
+    moreLikeThis: ['Profile with tags: Introverted, Thoughtful'],
+    lessLikeThis: ['Profile with tags: Extroverted'],
+  };
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+}
+
+function normalizeTasteInteractions(raw: any): TasteInteractions {
+  const input = raw && typeof raw === 'object' ? raw : {};
+  return {
+    likes: stringList(input.likes),
+    passes: stringList(input.passes),
+    moreLikeThis: stringList(input.moreLikeThis),
+    lessLikeThis: stringList(input.lessLikeThis),
+  };
 }
 
 function emptyTasteStateForProfile(profile: TasteProfileDraft = cloneDefaultTasteProfile()): TasteState {
@@ -284,28 +320,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [conversations, setConversations] = useState<Conversation[]>(isLocalOnlyMode ? DEMO_CONVERSATIONS : []);
   const [dailyPicks, setDailyPicks] = useState<Profile[]>(isLocalOnlyMode ? initialLocalDiscovery.daily : []);
   const [exploreProfiles, setExploreProfiles] = useState<Profile[]>(isLocalOnlyMode ? initialLocalDiscovery.explore : []);
-
-  const [interactions, setInteractions] = useState<{
-    likes: string[];
-    passes: string[];
-    moreLikeThis: string[];
-    lessLikeThis: string[];
-  }>(() => {
-    if (isLocalOnlyMode) {
-      return {
-        likes: ['Profile with tags: Traditional, History, Beach and observance: traditional', 'Profile with tags: Masorti, Dogs, Foodie and observance: masorti'],
-        passes: ['Profile with tags: Secular, Art, Spontaneous and observance: secular'],
-        moreLikeThis: ['Profile with tags: Introverted, Thoughtful'],
-        lessLikeThis: ['Profile with tags: Extroverted'],
-      };
-    }
-    return {
-      likes: [],
-      passes: [],
-      moreLikeThis: [],
-      lessLikeThis: [],
-    };
-  });
+  const [interactions, setInteractions] = useState<TasteInteractions>(() => (
+    isLocalOnlyMode ? createDemoInteractions() : createEmptyInteractions()
+  ));
 
   const refreshLocalDiscovery = (
     nextPrefs: DiscoveryPreferences,
@@ -355,6 +372,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsPremium(true);
       setMatches(DEMO_MATCHES);
       setConversations(DEMO_CONVERSATIONS);
+      setInteractions(createDemoInteractions());
       refreshLocalDiscovery(preferences, tasteState, localUser);
       setLoading(false);
       return;
@@ -412,6 +430,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (tasteResponse?.profile) {
                 setTasteProfileState(normalizeTasteProfile(tasteResponse.profile));
               }
+
+              const interactionsResponse = await discoveryService.getTasteInteractions().catch(() => null);
+              if (interactionsResponse?.interactions) {
+                setInteractions(normalizeTasteInteractions(interactionsResponse.interactions));
+              }
               await refreshRemoteDiscovery();
             } catch (error) {
               console.error('Error fetching data:', error);
@@ -434,6 +457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               tags: [],
             });
             setOnboarding(true);
+            setInteractions(createEmptyInteractions());
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -446,6 +470,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         setUser(null);
         setOnboarding(true);
+        setInteractions(createEmptyInteractions());
       }
       setLoading(false);
     });
@@ -626,11 +651,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      const { doc, setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, `users/${user.uid}/private/interactions`), {
-        moreLikeThis: [...interactions.moreLikeThis, profileId],
-      }, { merge: true });
-
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
@@ -668,11 +688,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      const { doc, setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, `users/${user.uid}/private/interactions`), {
-        lessLikeThis: [...interactions.lessLikeThis, profileId],
-      }, { merge: true });
-
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
@@ -694,13 +709,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setTasteProfileState(emptyProfile);
 
-    const emptyInteractions = {
-      likes: [],
-      passes: [],
-      moreLikeThis: [],
-      lessLikeThis: [],
-    };
-    setInteractions(emptyInteractions);
+    const nextEmptyInteractions = createEmptyInteractions();
+    setInteractions(nextEmptyInteractions);
 
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteStateRaw(freshTasteState);
@@ -714,7 +724,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), emptyProfile);
-      await setDoc(doc(db, `users/${user.uid}/private/interactions`), emptyInteractions);
+      await setDoc(doc(db, `users/${user.uid}/private/interactions`), nextEmptyInteractions);
       await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(freshTasteState));
       await discoveryService.resetTasteProfile().catch(() => null);
       await refreshRemoteDiscovery();
@@ -739,7 +749,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isLocalOnlyMode || !user) return;
     try {
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), updatedProfile);
-      await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted').catch(() => null);
+      await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted', undefined, {
+        paused,
+        optedOut: updatedProfile.learning.optedOut,
+      }).catch(() => null);
     } catch (error) {
       console.error('Error updating taste pause state:', error);
     }
@@ -765,7 +778,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         learningPaused: true,
         optedOut: true,
       }));
-      await discoveryService.recordTasteEvent('taste_pause').catch(() => null);
+      await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true }).catch(() => null);
     } catch (error) {
       console.error('Error opting out of taste learning:', error);
     }
@@ -785,6 +798,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userId: user?.uid ?? null,
       tasteProfile,
       tasteState: serializeTasteState(tasteState),
+      interactions,
     };
   };
 
@@ -793,12 +807,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteProfileState(emptyProfile);
     setTasteStateRaw(freshTasteState);
-    setInteractions({
-      likes: [],
-      passes: [],
-      moreLikeThis: [],
-      lessLikeThis: [],
-    });
+    setInteractions(createEmptyInteractions());
     if (isLocalOnlyMode) {
       refreshLocalDiscovery(preferences, freshTasteState);
       return;
@@ -853,6 +862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsPremium(true);
     setMatches(DEMO_MATCHES);
     setConversations(DEMO_CONVERSATIONS);
+    setInteractions(createDemoInteractions());
     const ranked = rankLocalDiscovery(LOCAL_DEV_USER, preferences, tasteState);
     setDailyPicks(ranked.daily);
     setExploreProfiles(ranked.explore);
@@ -875,6 +885,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const signOut = async () => {
     setLocalMockAuthSession(false);
     setIsLocalMockAuth(false);
+    setInteractions(createEmptyInteractions());
     await firebaseSignOut(auth);
     setUser(null);
     setOnboarding(false);
