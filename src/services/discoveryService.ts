@@ -84,14 +84,14 @@ export const discoveryService = {
   likeProfile(profileId: string) {
     return apiFetch('/api/discovery/like', {
       method: 'POST',
-      body: JSON.stringify({ profileId, tasteEventAlreadyRecorded: true }),
+      body: JSON.stringify({ profileId }),
     });
   },
 
   passProfile(profileId: string) {
     return apiFetch('/api/discovery/pass', {
       method: 'POST',
-      body: JSON.stringify({ profileId, tasteEventAlreadyRecorded: true }),
+      body: JSON.stringify({ profileId }),
     });
   },
 };
