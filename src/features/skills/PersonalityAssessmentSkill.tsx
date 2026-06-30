@@ -88,23 +88,23 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [demoStep, setDemoStep] = useState(0);
+  const [referenceStep, setReferenceStep] = useState(0);
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [showScoring, setShowScoring] = useState(false);
 
-  const currentItem = SAMPLE_ITEMS[demoStep];
+  const currentItem = SAMPLE_ITEMS[referenceStep];
 
   const handleResponse = (value: number) => {
     setResponses(prev => ({ ...prev, [currentItem.id]: value }));
-    if (demoStep < SAMPLE_ITEMS.length - 1) {
-      setDemoStep(prev => prev + 1);
+    if (referenceStep < SAMPLE_ITEMS.length - 1) {
+      setReferenceStep(prev => prev + 1);
     } else {
       setShowScoring(true);
     }
   };
 
   const resetDemo = () => {
-    setDemoStep(0);
+    setReferenceStep(0);
     setResponses({});
     setShowScoring(false);
   };
@@ -121,7 +121,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
           </div>
           <div className="space-y-0.5">
             <h1 className="text-lg font-serif italic">Personality Assessment</h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Progressive BFAS/IPIP Administration</p>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Kesher Reflection Administration</p>
           </div>
         </div>
       </header>
@@ -130,48 +130,48 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
         {/* LIVE: run the real assessment */}
         <LiveAssessment />
 
-        {/* Instrument Selection */}
+        {/* Production instrument status */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Instrument Selection</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Production Instrument</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[#F3EFEA]">
-                  <th className="text-left py-2 pr-4 font-bold text-[#2D2926]">Instrument</th>
-                  <th className="text-left py-2 pr-4 font-bold text-[#2D2926]">Rights</th>
+                  <th className="text-left py-2 pr-4 font-bold text-[#2D2926]">Source</th>
+                  <th className="text-left py-2 pr-4 font-bold text-[#2D2926]">Use</th>
                   <th className="text-left py-2 pr-4 font-bold text-[#2D2926]">Status</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">IPIP-BFAS 100</td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Public domain</span></td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Implementable</span></td>
+                  <td className="py-2 pr-4">Kesher original reflection v1</td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Owner-only reflection</span></td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Live</span></td>
                 </tr>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">IPIP-NEO</td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Public domain</span></td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Implementable</span></td>
+                  <td className="py-2 pr-4">Deterministic score key</td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-bold">No AI scoring</span></td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Live</span></td>
                 </tr>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">BFI-2 (60 items)</td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-[10px] font-bold">Non-commercial</span></td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-[10px] font-bold">Blocked</span></td>
+                  <td className="py-2 pr-4">Raw answer handling</td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-[10px] font-bold">Private only</span></td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Not exported</span></td>
                 </tr>
                 <tr className="border-b border-[#F3EFEA]/50">
-                  <td className="py-2 pr-4">HEXACO-60</td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-[10px] font-bold">Academic only</span></td>
-                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-full text-[10px] font-bold">Blocked</span></td>
+                  <td className="py-2 pr-4">Public/match surfaces</td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-bold">No raw scores</span></td>
+                  <td className="py-2 pr-4"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-[10px] font-bold">Guarded</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        {/* Interactive Assessment Demo */}
+        {/* Interactive scoring reference */}
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Interactive Demo</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Scoring Reference</h2>
             <Button variant="ghost" size="sm" onClick={resetDemo} className="text-[10px] uppercase tracking-widest">
               Reset
             </Button>
@@ -182,13 +182,13 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               {/* Progress */}
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] text-[#8C7E6E]">
-                  <span>Item {demoStep + 1} of {SAMPLE_ITEMS.length}</span>
+                  <span>Item {referenceStep + 1} of {SAMPLE_ITEMS.length}</span>
                   <span>{currentItem.domain} / {currentItem.aspect}</span>
                 </div>
                 <div className="h-1.5 bg-[#F3EFEA] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-violet-500 rounded-full transition-all duration-300"
-                    style={{ width: `${((demoStep) / SAMPLE_ITEMS.length) * 100}%` }}
+                    style={{ width: `${((referenceStep) / SAMPLE_ITEMS.length) * 100}%` }}
                   />
                 </div>
               </div>
@@ -223,7 +223,7 @@ export const PersonalityAssessmentSkill: React.FC<{ onBack: () => void }> = ({ o
               <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 space-y-3">
                 <h3 className="text-xs font-bold text-violet-800">Scoring Complete (Demo)</h3>
                 <p className="text-xs text-violet-700 italic">
-                  The prototype uses deterministic IPIP-BFAS scoring. AI may interpret bands later,
+                  The production Kesher reflection uses deterministic scoring. AI may interpret derived cards later,
                   but it never scores responses. Reverse-keyed items use formula: reverse = 6 - response.
                 </p>
                 <div className="space-y-2">

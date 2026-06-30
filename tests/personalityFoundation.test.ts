@@ -4,6 +4,7 @@ import { test } from "vitest";
 import {
   FORBIDDEN_PERSONALITY_FIELDS,
   assertNoForbiddenPersonalityFields,
+  buildSafePersonalityExport,
   redactPersonalityLogPayload,
 } from "../src/personality/privacy.ts";
 import {
@@ -128,6 +129,31 @@ test("personality export excludes raw answers", () => {
 
   assert.equal("answers" in exportPayload, false);
   assert.equal(exportPayload.report?.item_text_source, "kesher_original");
+});
+
+test("safe personality data export excludes stale raw answer fields", () => {
+  const report = scoreKesherPersonalityAssessment(
+    Object.fromEntries(KESHER_PERSONALITY_ITEMS.map((item) => [item.id, 4])),
+  );
+
+  const exportPayload = buildSafePersonalityExport({
+    exportedAt: "2026-06-30T00:00:00.000Z",
+    userData: {
+      personalityScores: report,
+      personalityAnswers: { should_not_export: 5 },
+    },
+    personalityData: {
+      report,
+      answers: { should_not_export: 5 },
+      personalityAnswers: { should_not_export: 5 },
+    },
+    visibility: { fields: { trait_summary: "private" } },
+  });
+
+  assert.equal(exportPayload.raw_answers_included, false);
+  assert.equal(JSON.stringify(exportPayload).includes("should_not_export"), false);
+  assert.equal("personalityAnswers" in exportPayload, false);
+  assert.equal(exportPayload.scoringVersion, "kesher-aspect-key-v1");
 });
 
 test("Why This Match bundle excludes private personality, hidden rank, safety flags, private taste, and raw messages", () => {

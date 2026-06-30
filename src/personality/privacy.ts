@@ -84,3 +84,28 @@ export function safePersonalityLog(
     ...redactPersonalityLogPayload(payload),
   });
 }
+
+export function buildSafePersonalityExport({
+  userData,
+  personalityData,
+  visibility,
+  exportedAt = new Date().toISOString(),
+}: {
+  userData?: Record<string, any> | null;
+  personalityData?: Record<string, any> | null;
+  visibility?: Record<string, any> | null;
+  exportedAt?: string;
+}) {
+  const report = personalityData?.report ?? userData?.personalityScores ?? null;
+
+  return {
+    exportedAt,
+    instrumentVersion: report?.instrument_version ?? null,
+    scoringVersion: report?.score_version ?? null,
+    itemTextSource: report?.item_text_source ?? null,
+    raw_answers_included: false as const,
+    personalityScores: report,
+    personalityProfile: userData?.personalityProfile ?? report,
+    visibility: visibility ?? null,
+  };
+}

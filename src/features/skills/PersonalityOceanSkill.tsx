@@ -95,7 +95,7 @@ export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        {/* LIVE: real OCEAN reflection */}
+        {/* LIVE: real Kesher reflection */}
         <LiveOcean />
 
         {/* What this does */}
@@ -105,7 +105,7 @@ export const PersonalityOceanSkill: React.FC<{ onBack: () => void }> = ({ onBack
             <span className="text-[10px] font-bold uppercase tracking-widest">What this is</span>
           </div>
           <p className="text-xs text-amber-800 leading-relaxed">
-            OCEAN-domain views on BFAS scores, plus a three-layer observance model.
+            Kesher personality domain views plus a three-layer observance model.
             Pair output is <strong>qualitative reflection only</strong> — no numeric fit rating
             is ever shown to users.
           </p>

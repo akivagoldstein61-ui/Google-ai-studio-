@@ -68,7 +68,7 @@ const ALLOWED_AI_INPUTS = [
 ];
 
 const FORBIDDEN_AI_INPUTS = [
-  'Raw BFAS answer text',
+  'Raw Kesher reflection answer text',
   'Exact numeric scores',
   'Private messages or chat history',
   'Private taste internals',
@@ -230,7 +230,7 @@ export const PersonalityProfileSkill: React.FC<{ onBack: () => void }> = ({ onBa
             <span className="text-[10px] font-bold uppercase tracking-widest">What this is</span>
           </div>
           <p className="text-xs text-teal-800 leading-relaxed">
-            Translates deterministic BFAS domain and aspect scores into warm, private, user-visible reflection cards.
+            Translates deterministic Kesher domain and aspect bands into warm, private, user-visible reflection cards.
             The AI receives <strong>only derived percentile bands</strong> — never raw answers, exact scores, or private data.
           </p>
           <p className="text-[9px] text-teal-700 italic">

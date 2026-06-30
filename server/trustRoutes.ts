@@ -1,8 +1,9 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, deleteField, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import fs from 'fs';
+import { buildSafePersonalityExport } from '../src/personality/privacy.ts';
 
 const router = express.Router();
 
@@ -202,7 +203,6 @@ router.post('/personality/reset', async (req, res) => {
     if ((req as any).user.uid !== userId) return res.status(403).json({ error: 'Forbidden' });
     if (!db) return res.status(500).json({ error: 'Database not initialized' });
 
-    // In a real app, this would clear the specific personality fields
     await updateDoc(doc(db, 'users', userId), {
       personalityAnswers: null,
       personalityProfile: null,
@@ -213,6 +213,18 @@ router.post('/personality/reset', async (req, res) => {
       rawAnswersStored: false,
       updatedAt: serverTimestamp(),
     });
+    await setDoc(
+      doc(db, `users/${userId}/private/personality`),
+      {
+        report: null,
+        answers: deleteField(),
+        personalityAnswers: deleteField(),
+        rawAnswersStored: false,
+        resetAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -227,7 +239,6 @@ router.post('/personality/delete', async (req, res) => {
     if ((req as any).user.uid !== userId) return res.status(403).json({ error: 'Forbidden' });
     if (!db) return res.status(500).json({ error: 'Database not initialized' });
 
-    // In a real app, this would delete all personality-related data
     await updateDoc(doc(db, 'users', userId), {
       personalityAnswers: null,
       personalityProfile: null,
@@ -240,6 +251,26 @@ router.post('/personality/delete', async (req, res) => {
       rawAnswersStored: false,
       updatedAt: serverTimestamp(),
     });
+    await setDoc(
+      doc(db, `users/${userId}/private/personality`),
+      {
+        report: null,
+        answers: deleteField(),
+        personalityAnswers: deleteField(),
+        rawAnswersStored: false,
+        deletedAt: new Date().toISOString(),
+        deletionScope: [
+          'personality_answers',
+          'personality_report',
+          'personality_share_cards',
+          'personality_share_grants',
+          'personality_consent_receipts',
+          'why_match_personality_provenance',
+        ],
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -258,14 +289,11 @@ router.post('/personality/export', async (req, res) => {
     const personalitySnap = await getDoc(doc(db, `users/${userId}/private/personality`));
     const visibilitySnap = await getDoc(doc(db, `users/${userId}/private/visibility`));
 
-    res.json({
-      exportedAt: new Date().toISOString(),
-      scoringVersion: personalitySnap.exists() ? personalitySnap.data()?.scoringVersion ?? 'bfas-mvp-v1' : null,
-      personalityScores: userSnap.exists() ? userSnap.data()?.personalityScores ?? null : null,
-      personalityAnswers: personalitySnap.exists() ? personalitySnap.data()?.answers ?? null : null,
-      personalityProfile: userSnap.exists() ? userSnap.data()?.personalityProfile ?? null : null,
+    res.json(buildSafePersonalityExport({
+      userData: userSnap.exists() ? userSnap.data() : null,
+      personalityData: personalitySnap.exists() ? personalitySnap.data() : null,
       visibility: visibilitySnap.exists() ? visibilitySnap.data() : null,
-    });
+    }));
   } catch (error) {
     console.error('Error exporting personality data:', error);
     res.status(500).json({ error: 'Failed to export personality data' });
