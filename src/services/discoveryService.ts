@@ -39,16 +39,24 @@ export const discoveryService = {
     return apiFetch('/api/taste/interactions');
   },
 
-  resetTasteProfile() {
-    return apiFetch('/api/taste/reset', { method: 'POST', body: JSON.stringify({}) });
+  async resetTasteProfile() {
+    const result = await apiFetch('/api/taste/reset', { method: 'POST', body: JSON.stringify({}) });
+    if (result?.persisted !== true) {
+      throw new Error('Taste reset was not persisted');
+    }
+    return result;
   },
 
   exportTasteProfile() {
     return apiFetch('/api/taste/export');
   },
 
-  deleteTasteProfile() {
-    return apiFetch('/api/taste/delete', { method: 'POST', body: JSON.stringify({}) });
+  async deleteTasteProfile() {
+    const result = await apiFetch('/api/taste/delete', { method: 'POST', body: JSON.stringify({}) });
+    if (result?.persisted !== true) {
+      throw new Error('Taste delete was not persisted');
+    }
+    return result;
   },
 
   async recordTasteEvent(name: string, candidateId?: string, payload: TasteEventPayload = {}) {
