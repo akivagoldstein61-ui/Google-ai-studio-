@@ -126,6 +126,7 @@ const LiveFiltering: React.FC = () => {
   const { user, preferences, setPreferences, dailyPicks, exploreProfiles, trackEvent } = useApp();
   const [draft, setDraft] = useState<DiscoveryPreferences>(preferences);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const candidatePool = useMemo(() => {
     const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);
     return live.length > 0 ? live : MOCK_PROFILES;
@@ -181,6 +182,7 @@ const LiveFiltering: React.FC = () => {
 
   const save = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const next: DiscoveryPreferences = {
         ...draft,
@@ -190,7 +192,7 @@ const LiveFiltering: React.FC = () => {
           current_pool: poolImpact.tier,
         },
       };
-      await Promise.resolve(setPreferences(next));
+      await setPreferences(next);
       trackEvent('skill_applied', {
         skillId: 'filtering-marketplace',
         recommendationMode: next.recommendationMode,
@@ -198,12 +200,18 @@ const LiveFiltering: React.FC = () => {
         softPreferenceCount: next.softPreferences.length,
         poolRemaining: poolImpact.remainingPercent,
       });
+    } catch (error) {
+      console.error('Failed to save filtering marketplace controls', error);
+      setSaveError('Could not save discovery controls. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const resetDraft = () => setDraft(preferences);
+  const resetDraft = () => {
+    setSaveError(null);
+    setDraft(preferences);
+  };
 
   return (
     <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-5 relative overflow-hidden">
@@ -317,6 +325,11 @@ const LiveFiltering: React.FC = () => {
               <p className="text-[9px] text-white/40 italic">Daily Picks stay strict. Explore can disclose spillover only when a setting, such as age, is not a dealbreaker.</p>
             </div>
 
+            {saveError && (
+              <p role="alert" className="text-[11px] font-bold text-red-200 bg-red-500/10 border border-red-500/20 rounded-2xl px-3 py-2">
+                {saveError}
+              </p>
+            )}
             <div className="flex gap-2">
               <button onClick={resetDraft} disabled={saving} className="flex-1 p-3 rounded-2xl border border-white/10 bg-white/5 text-xs font-bold uppercase tracking-widest text-white/60 hover:border-white/25">Reset draft</button>
               <button onClick={save} disabled={saving} className="flex-1 p-3 rounded-2xl bg-[#D4AF37] text-[#2D2926] text-xs font-bold uppercase tracking-widest hover:bg-[#E2BE48] disabled:opacity-70">{saving ? 'Saving...' : 'Save controls'}</button>
