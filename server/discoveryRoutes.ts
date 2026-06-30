@@ -248,6 +248,13 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
+  const tasteEventAlreadyRecorded = req.body?.tasteEventAlreadyRecorded === true;
+  const candidate = await loadCandidateForInteraction(profileId);
+  if (!tasteEventAlreadyRecorded && !candidate) {
+    res.status(500).json({ error: 'Like candidate profile was not loaded', profileId, persisted: false });
+    return;
+  }
+
   const interactionPersisted = await db
     .collection('users')
     .doc(viewerUid)
@@ -278,10 +285,7 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
 
   const reciprocalLikes = reciprocalSnap.data()?.likes;
   const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
-  const candidatePool = await loadCandidatePool(viewerUid, { includeInteracted: true });
-  const candidate = (candidatePool ?? [])
-    .find((profile) => profile.uid === profileId || profile.id === profileId);
-  let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
+  let tastePersisted = tasteEventAlreadyRecorded;
   if (!tastePersisted) {
     tastePersisted = await persistDiscoveryTasteState(viewerUid, 'like', candidate);
     if (!tastePersisted) {
@@ -290,7 +294,7 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
     }
   }
 
-  const match = isMatch ? buildMatch(viewerUid, profileId, candidate) : null;
+  const match = isMatch ? buildMatch(viewerUid, profileId, candidate ?? undefined) : null;
   if (match) {
     const matchPersisted = await db.collection('matches').doc(match.id).set(match, { merge: true }).then(() => true).catch(() => false);
     const conversationPersisted = await db.collection('conversations').doc(match.id).set({
@@ -325,6 +329,13 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
+  const tasteEventAlreadyRecorded = req.body?.tasteEventAlreadyRecorded === true;
+  const candidate = await loadCandidateForInteraction(profileId);
+  if (!tasteEventAlreadyRecorded && !candidate) {
+    res.status(500).json({ error: 'Pass candidate profile was not loaded', profileId, persisted: false });
+    return;
+  }
+
   const interactionPersisted = await db
     .collection('users')
     .doc(viewerUid)
@@ -341,10 +352,7 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const candidatePool = await loadCandidatePool(viewerUid, { includeInteracted: true });
-  const candidate = (candidatePool ?? [])
-    .find((profile) => profile.uid === profileId || profile.id === profileId);
-  let tastePersisted = req.body?.tasteEventAlreadyRecorded === true;
+  let tastePersisted = tasteEventAlreadyRecorded;
   if (!tastePersisted) {
     tastePersisted = await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
     if (!tastePersisted) {
@@ -431,19 +439,40 @@ async function loadCandidateRankingContexts(candidates: Profile[]): Promise<Reco
   return Object.fromEntries(entries.filter((entry): entry is readonly [string, CandidateRankingContext] => entry !== null));
 }
 
+async function loadCandidateForInteraction(profileId: string): Promise<Profile | null> {
+  const db = getOptionalAdminFirestore();
+  if (!db) return null;
+  const directSnap = await db.collection('users').doc(profileId).get().catch(() => null);
+  if (directSnap?.exists) return normalizeProfile(directSnap.id, directSnap.data());
+
+  for (const field of ['uid', 'id']) {
+    const querySnap = await db.collection('users')
+      .where(field, '==', profileId)
+      .limit(1)
+      .get()
+      .catch(() => null);
+    const doc = querySnap?.docs?.[0];
+    if (doc) return normalizeProfile(doc.id, doc.data());
+  }
+
+  return null;
+}
+
 async function persistDiscoveryTasteState(
   viewerUid: string,
   name: Extract<EventName, 'like' | 'pass'>,
-  candidate: Profile | undefined,
+  candidate: Profile,
 ): Promise<boolean> {
   const db = getOptionalAdminFirestore();
   if (!db) return false;
+  const candidateFeatures = profileToFeatureTags(candidate);
+  if (candidateFeatures.length === 0) return false;
   const previous = await loadTasteState(viewerUid);
   const next = applyEvent(previous, {
     name,
     class: 'explicit_preference',
-    candidateId: candidate?.uid ?? candidate?.id,
-    candidateFeatures: candidate ? profileToFeatureTags(candidate) : [],
+    candidateId: candidate.uid ?? candidate.id,
+    candidateFeatures,
     occurredAt: Date.now(),
   });
   return await db
