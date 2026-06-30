@@ -78,6 +78,45 @@ export const DEFAULT_DISCOVERY_PREFERENCES: DiscoveryPreferences = {
 
 router.use(authMiddleware);
 
+router.get('/preferences', async (req: AuthenticatedRequest, res) => {
+  const preferences = await loadPreferences(req.uid);
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.json({
+    preferences,
+    source: req.uid ? 'private/discovery_preferences' : 'defaults',
+    persisted: Boolean(req.uid && await loadOptionalPreferences(req.uid)),
+  });
+});
+
+router.post('/preferences', async (req: AuthenticatedRequest, res) => {
+  const viewerUid = req.uid;
+  if (!viewerUid) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const nextPreferences = normalizePreferences(req.body?.preferences ?? req.body);
+  const db = getOptionalAdminFirestore();
+  if (db) {
+    await db
+      .collection('users')
+      .doc(viewerUid)
+      .collection(PRIVATE_COLLECTION)
+      .doc('discovery_preferences')
+      .set({
+        ...nextPreferences,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: false })
+      .catch(() => null);
+  }
+
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.json({
+    preferences: nextPreferences,
+    persisted: Boolean(db),
+  });
+});
+
 router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
   const viewer = await loadViewer(req.uid);
   const preferences = await loadPreferences(req.uid);
