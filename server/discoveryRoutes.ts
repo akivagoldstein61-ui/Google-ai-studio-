@@ -36,7 +36,7 @@ export const DEFAULT_DISCOVERY_PREFERENCES: DiscoveryPreferences = {
   observancePreference: ['secular', 'traditional', 'masorti', 'dati', 'modern_orthodox'],
   intentPreference: ['serious_relationship', 'marriage_minded'],
   hardFilters: ['verified'],
-  softPreferences: ['shared_interests', 'same_city'],
+  softPreferences: ['shared_interests', 'same_city', 'similar_age'],
   recommendationMode: 'balanced',
   dealbreakers: {
     age: true,
@@ -50,6 +50,7 @@ export const DEFAULT_DISCOVERY_PREFERENCES: DiscoveryPreferences = {
     shared_interests: 0.6,
     same_city: 0.25,
     similar_observance: 0.15,
+    similar_age: 0.35,
   },
 };
 
