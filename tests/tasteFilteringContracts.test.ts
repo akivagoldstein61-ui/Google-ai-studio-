@@ -38,10 +38,13 @@ describe('taste and filtering server contracts', () => {
   it('direct discovery API calls still update learned taste when no client marker is present', () => {
     const source = readSource('server/discoveryRoutes.ts');
 
-    expect(source).toContain("req.body?.tasteEventAlreadyRecorded !== true");
-    expect(source).toContain("persistDiscoveryTasteState(viewerUid, 'like', candidate)");
-    expect(source).toContain("persistDiscoveryTasteState(viewerUid, 'pass', candidate)");
+    expect(source).toContain('const tasteEventAlreadyRecorded = req.body?.tasteEventAlreadyRecorded === true;');
+    expect(source).toContain("tasteStateSnapshot = await buildDiscoveryTasteStateSnapshot(viewerUid, 'like', candidate)");
+    expect(source).toContain("tasteStateSnapshot = await buildDiscoveryTasteStateSnapshot(viewerUid, 'pass', candidate)");
     expect(source).toContain('serializeTasteState(next)');
+    expect(source).toContain('batch.set(tasteStateRef, tasteStateSnapshot, { merge: false });');
+    expect(source).toContain('const persisted = await batch.commit().then(() => true).catch(() => false);');
+    expect(source).not.toContain('persistDiscoveryTasteState');
   });
 
   it('server discovery loads reciprocal candidate contexts instead of ranking against empty candidate state', () => {
