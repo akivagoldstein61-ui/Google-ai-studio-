@@ -41,16 +41,24 @@ describe('discovery interaction exclusion contracts', () => {
     expect(server).not.toContain('candidateFeatures: candidate ? profileToFeatureTags(candidate) : []');
   });
 
-  it('does not serve seeded demo candidates for authenticated live discovery when candidate loading fails', () => {
+  it('does not serve seeded demo candidates or default viewers for authenticated live discovery loading failures', () => {
     const server = readSource('server/discoveryRoutes.ts');
 
     expect(server).toContain('allowDemoFallback?: boolean');
-    expect(server).toContain("allowDemoFallback: req.authContext?.mode === 'local-dev-mock'");
+    expect(server).toContain("const allowDemoFallback = req.authContext?.mode === 'local-dev-mock';");
     expect(server).toContain("error: 'Discovery candidate persistence unavailable'");
+    expect(server).toContain("error: req.uid ? 'Discovery viewer profile was not loaded' : 'Authentication required'");
+    expect(server).toContain('async function loadViewer(uid: string | undefined, options: ViewerLoadOptions = {}): Promise<Profile | null>');
+    expect(server).toContain('if (!uid) return options.allowDemoFallback ? fallback : null;');
+    expect(server).toContain('if (!db) return options.allowDemoFallback ? fallback : null;');
+    expect(server).toContain('if (!snap?.exists) return options.allowDemoFallback ? fallback : null;');
     expect(server).toContain('async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[] | null>');
     expect(server).toContain('if (!db) return options.allowDemoFallback ? demoCandidatePool() : null;');
     expect(server).toContain('if (!snap) return options.allowDemoFallback ? demoCandidatePool() : null;');
     expect(server).toContain('if (profiles.length === 0) return options.allowDemoFallback ? demoCandidatePool() : [];');
+    expect(server).not.toContain('if (!uid) return fallback;');
+    expect(server).not.toContain('if (!db) return fallback;');
+    expect(server).not.toContain('if (!snap?.exists) return fallback;');
     expect(server).not.toContain('if (!db) return demoCandidatePool();');
     expect(server).not.toContain('if (profiles.length === 0) return demoCandidatePool();');
     expect(server).not.toContain('const outboundLikes = new Set<string>();');
