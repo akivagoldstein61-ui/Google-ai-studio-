@@ -6,6 +6,7 @@ type TasteEventPayload = {
   optedOut?: boolean;
   value?: number;
   surface?: 'daily_picks' | 'explore' | 'inbox' | 'profile';
+  profile?: TasteProfileDraft;
 };
 
 async function getJsonHeaders() {
