@@ -480,12 +480,12 @@ function normalizePreferences(raw: unknown): DiscoveryPreferences {
   };
 }
 
-function normalizeStringList(value: unknown, allowed: Set<string>, fallback: string[]): string[] {
+function normalizeStringList<T extends string>(value: unknown, allowed: ReadonlySet<string>, fallback: readonly T[]): T[] {
   if (!Array.isArray(value)) return [...fallback];
-  const output: string[] = [];
+  const output: T[] = [];
   for (const item of value) {
-    if (typeof item !== 'string' || !allowed.has(item) || output.includes(item)) continue;
-    output.push(item);
+    if (typeof item !== 'string' || !allowed.has(item) || output.includes(item as T)) continue;
+    output.push(item as T);
   }
   return output.length > 0 ? output : [...fallback];
 }
