@@ -8,10 +8,34 @@ import type { TasteProfileDraft } from '@/types';
 
 type TasteListKey = 'soft_preferences' | 'things_to_avoid' | 'hard_dealbreakers';
 
+function emptyPrivateTasteProfile(paused = true): TasteProfileDraft {
+  return {
+    hard_dealbreakers: [],
+    soft_preferences: [],
+    things_to_avoid: [],
+    weights: {
+      values_weight: 0.5,
+      stability_weight: 0.5,
+      pacing_weight: 0.5,
+    },
+    learning: {
+      paused,
+      optedOut: false,
+      lastUpdatedAt: null,
+    },
+    provenance: {},
+    lockedItems: [],
+    removedItems: [],
+    explanation: '',
+  };
+}
+
 function normalizeTasteProfileDraft(raw: any): TasteProfileDraft {
   const input = raw && typeof raw === 'object' ? raw : {};
   const weights = input.weights && typeof input.weights === 'object' ? input.weights : {};
   return {
+    ...emptyPrivateTasteProfile(),
+    ...input,
     hard_dealbreakers: Array.isArray(input.hard_dealbreakers) ? input.hard_dealbreakers : [],
     soft_preferences: Array.isArray(input.soft_preferences) ? input.soft_preferences : [],
     things_to_avoid: Array.isArray(input.things_to_avoid) ? input.things_to_avoid : [],
@@ -25,7 +49,7 @@ function normalizeTasteProfileDraft(raw: any): TasteProfileDraft {
       pacing_weight: typeof weights.pacing_weight === 'number' ? weights.pacing_weight : 0.5,
     },
     learning: {
-      paused: input.learning?.paused === true,
+      paused: typeof input.learning?.paused === 'boolean' ? input.learning.paused : true,
       optedOut: input.learning?.optedOut === true,
       lastUpdatedAt: typeof input.learning?.lastUpdatedAt === 'string' ? input.learning.lastUpdatedAt : null,
     },
@@ -40,31 +64,151 @@ function mergeManualControls(raw: any, current: TasteProfileDraft): TasteProfile
   const next = normalizeTasteProfileDraft(raw);
   const merged: TasteProfileDraft = {
     ...next,
-    hard_dealbreakers: [],
     learning: current.learning,
     provenance: { ...next.provenance, ...current.provenance },
-    lockedItems: [...current.lockedItems],
-    removedItems: [...current.removedItems],
+    lockedItems: [...(current.lockedItems ?? [])],
+    removedItems: [...(current.removedItems ?? [])],
   };
 
-  for (const lockKey of current.lockedItems) {
+  for (const lockKey of current.lockedItems ?? []) {
     const [key, ...valueParts] = lockKey.split(':') as [TasteListKey, ...string[]];
     const value = valueParts.join(':');
     if (key in merged && Array.isArray(merged[key]) && value) {
-      merged[key] = Array.from(new Set([...merged[key], value])) as any;
+      merged[key] = Array.from(new Set([...(merged[key] as string[]), value])) as any;
     }
   }
 
-  for (const removedKey of current.removedItems) {
+  for (const removedKey of current.removedItems ?? []) {
     const [key, ...valueParts] = removedKey.split(':') as [TasteListKey, ...string[]];
     const value = valueParts.join(':');
     if (key in merged && Array.isArray(merged[key]) && value) {
-      merged[key] = merged[key].filter((item) => item !== value) as any;
+      merged[key] = (merged[key] as string[]).filter((item) => item !== value) as any;
     }
   }
 
   return merged;
 }
+
+const TasteListEditor: React.FC<{
+  title: string;
+  listKey: TasteListKey;
+  displayProfile: TasteProfileDraft;
+  editedProfile: TasteProfileDraft;
+  isEditing: boolean;
+  onChange: (profile: TasteProfileDraft) => void;
+}> = ({ title, listKey, displayProfile, editedProfile, isEditing, onChange }) => {
+  const [addingNew, setAddingNew] = useState(false);
+  const [newItemText, setNewItemText] = useState('');
+  const items = isEditing ? editedProfile[listKey] : displayProfile[listKey];
+  const lockedItems = editedProfile.lockedItems ?? [];
+
+  const toggleLock = (item: string) => {
+    const lockKey = `${listKey}:${item}`;
+    onChange({
+      ...editedProfile,
+      lockedItems: lockedItems.includes(lockKey)
+        ? lockedItems.filter((locked) => locked !== lockKey)
+        : [...lockedItems, lockKey],
+    });
+  };
+
+  const removeItem = (item: string) => {
+    const currentItems = editedProfile[listKey];
+    const removedKey = `${listKey}:${item}`;
+    onChange({
+      ...editedProfile,
+      [listKey]: currentItems.filter((current) => current !== item),
+      removedItems: Array.from(new Set([...(editedProfile.removedItems ?? []), removedKey])),
+    });
+  };
+
+  const addItem = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const removedKey = `${listKey}:${trimmed}`;
+    onChange({
+      ...editedProfile,
+      [listKey]: Array.from(new Set([...editedProfile[listKey], trimmed])),
+      removedItems: (editedProfile.removedItems ?? []).filter((item) => item !== removedKey),
+    });
+  };
+
+  const commitNewItem = () => {
+    addItem(newItemText);
+    setNewItemText('');
+    setAddingNew(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">{title}</h4>
+      <div className="flex flex-wrap gap-2 items-center">
+        {items.map((item: string) => {
+          const lockKey = `${listKey}:${item}`;
+          const locked = lockedItems.includes(lockKey);
+          return (
+            <div key={lockKey} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F3EFEA] rounded-full text-xs font-medium text-[#2D2926]">
+              <span>{item}</span>
+              {isEditing && (
+                <>
+                  <button
+                    onClick={() => toggleLock(item)}
+                    className="text-[#8C7E6E] hover:text-[#2D2926]"
+                    title={locked ? 'Unlock' : 'Lock'}
+                    aria-label={locked ? `Unlock ${item}` : `Lock ${item}`}
+                  >
+                    {locked ? <Lock size={12} /> : <Unlock size={12} />}
+                  </button>
+                  {!locked && (
+                    <button
+                      onClick={() => removeItem(item)}
+                      className="text-[#8C7E6E] hover:text-red-500"
+                      aria-label={`Remove ${item}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+        {isEditing && !addingNew && (
+          <button
+            onClick={() => setAddingNew(true)}
+            className="px-3 py-1.5 bg-[#F7F2EE] border border-dashed border-[#D4AF37]/50 rounded-full text-xs font-medium text-[#D4AF37] hover:bg-[#D4AF37]/10"
+          >
+            + Add
+          </button>
+        )}
+        {isEditing && addingNew && (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              autoFocus
+              value={newItemText}
+              onChange={(e) => setNewItemText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitNewItem();
+                } else if (e.key === 'Escape') {
+                  setNewItemText('');
+                  setAddingNew(false);
+                }
+              }}
+              onBlur={commitNewItem}
+              className="px-3 py-1 bg-white border border-[#D4AF37] rounded-full text-xs font-medium text-[#2D2926] focus:outline-none w-32"
+              placeholder="Type and enter..."
+            />
+          </div>
+        )}
+        {!isEditing && items.length === 0 && (
+          <span className="text-xs text-[#8C7E6E] italic">None learned yet.</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const {
@@ -80,7 +224,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
     user,
   } = useApp();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState(tasteProfile);
+  const [editedProfile, setEditedProfile] = useState<TasteProfileDraft>(() => normalizeTasteProfileDraft(tasteProfile));
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -91,49 +235,41 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
   }, [user, trackEvent]);
 
   useEffect(() => {
-    setEditedProfile(tasteProfile);
+    setEditedProfile(normalizeTasteProfileDraft(tasteProfile));
   }, [tasteProfile]);
+
+  const signalCount = interactions.likes.length + interactions.passes.length + interactions.moreLikeThis.length + interactions.lessLikeThis.length;
+  const learningPaused = tasteProfile.learning.paused || tasteProfile.learning.optedOut;
 
   const handleReset = () => {
     resetTasteProfile();
-    setEditedProfile({
-      hard_dealbreakers: [],
-      soft_preferences: [],
-      things_to_avoid: [],
-      weights: {
-        values_weight: 0.5,
-        stability_weight: 0.5,
-        pacing_weight: 0.5
-      },
-      learning: {
-        paused: false,
-        optedOut: false,
-        lastUpdatedAt: null,
-      },
-      provenance: {},
-      lockedItems: [],
-      removedItems: [],
-      explanation: ""
-    });
+    setEditedProfile(emptyPrivateTasteProfile(true));
     setShowResetConfirm(false);
   };
 
   const handleSave = () => {
-    setTasteProfile(editedProfile);
+    setTasteProfile(normalizeTasteProfileDraft(editedProfile));
     setIsEditing(false);
   };
 
   const handleAnalyze = async () => {
+    if (learningPaused) return;
     setIsAnalyzing(true);
     try {
       const newProfile = await aiService.analyzeTasteProfile(interactions, tasteProfile);
       if (newProfile) {
-        const mergedProfile = mergeManualControls(newProfile, tasteProfile);
+        const mergedProfile = mergeManualControls(newProfile, {
+          ...tasteProfile,
+          learning: {
+            ...tasteProfile.learning,
+            lastUpdatedAt: new Date().toISOString(),
+          },
+        });
         setTasteProfile(mergedProfile);
         setEditedProfile(mergedProfile);
       }
     } catch (error) {
-      console.error("Taste profile analysis error:", error);
+      console.error('Taste profile analysis error:', error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -151,100 +287,6 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
     URL.revokeObjectURL(url);
   };
 
-  const renderListEditor = (title: string, key: TasteListKey) => {
-    const items = isEditing ? editedProfile[key] : tasteProfile[key];
-    const [addingNew, setAddingNew] = useState(false);
-    const [newItemText, setNewItemText] = useState('');
-    const lockedItems = editedProfile.lockedItems ?? [];
-    
-    return (
-      <div className="space-y-3">
-        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">{title}</h4>
-        <div className="flex flex-wrap gap-2 items-center">
-          {items.map((item: string, i: number) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F3EFEA] rounded-full text-xs font-medium text-[#2D2926]">
-              <span>{item}</span>
-              {isEditing && (
-                <>
-                  <button
-                    onClick={() => {
-                      const lockKey = `${key}:${item}`;
-                      setEditedProfile({
-                        ...editedProfile,
-                        lockedItems: lockedItems.includes(lockKey)
-                          ? lockedItems.filter((locked) => locked !== lockKey)
-                          : [...lockedItems, lockKey],
-                      });
-                    }}
-                    className="text-[#8C7E6E] hover:text-[#2D2926]"
-                    title={lockedItems.includes(`${key}:${item}`) ? 'Unlock' : 'Lock'}
-                  >
-                    {lockedItems.includes(`${key}:${item}`) ? <Lock size={12} /> : <Unlock size={12} />}
-                  </button>
-                  {!lockedItems.includes(`${key}:${item}`) && (
-                    <button
-                      onClick={() => {
-                        const newItems = [...items];
-                        newItems.splice(i, 1);
-                        setEditedProfile({
-                          ...editedProfile,
-                          [key]: newItems,
-                          removedItems: [...(editedProfile.removedItems ?? []), `${key}:${item}`],
-                        });
-                      }}
-                      className="text-[#8C7E6E] hover:text-red-500"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-          {isEditing && !addingNew && (
-            <button 
-              onClick={() => setAddingNew(true)}
-              className="px-3 py-1.5 bg-[#F7F2EE] border border-dashed border-[#D4AF37]/50 rounded-full text-xs font-medium text-[#D4AF37] hover:bg-[#D4AF37]/10"
-            >
-              + Add
-            </button>
-          )}
-          {isEditing && addingNew && (
-            <div className="flex items-center gap-2">
-              <input 
-                type="text"
-                autoFocus
-                value={newItemText}
-                onChange={(e) => setNewItemText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newItemText.trim()) {
-                    setEditedProfile({ ...editedProfile, [key]: [...items, newItemText.trim()] });
-                    setNewItemText('');
-                    setAddingNew(false);
-                  } else if (e.key === 'Escape') {
-                    setAddingNew(false);
-                  }
-                }}
-                onBlur={() => {
-                  if (newItemText.trim()) {
-                    setEditedProfile({ ...editedProfile, [key]: [...items, newItemText.trim()] });
-                  }
-                  setNewItemText('');
-                  setAddingNew(false);
-                }}
-                className="px-3 py-1 bg-white border border-[#D4AF37] rounded-full text-xs font-medium text-[#2D2926] focus:outline-none w-32"
-                placeholder="Type and enter..."
-              />
-            </div>
-          )}
-          {!isEditing && items.length === 0 && (
-            <span className="text-xs text-[#8C7E6E] italic">None learned yet.</span>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="h-full flex flex-col bg-[#FDFCFB]">
       <header className="px-6 py-4 flex items-center justify-between border-b border-[#F3EFEA]">
@@ -258,11 +300,11 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           </div>
         </div>
         {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-[#D4AF37]">
+          <button onClick={() => setIsEditing(true)} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-[#D4AF37]" aria-label="Edit private taste profile">
             <Edit2 size={18} />
           </button>
         ) : (
-          <button onClick={handleSave} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-emerald-600">
+          <button onClick={handleSave} className="p-2 hover:bg-[#F7F2EE] rounded-full transition-all text-emerald-600" aria-label="Save private taste profile">
             <Check size={18} />
           </button>
         )}
@@ -282,17 +324,22 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
         </section>
 
         <section className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-serif italic text-[#2D2926]">Learned Preferences</h3>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+          <div className="flex justify-between items-center gap-4">
+            <div>
+              <h3 className="text-lg font-serif italic text-[#2D2926]">Learned Preferences</h3>
+              <p className="text-[10px] text-[#8C7E6E] font-bold uppercase tracking-widest mt-1">
+                {learningPaused ? 'Learning paused' : `${signalCount} eligible activity signals`}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleAnalyze}
-              disabled={isAnalyzing || isEditing || (interactions.likes.length === 0 && interactions.passes.length === 0 && interactions.moreLikeThis.length === 0 && interactions.lessLikeThis.length === 0)}
+              disabled={isAnalyzing || isEditing || learningPaused || signalCount === 0}
               className="text-[#D4AF37] hover:text-[#B8962E] hover:bg-[#D4AF37]/5 rounded-full gap-2 font-bold uppercase tracking-[0.1em] text-[10px]"
             >
               {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              Refresh from Activity
+              {learningPaused ? 'Paused' : 'Refresh from Activity'}
             </Button>
           </div>
 
@@ -306,9 +353,9 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
           )}
 
           <div className="p-6 bg-white border border-[#F3EFEA] rounded-[32px] space-y-6 shadow-sm">
-            {renderListEditor("Soft Preferences", "soft_preferences")}
-            {renderListEditor("Things to Avoid", "things_to_avoid")}
-            {renderListEditor("Hard Dealbreakers", "hard_dealbreakers")}
+            <TasteListEditor title="Soft Preferences" listKey="soft_preferences" displayProfile={tasteProfile} editedProfile={editedProfile} isEditing={isEditing} onChange={setEditedProfile} />
+            <TasteListEditor title="Things to Avoid" listKey="things_to_avoid" displayProfile={tasteProfile} editedProfile={editedProfile} isEditing={isEditing} onChange={setEditedProfile} />
+            <TasteListEditor title="Hard Dealbreakers" listKey="hard_dealbreakers" displayProfile={tasteProfile} editedProfile={editedProfile} isEditing={isEditing} onChange={setEditedProfile} />
           </div>
         </section>
 
@@ -320,14 +367,14 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
                 <span>Values</span>
                 <span>Stability</span>
               </div>
-              <input 
-                type="range" 
-                min="0" max="1" step="0.1" 
+              <input
+                type="range"
+                min="0" max="1" step="0.1"
                 disabled={!isEditing}
                 value={isEditing ? editedProfile.weights.values_weight : tasteProfile.weights.values_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
-                  weights: { ...editedProfile.weights, values_weight: parseFloat(e.target.value) }
+                  weights: { ...editedProfile.weights, values_weight: parseFloat(e.target.value) },
                 })}
                 className="w-full accent-[#D4AF37]"
               />
@@ -337,14 +384,14 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
                 <span>Fast Paced</span>
                 <span>Slow Paced</span>
               </div>
-              <input 
-                type="range" 
-                min="0" max="1" step="0.1" 
+              <input
+                type="range"
+                min="0" max="1" step="0.1"
                 disabled={!isEditing}
                 value={isEditing ? editedProfile.weights.pacing_weight : tasteProfile.weights.pacing_weight}
                 onChange={(e) => setEditedProfile({
                   ...editedProfile,
-                  weights: { ...editedProfile.weights, pacing_weight: parseFloat(e.target.value) }
+                  weights: { ...editedProfile.weights, pacing_weight: parseFloat(e.target.value) },
                 })}
                 className="w-full accent-[#D4AF37]"
               />
@@ -374,7 +421,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
             <Shield size={16} />
             Opt Out of Taste Learning
           </button>
-          <button 
+          <button
             onClick={() => setShowResetConfirm(true)}
             className="w-full p-4 flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 rounded-[24px] transition-all font-bold text-sm"
           >
@@ -394,7 +441,7 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
       <AnimatePresence>
         {showResetConfirm && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -406,17 +453,17 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
                 </div>
                 <h3 className="text-xl font-serif italic text-[#2D2926]">Reset Taste Learning?</h3>
                 <p className="text-sm text-[#8C7E6E] leading-relaxed">
-                  Are you sure you want to reset your taste learning? This will clear your private preference model.
+                  Are you sure you want to reset your taste learning? This will clear your private preference model and keep learning paused until you enable it again.
                 </p>
               </div>
               <div className="space-y-3">
-                <Button 
+                <Button
                   className="w-full h-12 bg-[#2D2926] text-white font-bold rounded-full"
                   onClick={handleReset}
                 >
                   Yes, Reset
                 </Button>
-                <Button 
+                <Button
                   variant="ghost"
                   className="w-full h-12 text-[#2D2926] font-bold rounded-full"
                   onClick={() => setShowResetConfirm(false)}
