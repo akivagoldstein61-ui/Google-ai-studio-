@@ -50,6 +50,11 @@ export interface RankingResult {
   privateAlignment: { alignedAreas: string[]; totalAreas: number };
 }
 
+export interface CandidateRankingContext {
+  preferences?: DiscoveryPreferences;
+  tasteState?: TasteState;
+}
+
 const NEW_USER_WINDOW_MS = 72 * 60 * 60 * 1000;
 const ACTIVE_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -178,6 +183,7 @@ export function selectDailyPicks(input: {
   candidates: Profile[];
   preferences: DiscoveryPreferences;
   tasteState: TasteState;
+  candidateContexts?: Record<string, CandidateRankingContext>;
   limit?: number;
 }): RankedProfile[] {
   return rankFromPreferences(input)
@@ -190,6 +196,7 @@ export function selectExploreProfiles(input: {
   candidates: Profile[];
   preferences: DiscoveryPreferences;
   tasteState: TasteState;
+  candidateContexts?: Record<string, CandidateRankingContext>;
   allowDisclosedSpillover?: boolean;
 }): RankedProfile[] {
   const ranked = rankFromPreferences(input);
@@ -204,6 +211,7 @@ function rankFromPreferences(input: {
   candidates: Profile[];
   preferences: DiscoveryPreferences;
   tasteState: TasteState;
+  candidateContexts?: Record<string, CandidateRankingContext>;
 }): RankedProfile[] {
   return input.candidates
     .map((candidate): RankedProfile | null => {
@@ -211,19 +219,30 @@ function rankFromPreferences(input: {
         candidate.age > input.preferences.ageRange[1];
       const ageIsDealbreaker = input.preferences.dealbreakers?.age ?? true;
       if (outsideAge && ageIsDealbreaker) return null;
-      const hardCtx = hardCtxFromPreferences(input.preferences, outsideAge && !ageIsDealbreaker);
+
+      const viewerHardCtx = hardCtxFromPreferences(input.preferences, outsideAge && !ageIsDealbreaker);
+      const candidateContext = input.candidateContexts?.[candidate.uid] ?? input.candidateContexts?.[candidate.id];
+      const candidatePreferences = candidateContext?.preferences;
+      const viewerOutsideCandidateAge = candidatePreferences
+        ? input.viewer.age < candidatePreferences.ageRange[0] || input.viewer.age > candidatePreferences.ageRange[1]
+        : false;
+      const candidateAgeIsDealbreaker = candidatePreferences?.dealbreakers?.age ?? true;
+      const candidateHardCtx = candidatePreferences
+        ? hardCtxFromPreferences(candidatePreferences, viewerOutsideCandidateAge && !candidateAgeIsDealbreaker)
+        : {};
       const candidateFeatures = profileToFeatureTags(candidate);
+      const viewerFeatures = profileToFeatureTags(input.viewer);
       const result = rank({
         viewer: input.viewer,
         candidate,
-        viewerHardCtx: hardCtx,
+        viewerHardCtx,
         viewerSoftWeights: softWeightsFromPreferences(input.preferences),
-        candidateHardCtx: {},
-        candidateSoftWeights: {},
+        candidateHardCtx,
+        candidateSoftWeights: candidatePreferences ? softWeightsFromPreferences(candidatePreferences) : {},
         viewerTaste: input.tasteState,
-        candidateTaste: emptyTasteStateForRanking(input.tasteState),
+        candidateTaste: candidateContext?.tasteState ?? emptyTasteStateForRanking(input.tasteState),
         candidateFeatures,
-        viewerFeatures: profileToFeatureTags(input.viewer),
+        viewerFeatures,
         fairness: {
           candidateAccountAgeMs: 14 * 24 * 60 * 60 * 1000,
           impressionsLast7d: 10,
