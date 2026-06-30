@@ -1,6 +1,13 @@
 import { auth } from '@/firebase';
 import type { DiscoveryPreferences } from '@/types';
 
+type TasteEventPayload = {
+  paused?: boolean;
+  optedOut?: boolean;
+  value?: number;
+  surface?: 'daily_picks' | 'explore' | 'inbox' | 'profile';
+};
+
 async function getJsonHeaders() {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -28,6 +35,10 @@ export const discoveryService = {
     return apiFetch('/api/taste/profile');
   },
 
+  getTasteInteractions() {
+    return apiFetch('/api/taste/interactions');
+  },
+
   resetTasteProfile() {
     return apiFetch('/api/taste/reset', { method: 'POST', body: JSON.stringify({}) });
   },
@@ -40,10 +51,10 @@ export const discoveryService = {
     return apiFetch('/api/taste/delete', { method: 'POST', body: JSON.stringify({}) });
   },
 
-  recordTasteEvent(name: string, candidateId?: string) {
+  recordTasteEvent(name: string, candidateId?: string, payload: TasteEventPayload = {}) {
     return apiFetch('/api/taste/events', {
       method: 'POST',
-      body: JSON.stringify({ name, candidateId }),
+      body: JSON.stringify({ name, candidateId, ...payload }),
     });
   },
 
