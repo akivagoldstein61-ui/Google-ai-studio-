@@ -24,14 +24,20 @@ describe('discovery interaction exclusion contracts', () => {
     expect(server).toContain('input.dismissed');
   });
 
-  it('still loads an acted-on candidate when recording the like or pass event itself', () => {
+  it('loads the acted-on candidate directly before writing live interaction and taste state', () => {
     const server = readSource('server/discoveryRoutes.ts');
 
-    expect(server).toContain('type CandidatePoolOptions');
-    expect(server).toContain('includeInteracted?: boolean');
-    expect(server).toContain('loadCandidatePool(viewerUid, { includeInteracted: true })');
-    expect(server).toContain('options.includeInteracted');
-    expect(server).toContain('Promise.resolve(emptyInteractionExclusionState())');
+    expect(server).toContain('async function loadCandidateForInteraction(profileId: string): Promise<Profile | null>');
+    expect(server).toContain("db.collection('users').doc(profileId).get()");
+    expect(server).toContain("for (const field of ['uid', 'id'])");
+    expect(server).toContain(".where(field, '==', profileId)");
+    expect(server).toContain('const tasteEventAlreadyRecorded = req.body?.tasteEventAlreadyRecorded === true;');
+    expect(server).toContain('const candidate = await loadCandidateForInteraction(profileId);');
+    expect(server).toContain("error: 'Like candidate profile was not loaded'");
+    expect(server).toContain("error: 'Pass candidate profile was not loaded'");
+    expect(server).toContain('candidateFeatures.length === 0');
+    expect(server).not.toContain('const candidatePool = await loadCandidatePool(viewerUid, { includeInteracted: true });');
+    expect(server).not.toContain('candidateFeatures: candidate ? profileToFeatureTags(candidate) : []');
   });
 
   it('does not serve seeded demo candidates for authenticated live discovery when candidate loading fails', () => {
