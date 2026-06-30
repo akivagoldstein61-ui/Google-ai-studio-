@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Profile } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,13 +23,46 @@ export const DailyPicksScreen: React.FC<{
   const [introAttempted, setIntroAttempted] = useState(false);
   const [pacingData, setPacingData] = useState<{ message_he: string, reflection_prompt_he: string } | null>(null);
   const [pacingAttempted, setPacingAttempted] = useState(false);
+  const sessionStartedAtRef = useRef<number | null>(null);
+  const decisionTimestampsRef = useRef<number[]>([]);
+
+  const startDailyPicksSession = () => {
+    const now = Date.now();
+    sessionStartedAtRef.current = now;
+    decisionTimestampsRef.current = [];
+    setPacingData(null);
+    setPacingAttempted(false);
+    setShowIntro(false);
+    trackEvent('daily_picks_session_started', { userId: user?.id, picksCount: dailyPicks.length });
+  };
+
+  const recordDailyDecision = () => {
+    const now = Date.now();
+    if (!sessionStartedAtRef.current) {
+      sessionStartedAtRef.current = now;
+    }
+    decisionTimestampsRef.current = [...decisionTimestampsRef.current, now];
+  };
+
+  const getPacingMetrics = () => {
+    const now = Date.now();
+    const startedAt = sessionStartedAtRef.current ?? decisionTimestampsRef.current[0] ?? now;
+    const elapsedMinutes = Math.max((now - startedAt) / 60000, 1 / 60);
+    const decisionCount = decisionTimestampsRef.current.length;
+
+    return {
+      sessionLength: Math.max(1, Math.round(elapsedMinutes)),
+      swipeVelocity: Number((decisionCount / elapsedMinutes).toFixed(1)),
+    };
+  };
 
   useEffect(() => {
     if (currentIndex >= dailyPicks.length && !pacingData && !pacingAttempted) {
       const fetchPacing = async () => {
         setPacingAttempted(true);
         try {
-          const result = await aiService.getPacingIntervention(10, 5); // Mock session length and velocity
+          const { sessionLength, swipeVelocity } = getPacingMetrics();
+          const result = await aiService.getPacingIntervention(sessionLength, swipeVelocity);
           if (result) {
             setPacingData(result);
           }
@@ -97,6 +130,7 @@ export const DailyPicksScreen: React.FC<{
 
   const handleLike = async () => {
     if (!currentProfile) return;
+    recordDailyDecision();
     setDirection(1);
     const isMatch = await likeProfile(currentProfile.id);
     if (isMatch) {
@@ -111,6 +145,7 @@ export const DailyPicksScreen: React.FC<{
 
   const handlePass = () => {
     if (!currentProfile) return;
+    recordDailyDecision();
     setDirection(-1);
     passProfile(currentProfile.id);
     setTimeout(() => {
@@ -169,7 +204,7 @@ export const DailyPicksScreen: React.FC<{
             limit={3}
           />
           <Button 
-            onClick={() => setShowIntro(false)}
+            onClick={startDailyPicksSession}
             className="w-full h-14 text-sm font-bold rounded-full bg-[#2D2926] text-white hover:bg-[#1A1816] shadow-xl shadow-black/10 transition-all uppercase tracking-widest"
           >
             View Today's Picks
