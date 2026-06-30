@@ -35,6 +35,43 @@ describe('taste and filtering server contracts', () => {
   });
 });
 
+describe('canonical filtering preference contracts', () => {
+  it('similar_age is a saved preference weight and reaches both ranking paths', () => {
+    const types = readSource('src/types.ts');
+    const grammar = readSource('src/lib/filteringGrammar.ts');
+    const integratedRanking = readSource('src/lib/integratedRanking.ts');
+    const serverDefaults = readSource('server/discoveryRoutes.ts');
+
+    expect(types).toContain('similar_age?: number');
+    expect(grammar).toContain('similar_age: preferences.softPreferenceWeights?.similar_age');
+    expect(integratedRanking).toContain('similar_age: preferences.softPreferenceWeights?.similar_age');
+    expect(serverDefaults).toContain("softPreferences: ['shared_interests', 'same_city', 'similar_age']");
+  });
+
+  it('filtering skill persists canonical controls and shows pool impact before saving', () => {
+    const source = readSource('src/features/skills/FilteringMarketplaceSkill.tsx');
+
+    expect(source).toContain('data-testid="pool-impact-preview"');
+    expect(source).toContain('setPreferences(next)');
+    expect(source).toContain("id: 'similar_age'");
+    expect(source).toContain("hardFilterId: 'verified'");
+    expect(source).toContain("current_pool: poolImpact.tier");
+  });
+
+  it('Explore drawer uses canonical preference ids instead of arbitrary interest tags', () => {
+    const source = readSource('src/features/discovery/ExploreScreen.tsx');
+
+    expect(source).toContain("id: 'shared_interests'");
+    expect(source).toContain("id: 'same_city'");
+    expect(source).toContain("id: 'similar_observance'");
+    expect(source).toContain("id: 'similar_age'");
+    expect(source).toContain("id: 'open_exploration'");
+    expect(source).not.toContain("'Urban'");
+    expect(source).not.toContain("'Tech-focused'");
+    expect(source).toContain('hardFilters: Array.from(hardFilters)');
+  });
+});
+
 describe('canonical learned-taste behavior', () => {
   const candidate: Pick<Profile, 'tags' | 'observance' | 'intent'> = {
     tags: ['Traditional', 'Hiking'],
