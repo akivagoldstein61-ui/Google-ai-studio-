@@ -6,10 +6,14 @@ import {
   reciprocalScore,
   fairnessMultiplier,
   adjustedFinalScore,
+  type HardFilterContext,
   type HardFilterId,
   type SoftPreferenceId,
   type FairnessState,
 } from '@/lib/filteringGrammar';
+import { estimateDistanceKm } from '@/lib/integratedRanking';
+import { implicitAffinity } from '@/lib/learnedTaste';
+import { profileToFeatureTags } from '@/lib/tastePersistence';
 import { MOCK_PROFILES } from '@/data/mockProfiles';
 import { useApp } from '@/context/AppContext';
 import type { DiscoveryPreferences, Profile, RecommendationMode } from '@/types';
@@ -77,6 +81,40 @@ function evaluatePoolImpact(pool: Profile[], prefs: DiscoveryPreferences) {
     excluded: Math.max(0, total - admitted),
     remainingPercent,
     tier: impactTier(remainingPercent),
+  };
+}
+
+function profileKey(profile: Profile): string {
+  return profile.uid || profile.id;
+}
+
+function uniqueProfiles(profiles: Profile[]): Profile[] {
+  const seen = new Set<string>();
+  const output: Profile[] = [];
+  for (const profile of profiles) {
+    const key = profileKey(profile);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    output.push(profile);
+  }
+  return output;
+}
+
+function practiceTags(profile: Profile): string[] {
+  return [...profile.tags, profile.observance]
+    .map((tag) => tag.toLowerCase().trim().replace(/\s+/g, '_'));
+}
+
+function softWeightsFromPreferences(preferences: DiscoveryPreferences): Partial<Record<SoftPreferenceId, number>> {
+  return {
+    shared_interests: preferences.softPreferenceWeights?.shared_interests ??
+      (preferences.softPreferences.includes('shared_interests') ? 0.5 : undefined),
+    same_city: preferences.softPreferenceWeights?.same_city ??
+      (preferences.softPreferences.includes('same_city') ? 0.5 : undefined),
+    shared_observance_label: preferences.softPreferenceWeights?.similar_observance ??
+      (preferences.softPreferences.includes('similar_observance') ? 0.5 : undefined),
+    similar_age: preferences.softPreferenceWeights?.similar_age ??
+      (preferences.softPreferences.includes('similar_age') ? 0.5 : undefined),
   };
 }
 
@@ -317,7 +355,7 @@ function ScoreBar({ value, color = 'bg-amber-400' }: { value: number; color?: st
   return (
     <div className="flex items-center gap-2">
       <div className="h-2 w-24 bg-[#F3EFEA] rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${value * 100}%` }} />
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
       </div>
       <span className="text-[10px] font-mono text-[#8C7E6E]">{value.toFixed(3)}</span>
     </div>
@@ -325,39 +363,68 @@ function ScoreBar({ value, color = 'bg-amber-400' }: { value: number; color?: st
 }
 
 export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { user, preferences, dailyPicks, exploreProfiles, tasteState } = useApp();
+  const currentCandidatePool = useMemo(() => {
+    const live = uniqueProfiles([...dailyPicks, ...exploreProfiles]);
+    return live.length > 0 ? live : MOCK_PROFILES;
+  }, [dailyPicks, exploreProfiles]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState('');
   const [requireVerified, setRequireVerified] = useState(false);
   const [requireShabbat, setRequireShabbat] = useState(false);
-  const [maxAge, setMaxAge] = useState(40);
+  const [maxAge, setMaxAge] = useState(preferences.ageRange[1]);
 
-  const candidate = MOCK_PROFILES[0];
+  useEffect(() => {
+    setMaxAge(preferences.ageRange[1]);
+  }, [preferences.ageRange]);
 
-  const hardCtx = {
-    ageRange: [22, maxAge] as [number, number],
-    verifiedOnly: requireVerified,
+  useEffect(() => {
+    if (currentCandidatePool.length === 0) return;
+    if (!currentCandidatePool.some((profile) => profileKey(profile) === selectedCandidateId)) {
+      setSelectedCandidateId(profileKey(currentCandidatePool[0]));
+    }
+  }, [currentCandidatePool, selectedCandidateId]);
+
+  const candidate = currentCandidatePool.find((profile) => profileKey(profile) === selectedCandidateId) ??
+    currentCandidatePool[0] ??
+    MOCK_PROFILES[0];
+  const viewer = user ?? MOCK_PROFILES.find((profile) => profileKey(profile) !== profileKey(candidate)) ?? candidate;
+  const comparisonProfile = currentCandidatePool.find((profile) => profileKey(profile) !== profileKey(candidate)) ?? viewer;
+  const inspectorMaxAge = Math.max(preferences.ageRange[0], maxAge);
+  const candidateDistanceKm = estimateDistanceKm(viewer, candidate);
+
+  const savedViolation = violatesHardFilters(candidate, preferences);
+  const hardCtx: HardFilterContext = {
+    ageRange: [preferences.ageRange[0], inspectorMaxAge],
+    maxDistanceKm: preferences.dealbreakers?.distance === false ? undefined : preferences.maxDistance,
+    candidateDistanceKm: candidateDistanceKm ?? undefined,
+    genderPreference: preferences.dealbreakers?.gender === false ? undefined : preferences.genderPreference,
+    intentPreference: preferences.dealbreakers?.intent === false ? undefined : preferences.intentPreference,
+    verifiedOnly: requireVerified || preferences.dealbreakers?.verified === true || preferences.hardFilters.includes('verified'),
     requireShomerShabbat: requireShabbat,
+    candidatePracticeTags: practiceTags(candidate),
   };
   const violation = violatesHardFilters(candidate, hardCtx);
 
-  const softWeights: Partial<Record<SoftPreferenceId, number>> = {
-    shared_interests: 0.7,
-    similar_age: 0.5,
-    same_city: 0.4,
-    shared_observance_label: 0.6,
-  };
-
+  const softWeights = softWeightsFromPreferences(preferences);
+  const viewerAffinity = implicitAffinity(tasteState, profileToFeatureTags(candidate));
   const viewerScore = directionalScore({
-    viewer: candidate,
-    candidate: MOCK_PROFILES[1] ?? candidate,
-    hardCtx: {},
-    softWeights,
-    implicitAffinity: 0.3,
+    viewer,
+    candidate,
+    preferences,
+    implicitAffinity: viewerAffinity,
   });
   const candidateScore = directionalScore({
-    viewer: MOCK_PROFILES[1] ?? candidate,
-    candidate,
+    viewer: candidate,
+    candidate: viewer,
     hardCtx: {},
     softWeights,
-    implicitAffinity: 0.2,
+    implicitAffinity: 0,
+  });
+  const comparisonScore = directionalScore({
+    viewer,
+    candidate: comparisonProfile,
+    preferences,
+    implicitAffinity: implicitAffinity(tasteState, profileToFeatureTags(comparisonProfile)),
   });
   const reciprocal = reciprocalScore(viewerScore.score, candidateScore.score);
 
@@ -406,24 +473,57 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
         </section>
 
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Hard Filters (Dealbreakers)</h2>
-          <p className="text-xs text-[#6B5E52] italic">Toggle these to test hard-filter violations on a demo candidate.</p>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Candidate Admissibility Inspector</h2>
+          <p className="text-xs text-[#6B5E52] italic">Inspect the active discovery pool against saved filters and stricter what-if constraints.</p>
 
           <div className="space-y-3">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]" htmlFor="filtering-candidate-select">
+              Candidate
+            </label>
+            <select
+              id="filtering-candidate-select"
+              value={profileKey(candidate)}
+              onChange={(event) => setSelectedCandidateId(event.target.value)}
+              className="w-full p-3 rounded-xl bg-[#F7F2EE] border border-[#E5E0DB] text-xs font-medium outline-none focus:border-lime-300"
+            >
+              {currentCandidatePool.map((profile) => (
+                <option key={profileKey(profile)} value={profileKey(profile)}>
+                  {profile.displayName} · {profile.age} · {profile.city}
+                </option>
+              ))}
+            </select>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-[#F7F2EE] rounded-xl">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Saved policy</p>
+                <p className={savedViolation.violates ? 'text-red-700 font-bold mt-1' : 'text-green-700 font-bold mt-1'}>
+                  {savedViolation.violates ? HARD_FILTER_LABELS[savedViolation.reason] : 'Admissible'}
+                </p>
+              </div>
+              <div className="p-3 bg-[#F7F2EE] rounded-xl">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Distance</p>
+                <p className="text-[#2D2926] font-bold mt-1">{candidateDistanceKm == null ? 'Unknown' : `${candidateDistanceKm} km`}</p>
+              </div>
+              <div className="p-3 bg-[#F7F2EE] rounded-xl">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">Pool source</p>
+                <p className="text-[#2D2926] font-bold mt-1">{dailyPicks.length + exploreProfiles.length > 0 ? 'Live discovery' : 'Fallback seed'}</p>
+              </div>
+            </div>
+
             <div className="flex items-center gap-4 p-3 bg-[#F7F2EE] rounded-xl">
-              <span className="text-xs font-medium min-w-[100px]">Max age</span>
-              <input type="range" min={20} max={60} value={maxAge}
-                onChange={e => { const v = Number(e.target.value); if (!Number.isNaN(v)) setMaxAge(Math.max(20, Math.min(60, v))); }}
+              <span className="text-xs font-medium min-w-[100px]">What-if max age</span>
+              <input type="range" min={18} max={80} value={inspectorMaxAge}
+                onChange={e => { const v = Number(e.target.value); if (!Number.isNaN(v)) setMaxAge(Math.max(18, Math.min(80, v))); }}
                 className="flex-1 accent-lime-500"
               />
-              <span className="text-xs font-mono w-8">{maxAge}</span>
+              <span className="text-xs font-mono w-8">{inspectorMaxAge}</span>
             </div>
 
             <button
               onClick={() => setRequireVerified(v => !v)}
               className={`w-full flex items-center justify-between p-3 rounded-xl text-xs transition-all ${requireVerified ? 'bg-lime-50 border-lime-200 border' : 'bg-[#F7F2EE]'}`}
             >
-              <span className="font-medium">Verified only</span>
+              <span className="font-medium">Require verified in inspector</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${requireVerified ? 'bg-lime-100 text-lime-700' : 'bg-[#E5E0DB] text-[#8C7E6E]'}`}>
                 {requireVerified ? 'ON' : 'OFF'}
               </span>
@@ -433,7 +533,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
               onClick={() => setRequireShabbat(v => !v)}
               className={`w-full flex items-center justify-between p-3 rounded-xl text-xs transition-all ${requireShabbat ? 'bg-lime-50 border-lime-200 border' : 'bg-[#F7F2EE]'}`}
             >
-              <span className="font-medium">Shomer Shabbat required</span>
+              <span className="font-medium">Require Shomer Shabbat tag in inspector</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${requireShabbat ? 'bg-lime-100 text-lime-700' : 'bg-[#E5E0DB] text-[#8C7E6E]'}`}>
                 {requireShabbat ? 'ON' : 'OFF'}
               </span>
@@ -446,25 +546,29 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
               : <Check size={16} className="text-green-600 shrink-0" />}
             <span className={violation.violates ? 'text-red-800' : 'text-green-800'}>
               {violation.violates
-                ? `Hard filter violated: "${HARD_FILTER_LABELS[violation.reason]}" -> candidate excluded (score = 0)`
-                : 'No hard filter violations - candidate is admissible'}
+                ? `Inspector hard filter violated: "${HARD_FILTER_LABELS[violation.reason]}" -> candidate excluded (score = 0)`
+                : 'No inspector hard filter violations - candidate is admissible'}
             </span>
           </div>
         </section>
 
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Soft Preference Scoring (Demo)</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Live Preference Scoring</h2>
           <p className="text-xs text-[#6B5E52] italic">
-            Score = 0.5 x explicit_match + 0.4 x implicit_affinity + 0.1 x context_boost
+            Viewer score uses your saved preferences and private taste state. Candidate-side score uses visible profile overlap because other members' private taste is not exposed in the client.
           </p>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-[#F7F2EE] rounded-xl text-xs">
-              <span className="font-medium">Viewer to Candidate score</span>
+              <span className="font-medium">You to {candidate.displayName}</span>
               <ScoreBar value={viewerScore.score} />
             </div>
             <div className="flex items-center justify-between p-3 bg-[#F7F2EE] rounded-xl text-xs">
-              <span className="font-medium">Candidate to Viewer score</span>
+              <span className="font-medium">Visible reciprocal estimate</span>
               <ScoreBar value={candidateScore.score} />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-[#F7F2EE] rounded-xl text-xs">
+              <span className="font-medium">Comparison: {comparisonProfile.displayName}</span>
+              <ScoreBar value={comparisonScore.score} color="bg-lime-400" />
             </div>
             <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-xl text-xs">
               <span className="font-bold">Reciprocal harmonic mean</span>
@@ -482,7 +586,7 @@ export const FilteringMarketplaceSkill: React.FC<{ onBack: () => void }> = ({ on
 
         <section className="bg-white border border-[#F3EFEA] rounded-[24px] p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[#8C7E6E]">Exposure Fairness Multiplier</h2>
-          <p className="text-xs text-[#6B5E52] italic">Adjust these to see how new-user boost, anti-starvation, and popularity cool-down affect the final score.</p>
+          <p className="text-xs text-[#6B5E52] italic">Adjust these to see how new-user boost, anti-starvation, and popularity cool-down affect the selected candidate's final score.</p>
 
           <div className="space-y-3">
             {[
