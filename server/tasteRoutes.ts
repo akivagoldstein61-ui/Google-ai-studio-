@@ -319,7 +319,18 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
 });
 
 router.post('/reset', async (req: AuthenticatedRequest, res) => {
-  const previousProfile = req.uid ? await loadTasteProfile(req.uid) : cloneEmptyTasteProfile();
+  if (!req.uid) {
+    res.status(401).json({ error: 'Authentication required', persisted: false });
+    return;
+  }
+
+  const db = getOptionalAdminFirestore();
+  if (!db) {
+    res.status(503).json({ error: 'Taste reset persistence unavailable', persisted: false });
+    return;
+  }
+
+  const previousProfile = await loadTasteProfile(req.uid);
   const profile = normalizeTasteProfile({
     ...cloneEmptyTasteProfile(),
     learning: {
@@ -328,35 +339,45 @@ router.post('/reset', async (req: AuthenticatedRequest, res) => {
       lastUpdatedAt: new Date().toISOString(),
     },
   });
+  const resetState: TasteState = {
+    ...emptyTasteState(),
+    learningPaused: profile.learning.paused,
+    optedOut: profile.learning.optedOut,
+  };
+  const serializedResetState = serializeTasteState(resetState);
+  const interactions = emptyInteractions();
+  const userPrivate = db.collection('users').doc(req.uid).collection(PRIVATE_COLLECTION);
+  const batch = db.batch();
 
-  if (req.uid) {
-    await tasteProfileRef(req.uid)?.set(profile).catch(() => null);
-    await tasteStateRef(req.uid)?.set({
-      fast: {},
-      slow: {},
-      lastUpdatedMs: Date.now(),
-      learningPaused: profile.learning.paused,
-      optedOut: profile.learning.optedOut,
-    }).catch(() => null);
-    await interactionsRef(req.uid)?.set({
-      likes: [],
-      passes: [],
-      moreLikeThis: [],
-      lessLikeThis: [],
-      resetAt: FieldValue.serverTimestamp(),
-    }, { merge: true }).catch(() => null);
-    await persistTasteEventAudit(req.uid, {
-      name: 'taste_reset',
-      eventClass: 'policy_consent',
-      candidateId: null,
-      surface: null,
-      candidateFeaturesCaptured: 0,
-    });
+  batch.set(userPrivate.doc('taste_profile'), profile, { merge: false });
+  batch.set(userPrivate.doc('taste_state'), serializedResetState, { merge: false });
+  batch.set(userPrivate.doc('interactions'), {
+    ...interactions,
+    resetAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  batch.set(userPrivate.doc('taste_events').collection('events').doc(), {
+    name: 'taste_reset',
+    eventClass: 'policy_consent',
+    candidateId: null,
+    surface: null,
+    candidateFeaturesCaptured: 0,
+    occurredAt: new Date().toISOString(),
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Taste reset was not persisted', persisted: false });
+    return;
   }
+
   res.json({
     success: true,
+    persisted: true,
     userId: req.uid,
     profile,
+    tasteState: serializedResetState,
+    interactions,
   });
 });
 
@@ -374,18 +395,34 @@ router.get('/export', async (req: AuthenticatedRequest, res) => {
 });
 
 router.post('/delete', async (req: AuthenticatedRequest, res) => {
-  if (req.uid) {
-    await tasteProfileRef(req.uid)?.delete().catch(() => null);
-    await tasteStateRef(req.uid)?.delete().catch(() => null);
-    await interactionsRef(req.uid)?.set({
-      likes: [],
-      passes: [],
-      moreLikeThis: [],
-      lessLikeThis: [],
-      deletedAt: FieldValue.serverTimestamp(),
-    }, { merge: true }).catch(() => null);
+  if (!req.uid) {
+    res.status(401).json({ error: 'Authentication required', persisted: false });
+    return;
   }
-  res.json({ success: true, userId: req.uid });
+
+  const db = getOptionalAdminFirestore();
+  if (!db) {
+    res.status(503).json({ error: 'Taste delete persistence unavailable', persisted: false });
+    return;
+  }
+
+  const interactions = emptyInteractions();
+  const userPrivate = db.collection('users').doc(req.uid).collection(PRIVATE_COLLECTION);
+  const batch = db.batch();
+  batch.delete(userPrivate.doc('taste_profile'));
+  batch.delete(userPrivate.doc('taste_state'));
+  batch.set(userPrivate.doc('interactions'), {
+    ...interactions,
+    deletedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Taste delete was not persisted', persisted: false });
+    return;
+  }
+
+  res.json({ success: true, persisted: true, userId: req.uid, interactions });
 });
 
 async function loadTasteProfile(uid: string) {
@@ -417,45 +454,6 @@ async function summarizeInteractionValue(value: string) {
 function summarizeProfileForTaste(profile: Profile) {
   const tags = profile.tags.length > 0 ? profile.tags.join(', ') : 'none listed';
   return `Profile with tags: ${tags} and observance: ${profile.observance}`;
-}
-
-async function persistTasteEventAudit(
-  uid: string,
-  payload: {
-    name: EventName;
-    eventClass: EventClass;
-    candidateId: string | null;
-    surface: TasteEvent['surface'] | null;
-    candidateFeaturesCaptured: number;
-  },
-) {
-  const db = getOptionalAdminFirestore();
-  if (!db) return;
-  await db
-    .collection('users')
-    .doc(uid)
-    .collection(PRIVATE_COLLECTION)
-    .doc('taste_events')
-    .collection('events')
-    .add({
-      ...payload,
-      occurredAt: new Date().toISOString(),
-      createdAt: FieldValue.serverTimestamp(),
-    })
-    .catch(() => null);
-}
-
-async function persistInteractionSummary(
-  uid: string,
-  name: EventName,
-  candidateId: string | undefined,
-) {
-  const field = INTERACTION_FIELD_BY_EVENT[name];
-  if (!field || !candidateId) return;
-  await interactionsRef(uid)?.set({
-    [field]: FieldValue.arrayUnion(candidateId),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true }).catch(() => null);
 }
 
 async function loadCandidateProfile(candidateId: string): Promise<Profile | null> {
