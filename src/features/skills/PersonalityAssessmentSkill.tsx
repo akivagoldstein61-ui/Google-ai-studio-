@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Brain, Check, AlertTriangle, Play, Pause, Sparkles, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { PersonalityAssessment, SCORING_VERSION } from '@/components/onboarding/PersonalityAssessment';
-
-const DOMAIN_ORDER = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'];
+import { PersonalityAssessment } from '@/components/onboarding/PersonalityAssessment';
+import type { PersonalityAssessmentReport } from '@/personality/scoring';
 
 /**
- * LIVE: runs the real, versioned 20-item BFAS/IPIP assessment used in
- * onboarding (deterministic scoring, no LLM) and shows the computed 0–100
- * domain approximations. This is the actual instrument, not a mock.
+ * LIVE: runs the real, versioned 20-item Kesher assessment used in
+ * onboarding (deterministic scoring, no LLM) and shows private domain bands.
  */
 const LiveAssessment: React.FC = () => {
-  const [scores, setScores] = useState<Record<string, number> | null>(null);
-  const [version, setVersion] = useState<string | null>(null);
+  const [report, setReport] = useState<PersonalityAssessmentReport | null>(null);
 
-  if (scores) {
+  if (report) {
     return (
       <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
@@ -24,26 +21,24 @@ const LiveAssessment: React.FC = () => {
               <Check size={16} />
               <span className="text-[10px] font-bold uppercase tracking-widest">Your deterministic result</span>
             </div>
-            <button onClick={() => { setScores(null); setVersion(null); }} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white">
+            <button onClick={() => setReport(null)} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-white">
               <RotateCcw size={12} /> Retake
             </button>
           </div>
           <div className="space-y-2.5">
-            {DOMAIN_ORDER.filter((d) => typeof scores[d] === 'number').map((d) => (
-              <div key={d} className="space-y-1">
+            {report.domains.map((domain) => (
+              <div key={domain.id} className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-white/90">{d}</span>
-                  <span className="text-[10px] text-white/50 font-mono">{scores[d]}%</span>
+                  <span className="text-xs font-bold text-white/90">{domain.label_en}</span>
+                  <span className="text-[10px] text-white/50 font-bold uppercase tracking-widest">{domain.band}</span>
                 </div>
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${Math.max(0, Math.min(100, scores[d]))}%` }} />
-                </div>
+                <p className="text-[10px] text-white/60 leading-relaxed">{domain.dating_note_he}</p>
               </div>
             ))}
           </div>
           <p className="text-[9px] text-white/40 italic">
-            Scored deterministically (no AI) · {version ?? SCORING_VERSION}. Approximate display values, not validated
-            percentiles. Raw answers stay private — only derived bands are ever sent to AI features.
+            Scored deterministically (no AI) · {report.instrument_version} · {report.score_version}.
+            Raw answers stay private and are not included in exports or AI feature prompts.
           </p>
         </div>
       </section>
@@ -57,15 +52,10 @@ const LiveAssessment: React.FC = () => {
         <span className="text-[10px] font-bold uppercase tracking-widest">Try the real assessment</span>
       </div>
       <p className="text-xs text-[#6B5E52] leading-relaxed italic">
-        This is the same opt-in, versioned 20-item instrument used in onboarding. Scoring is deterministic — no LLM
+        This is the same opt-in, versioned 20-item Kesher reflection used in onboarding. Scoring is deterministic — no LLM
         scores you. Reverse-keyed items are handled, and your raw answers never leave your private store.
       </p>
-      <PersonalityAssessment
-        onComplete={(s, meta) => {
-          setScores(s);
-          setVersion(meta?.scoringVersion ?? SCORING_VERSION);
-        }}
-      />
+      <PersonalityAssessment onComplete={setReport} />
     </section>
   );
 };

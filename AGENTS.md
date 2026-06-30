@@ -8,7 +8,7 @@ Build Kesher as a trustworthy, privacy-sensitive, serious-intent Jewish dating p
 
 - App source of truth: `akivagoldstein61-ui/Google-ai-studio-` on `main`.
 - This is a React 19 + Vite frontend served by an Express API in `server.ts`.
-- The product is a Kesher trust-forward dating prototype with Firebase auth/data and server-side Gemini AI routes.
+- The product is the Kesher trust-forward dating app with Firebase auth/data and server-side Gemini AI routes.
 
 ## Stable Project Rules
 
@@ -72,7 +72,7 @@ Build Kesher as a trustworthy, privacy-sensitive, serious-intent Jewish dating p
 
 - Canonical app types are in `src/types.ts`.
 - `src/types/index.ts` exists but is not currently imported by the app.
-- `AI_ROUTE_AUTH_MODE=prototype` allows unauthenticated AI route testing; strict mode requires Firebase Admin initialization and bearer tokens.
+- `AI_ROUTE_AUTH_MODE=strict` is the production default for AI routes; `prototype` is only for local unauthenticated testing. Strict mode requires Firebase Admin initialization and bearer tokens.
 
 ## Skill Usage Rules
 

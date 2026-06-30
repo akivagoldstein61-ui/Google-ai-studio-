@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Shield, Eye, RefreshCw, Info, ChevronLeft, Check, AlertTriangle } from 'lucide-react';
+import { Sparkles, Shield, Eye, RefreshCw, Info, ChevronLeft, Check, AlertTriangle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AI_FEATURE_REGISTRY } from '@/ai/featureRegistry';
 import {
@@ -237,6 +237,28 @@ export const AITrustHub: React.FC<{ onBack: () => void, onShowTasteProfile?: () 
                 </div>
               </div>
             </button>
+          </div>
+        </section>
+
+        {/* Personality Disclosure */}
+        <section className="space-y-6">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">Personality Disclosure</h4>
+          <div className="bg-white border border-[#F3EFEA] rounded-[32px] p-6 space-y-4 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-[#F7F2EE] rounded-full flex items-center justify-center text-[#2D2926] shrink-0">
+                <Brain size={18} />
+              </div>
+              <div className="space-y-2">
+                <h5 className="font-bold text-[#2D2926]">Private personality reflection</h5>
+                <p className="text-xs text-[#8C7E6E] leading-relaxed italic">
+                  The current assessment uses original Kesher reflection items. Scoring is deterministic, stores instrument and score versions, and does not use AI to score answers.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-2 text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+              <span>Excluded: raw answers, raw trait public display, safety flags, hidden rank, private taste, protected trait inference</span>
+              <span>Controls: reset, delete, export summary, revoke future share grants</span>
+            </div>
           </div>
         </section>
 

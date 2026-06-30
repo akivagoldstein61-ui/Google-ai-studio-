@@ -17,6 +17,7 @@ import { aiService } from "@/services/aiService";
 import { SkillContextPanel } from "@/features/skills/components/SkillContextPanel";
 
 import { PersonalityAssessment } from "./PersonalityAssessment";
+import type { PersonalityAssessmentReport } from "@/personality/scoring";
 
 interface Photo {
   id: string;
@@ -43,14 +44,8 @@ export const ProfileBuilder: React.FC<{
     ],
   );
   const [bio, setBio] = useState(initialData?.bio || "");
-  const [personalityScores, setPersonalityScores] = useState<Record<
-    string,
-    number
-  > | null>(initialData?.personalityScores || null);
-  const [personalityMeta, setPersonalityMeta] = useState<{
-    scoringVersion: string;
-    completedAt: string;
-  } | null>(initialData?.personalityMeta || null);
+  const [personalityScores, setPersonalityScores] =
+    useState<PersonalityAssessmentReport | null>(initialData?.personalityScores || null);
   const [isCoaching, setIsCoaching] = useState(false);
   const [coachDrafts, setCoachDrafts] = useState<any[]>([]);
   const [coachQuestions, setCoachQuestions] = useState<string[]>([]);
@@ -160,34 +155,29 @@ export const ProfileBuilder: React.FC<{
             <span>Private by default</span>
           </div>
           <h3 className="text-2xl font-serif italic tracking-tight text-[#2D2926]">
-            Personality Matrix
+            Private Personality Reflection
           </h3>
           <p className="text-sm text-[#8C7E6E] italic">
-            Discover your dating blueprint. This is only visible to you.
+            Original Kesher reflection. Private by default and scored without AI.
           </p>
         </div>
         {!personalityScores ? (
-          <PersonalityAssessment
-            onComplete={(scores, meta) => {
-              setPersonalityScores(scores);
-              if (meta) {
-                setPersonalityMeta({
-                  scoringVersion: meta.scoringVersion,
-                  completedAt: meta.completedAt,
-                });
-              }
-            }}
-          />
+          <PersonalityAssessment onComplete={setPersonalityScores} />
         ) : (
           <div className="p-8 bg-white border border-[#F3EFEA] rounded-[32px] space-y-4 shadow-sm text-center">
             <div className="w-16 h-16 bg-[#D4AF37]/10 rounded-full flex items-center justify-center mx-auto text-[#D4AF37]">
               <Check size={32} />
             </div>
             <h3 className="text-xl font-serif italic text-[#2D2926]">
-              Assessment Complete
+              Private Report Ready
             </h3>
             <p className="text-sm text-[#8C7E6E] italic">
-              Your personality profile is ready.
+              {personalityScores.is_partial
+                ? "Finish the remaining items before relying on this report."
+                : "Your private personality report is ready."}
+            </p>
+            <p className="text-[10px] text-[#8C7E6E] uppercase tracking-widest">
+              {personalityScores.instrument_version} • {personalityScores.score_version} • {personalityScores.item_text_source}
             </p>
           </div>
         )}
@@ -639,7 +629,7 @@ export const ProfileBuilder: React.FC<{
             !isVerified
           }
           onClick={() =>
-            onComplete({ photos, prompts, bio, personalityScores, personalityMeta, isVerified })
+            onComplete({ photos, prompts, bio, personalityScores, isVerified })
           }
         >
           Complete Profile

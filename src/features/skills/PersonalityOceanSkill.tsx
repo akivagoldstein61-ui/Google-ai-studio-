@@ -30,41 +30,35 @@ const OBSERVANCE_MASORTI_DATI: ObservanceProfile = { selfDescriptionId: 'masorti
 
 const AREA_LABELS: Record<string, string> = { shabbat: 'Shabbat', kashrut: 'Kashrut', community: 'Community', family: 'Family' };
 
-const OCEAN_KEYS = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'] as const;
-
 /**
- * LIVE: renders the signed-in user's REAL deterministic OCEAN domain scores
- * (from the opt-in assessment) as owner-only reflection bars. Tendencies, not
+ * LIVE: renders the signed-in user's real deterministic Kesher domain report
+ * (from the opt-in assessment) as owner-only reflection cards. Tendencies, not
  * fixed labels; observance is shown as a separate self-declared layer.
  */
 const LiveOcean: React.FC = () => {
   const { user } = useApp();
-  const scores = (user?.personalityScores ?? {}) as Record<string, number>;
-  const has = OCEAN_KEYS.some((k) => typeof scores[k] === 'number');
+  const domains = user?.personalityScores?.domains ?? [];
+  const has = domains.length > 0;
 
   return (
     <section className="p-6 bg-[#2D2926] rounded-[28px] text-white space-y-4 relative overflow-hidden">
       <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#D4AF37]/10 blur-3xl" />
       <div className="relative z-10 space-y-4">
-        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your OCEAN profile</span></div>
+        <div className="flex items-center gap-2 text-[#D4AF37]"><Sparkles size={16} /><span className="text-[10px] font-bold uppercase tracking-widest">Your private profile</span></div>
         {!user ? (
-          <p className="text-sm text-white/70 italic">Sign in to see your private OCEAN reflection.</p>
+          <p className="text-sm text-white/70 italic">Sign in to see your private personality reflection.</p>
         ) : !has ? (
-          <p className="text-sm text-white/70 italic leading-relaxed">Take the optional personality assessment first — your five OCEAN domains will appear here as a private reflection.</p>
+          <p className="text-sm text-white/70 italic leading-relaxed">Take the optional personality assessment first — your five private domains will appear here as reflection cards.</p>
         ) : (
           <div className="space-y-2.5">
-            {OCEAN_KEYS.map((k) => {
-              const v = typeof scores[k] === 'number' ? Math.max(0, Math.min(100, scores[k])) : null;
-              if (v === null) return null;
+            {domains.map((domain) => {
               return (
-                <div key={k} className="space-y-1">
+                <div key={domain.id} className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-white/90">{FRIENDLY[k] ?? k}</span>
-                    <span className="text-[10px] text-white/50 font-mono">{v}%</span>
+                    <span className="text-xs font-bold text-white/90">{domain.label_en}</span>
+                    <span className="text-[10px] text-white/50 font-bold uppercase tracking-widest">{domain.band}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${v}%` }} />
-                  </div>
+                  <p className="text-[10px] text-white/60 leading-relaxed">{domain.dating_note_he}</p>
                 </div>
               );
             })}

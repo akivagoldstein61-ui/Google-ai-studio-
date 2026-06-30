@@ -114,7 +114,7 @@ export async function createApp(): Promise<Express> {
       source: "express-server",
       service: "kesher",
       path: req.originalUrl,
-      message: "API route not implemented in this prototype server.",
+      message: "API route not implemented on this server.",
       timestamp: new Date().toISOString(),
     });
   });
@@ -145,7 +145,10 @@ if (!isServerless) {
     if (process.env.NODE_ENV !== "production") {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
-        server: { middlewareMode: true },
+        server: {
+          middlewareMode: true,
+          hmr: process.env.DISABLE_HMR === "true" ? false : undefined,
+        },
         appType: "spa",
       });
       app.use(vite.middlewares);
