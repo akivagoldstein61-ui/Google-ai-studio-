@@ -123,17 +123,23 @@ router.post('/preferences', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const persisted = await db
-    .collection('users')
-    .doc(viewerUid)
-    .collection(PRIVATE_COLLECTION)
-    .doc('discovery_preferences')
-    .set({
-      ...nextPreferences,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: false })
-    .then(() => true)
-    .catch(() => false);
+  const userPrivate = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION);
+  const batch = db.batch();
+  batch.set(userPrivate.doc('discovery_preferences'), {
+    ...nextPreferences,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: false });
+  batch.set(userPrivate.doc('taste_events').collection('events').doc(), {
+    name: 'hard_filter_edited',
+    eventClass: 'policy_consent',
+    candidateId: null,
+    surface: null,
+    candidateFeaturesCaptured: 0,
+    occurredAt: new Date().toISOString(),
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
 
   if (!persisted) {
     res.status(500).json({
