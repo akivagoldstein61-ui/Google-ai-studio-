@@ -262,6 +262,16 @@ export const PrivateTasteProfile: React.FC<{ onBack: () => void }> = ({ onBack }
   const handleReset = async () => {
     await runProfileAction('reset', 'Could not reset private taste profile. Please try again.', async () => {
       await resetTasteProfile();
+      const resetDraft = emptyPrivateTasteProfile(true);
+      setEditedProfile({
+        ...resetDraft,
+        learning: {
+          ...resetDraft.learning,
+          paused: tasteProfile.learning.paused,
+          optedOut: tasteProfile.learning.optedOut,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      });
       setShowResetConfirm(false);
     });
   };
