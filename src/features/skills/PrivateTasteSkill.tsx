@@ -129,6 +129,7 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   const { user, interactions, tasteProfile, setTasteProfile, resetTasteProfile, trackEvent } = useApp();
   const [loading, setLoading] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
 
   const counts = {
     likes: interactions?.likes?.length ?? 0,
@@ -145,6 +146,7 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   const build = async () => {
     setLoading(true);
     setAttempted(true);
+    setModelError(null);
     try {
       const result = await aiService.analyzeTasteProfile(interactions, tasteProfile);
       if (result) {
@@ -157,21 +159,32 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
             lastUpdatedAt: new Date().toISOString(),
           },
         });
-        setTasteProfile(mergedProfile);
+        await setTasteProfile(mergedProfile);
         trackEvent?.('skill_taste_model_built', { hasResult: true, signalCount, persisted: true });
       } else {
         trackEvent?.('skill_taste_model_built', { hasResult: false, signalCount, persisted: false });
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to build private taste model:', error);
+      setModelError('Could not save your private taste model. Please try again.');
       trackEvent?.('skill_taste_model_built', { hasResult: false, signalCount, persisted: false });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    resetTasteProfile?.();
-    setAttempted(false);
+  const handleReset = async () => {
+    setLoading(true);
+    setModelError(null);
+    try {
+      await resetTasteProfile?.();
+      setAttempted(false);
+    } catch (error) {
+      console.error('Failed to reset private taste model:', error);
+      setModelError('Could not reset your private taste model. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!enabled) {
@@ -200,6 +213,12 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
           <>
             <SignalPills counts={counts} />
 
+            {modelError && (
+              <p role="alert" className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-100">
+                {modelError}
+              </p>
+            )}
+
             {signalCount === 0 && !hasProfile ? (
               <p className="text-sm text-white/70 italic leading-relaxed">
                 Like or pass on a few profiles first. Private conversations, precise location, and sensitive-trait guesses are never used.
@@ -207,7 +226,7 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
             ) : loading ? (
               <div className="flex items-center gap-3 text-white/70">
                 <Loader2 size={18} className="animate-spin text-[#D4AF37]" />
-                <span className="text-sm italic">Learning from your signals...</span>
+                <span className="text-sm italic">Saving private taste changes...</span>
               </div>
             ) : (
               <div className="space-y-4">
@@ -223,10 +242,10 @@ const LiveTasteModel: React.FC<{ enabled: boolean }> = ({ enabled }) => {
                   Category-level summary only. Internal scoring values are never shown, and this is visible to you alone.
                 </p>
                 <div className="flex gap-2">
-                  <Button onClick={build} disabled={signalCount === 0} className="h-9 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] text-[10px] font-bold uppercase tracking-widest px-4 disabled:opacity-50">
+                  <Button onClick={build} disabled={signalCount === 0 || loading} className="h-9 rounded-full bg-[#D4AF37] text-[#2D2926] hover:bg-[#B8962E] text-[10px] font-bold uppercase tracking-widest px-4 disabled:opacity-50">
                     {hasProfile ? 'Refresh and save' : 'Build and save'}
                   </Button>
-                  <Button onClick={handleReset} variant="ghost" className="h-9 rounded-full text-white/70 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4 gap-1.5">
+                  <Button onClick={handleReset} disabled={loading} variant="ghost" className="h-9 rounded-full text-white/70 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest px-4 gap-1.5 disabled:opacity-50">
                     <RotateCcw size={12} /> Reset
                   </Button>
                 </div>
@@ -246,6 +265,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const { tasteProfile, pauseTasteLearning, optOutTasteLearning, trackEvent } = useApp();
   const [showConsentGate, setShowConsentGate] = useState(false);
   const [isSavingConsent, setIsSavingConsent] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
 
   const tasteEnabled = !tasteProfile.learning.paused && !tasteProfile.learning.optedOut;
   const statusLabel = tasteProfile.learning.optedOut
@@ -259,10 +279,14 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   const enableTaste = async () => {
     setIsSavingConsent(true);
+    setConsentError(null);
     try {
       await pauseTasteLearning(false);
       trackEvent?.('skill_taste_consent_changed', { enabled: true });
       setShowConsentGate(false);
+    } catch (error) {
+      console.error('Failed to enable private taste personalization:', error);
+      setConsentError('Could not enable personalization. Please try again.');
     } finally {
       setIsSavingConsent(false);
     }
@@ -270,9 +294,27 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   const disableTaste = async () => {
     setIsSavingConsent(true);
+    setConsentError(null);
     try {
       await pauseTasteLearning(true);
       trackEvent?.('skill_taste_consent_changed', { enabled: false });
+    } catch (error) {
+      console.error('Failed to pause private taste personalization:', error);
+      setConsentError('Could not pause personalization. Please try again.');
+    } finally {
+      setIsSavingConsent(false);
+    }
+  };
+
+  const handleOptOut = async () => {
+    setIsSavingConsent(true);
+    setConsentError(null);
+    try {
+      await optOutTasteLearning();
+      trackEvent?.('skill_taste_consent_changed', { enabled: false, optedOut: true });
+    } catch (error) {
+      console.error('Failed to opt out of private taste learning:', error);
+      setConsentError('Could not opt out of taste learning. Please try again.');
     } finally {
       setIsSavingConsent(false);
     }
@@ -283,6 +325,7 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
       disableTaste();
       return;
     }
+    setConsentError(null);
     setShowConsentGate(true);
   };
 
@@ -322,6 +365,12 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
               }
             </button>
           </div>
+
+          {consentError && (
+            <p role="alert" className="p-3 rounded-xl bg-red-50 border border-red-100 text-xs font-medium text-red-700">
+              {consentError}
+            </p>
+          )}
 
           <div className={`p-3 rounded-xl text-xs border ${tasteEnabled ? 'bg-purple-50 text-purple-800 border-purple-100' : 'bg-[#F7F2EE] text-[#6B5E52] border-[#E5E0DB]'}`}>
             <span className="font-bold">{statusLabel}</span> - {tasteEnabled ? 'Kesher can learn from eligible profile interactions.' : 'Taste learning is not updating your model.'}
@@ -471,11 +520,12 @@ export const PrivateTasteSkill: React.FC<{ onBack: () => void }> = ({ onBack }) 
             </div>
           </div>
           <Button
-            onClick={optOutTasteLearning}
+            onClick={handleOptOut}
+            disabled={isSavingConsent}
             variant="ghost"
-            className="w-full h-11 rounded-full text-[#8C7E6E] hover:bg-[#F7F2EE] text-[10px] font-bold uppercase tracking-widest"
+            className="w-full h-11 rounded-full text-[#8C7E6E] hover:bg-[#F7F2EE] text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
           >
-            Opt Out of Taste Learning
+            {isSavingConsent ? 'Saving...' : 'Opt Out of Taste Learning'}
           </Button>
         </section>
       </main>
