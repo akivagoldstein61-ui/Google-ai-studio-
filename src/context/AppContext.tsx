@@ -547,6 +547,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isLocalOnlyMode || !user) {
       setTasteProfileState(normalized);
       setTasteStateRaw(nextTasteState);
+      if (isLocalOnlyMode) {
+        refreshLocalDiscovery(preferences, nextTasteState);
+      }
       return;
     }
 
@@ -562,6 +565,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       setTasteProfileState(persistedProfile);
       setTasteStateRaw(persistedTasteState);
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving taste profile:', error);
       setTasteProfileState(previousProfile);
@@ -632,6 +636,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, { persistRemote: false });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
+      await refreshRemoteDiscovery();
 
       if (result?.isMatch && result.match) {
         const newMatch: Match = {
@@ -693,6 +698,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, { persistRemote: false });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving pass:', error);
       throw error;
@@ -915,6 +921,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isLocalOnlyMode || !user) {
       setTasteProfileState(updatedProfile);
       setTasteStateRaw(updatedTasteState);
+      if (isLocalOnlyMode) {
+        refreshLocalDiscovery(preferences, updatedTasteState);
+      }
       return;
     }
 
@@ -925,6 +934,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setTasteProfileState(updatedProfile);
       setTasteStateRaw(updatedTasteState);
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error updating taste pause state:', error);
       setTasteProfileState(previousProfile);
@@ -953,6 +963,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isLocalOnlyMode || !user) {
       setTasteProfileState(updatedProfile);
       setTasteStateRaw(optedOutTasteState);
+      if (isLocalOnlyMode) {
+        refreshLocalDiscovery(preferences, optedOutTasteState);
+      }
       return;
     }
 
@@ -960,6 +973,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true });
       setTasteProfileState(updatedProfile);
       setTasteStateRaw(optedOutTasteState);
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error opting out of taste learning:', error);
       setTasteProfileState(previousProfile);
