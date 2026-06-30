@@ -327,6 +327,40 @@ describe('private taste skill contracts', () => {
     expect(handler).not.toContain("setDoc(doc(db, `users/${user.uid}/private/taste_profile`)");
   });
 
+  it('more and less like this persist derived profile with the explicit event', () => {
+    const server = readSource('server/tasteRoutes.ts');
+    const service = readSource('src/services/discoveryService.ts');
+    const app = readSource('src/context/AppContext.tsx');
+    const moreHandler = app.slice(app.indexOf('const moreLikeThis'), app.indexOf('const lessLikeThis'));
+    const lessHandler = app.slice(app.indexOf('const lessLikeThis'), app.indexOf('const recordTasteSignal'));
+
+    expect(service).toContain('profile?: TasteProfileDraft');
+    expect(server).toContain('const derivedProfile = req.body?.profile !== undefined');
+    expect(server).toContain("batch.set(userPrivate.doc('taste_profile'), derivedProfile, { merge: false });");
+    expect(server).toContain('profile: derivedProfile ?? undefined');
+    expect(server).toContain('tasteState: serializedTasteState');
+
+    expect(moreHandler).toContain('await aiService.analyzeTasteProfile(newInteractions, tasteProfile)');
+    expect(moreHandler).toContain('Failed to analyze more-like-this taste profile');
+    expect(moreHandler).toContain("soft_preferences: Array.from(new Set([...(tasteProfile.soft_preferences ?? []), ...profile.tags.slice(0, 2)]))");
+    expect(moreHandler).toContain("await discoveryService.recordTasteEvent('more_like_this', profile.uid ?? profileId, {");
+    expect(moreHandler).toContain('profile: derivedProfile,');
+    expect(moreHandler).toContain('setTasteProfileState(persistedProfile)');
+    expect(moreHandler).toContain('setTasteStateRaw(persistedTasteState)');
+    expect(moreHandler).not.toContain('await setTasteProfile(');
+    expect(moreHandler.indexOf('const derivedProfile = normalizeTasteProfile')).toBeLessThan(moreHandler.indexOf("await discoveryService.recordTasteEvent('more_like_this'"));
+
+    expect(lessHandler).toContain('await aiService.analyzeTasteProfile(newInteractions, tasteProfile)');
+    expect(lessHandler).toContain('Failed to analyze less-like-this taste profile');
+    expect(lessHandler).toContain("things_to_avoid: Array.from(new Set([...(tasteProfile.things_to_avoid ?? []), ...profile.tags.slice(0, 2)]))");
+    expect(lessHandler).toContain("await discoveryService.recordTasteEvent('less_like_this', profile.uid ?? profileId, {");
+    expect(lessHandler).toContain('profile: derivedProfile,');
+    expect(lessHandler).toContain('setTasteProfileState(persistedProfile)');
+    expect(lessHandler).toContain('setTasteStateRaw(persistedTasteState)');
+    expect(lessHandler).not.toContain('await setTasteProfile(');
+    expect(lessHandler.indexOf('const derivedProfile = normalizeTasteProfile')).toBeLessThan(lessHandler.indexOf("await discoveryService.recordTasteEvent('less_like_this'"));
+  });
+
   it('pause and opt-out controls wait for the persisted server event in live mode', () => {
     const app = readSource('src/context/AppContext.tsx');
     const pauseHandler = app.slice(app.indexOf('const pauseTasteLearning'), app.indexOf('const optOutTasteLearning'));
