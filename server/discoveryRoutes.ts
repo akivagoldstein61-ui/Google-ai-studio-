@@ -1,8 +1,8 @@
 import express from 'express';
 import { MOCK_PROFILES } from '../src/data/mockProfiles.ts';
 import type { DiscoveryPreferences, Match, Profile } from '../src/types.ts';
-import { emptyTasteState, type TasteState } from '../src/lib/learnedTaste.ts';
-import { deserializeTasteState } from '../src/lib/tastePersistence.ts';
+import { applyEvent, emptyTasteState, type EventName, type TasteState } from '../src/lib/learnedTaste.ts';
+import { deserializeTasteState, profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence.ts';
 import { selectDailyPicks, selectExploreProfiles } from '../src/lib/integratedRanking.ts';
 import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
 import { FieldValue, getOptionalAdminFirestore } from './firebaseAdmin.ts';
@@ -131,6 +131,7 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
     const reciprocalLikes = reciprocalSnap?.data()?.likes;
     const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
     const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
+    await persistDiscoveryTasteState(viewerUid, 'like', candidate);
     const match = isMatch ? buildMatch(viewerUid, profileId, candidate) : null;
     if (match) {
       await db.collection('matches').doc(match.id).set(match, { merge: true }).catch(() => null);
@@ -177,6 +178,8 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
       .catch(() => null);
+    const candidate = (await loadCandidatePool(viewerUid)).find((profile) => profile.uid === profileId || profile.id === profileId);
+    await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
   }
   res.json({ success: true, profileId });
 });
@@ -217,6 +220,30 @@ async function loadTasteState(uid: string | undefined): Promise<TasteState> {
     .get()
     .catch(() => null);
   return snap?.exists ? deserializeTasteState(snap.data()) : emptyTasteState();
+}
+
+async function persistDiscoveryTasteState(
+  viewerUid: string,
+  name: Extract<EventName, 'like' | 'pass'>,
+  candidate: Profile | undefined,
+) {
+  const db = getOptionalAdminFirestore();
+  if (!db) return;
+  const previous = await loadTasteState(viewerUid);
+  const next = applyEvent(previous, {
+    name,
+    class: 'explicit_preference',
+    candidateId: candidate?.uid ?? candidate?.id,
+    candidateFeatures: candidate ? profileToFeatureTags(candidate) : [],
+    occurredAt: Date.now(),
+  });
+  await db
+    .collection('users')
+    .doc(viewerUid)
+    .collection(PRIVATE_COLLECTION)
+    .doc('taste_state')
+    .set(serializeTasteState(next), { merge: false })
+    .catch(() => null);
 }
 
 async function loadCandidatePool(viewerUid: string | undefined): Promise<Profile[]> {
