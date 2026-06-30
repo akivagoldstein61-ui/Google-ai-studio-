@@ -255,22 +255,6 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const interactionPersisted = await db
-    .collection('users')
-    .doc(viewerUid)
-    .collection(PRIVATE_COLLECTION)
-    .doc('interactions')
-    .set({
-      likes: FieldValue.arrayUnion(profileId),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
-    .then(() => true)
-    .catch(() => false);
-  if (!interactionPersisted) {
-    res.status(500).json({ error: 'Like was not persisted', profileId, persisted: false });
-    return;
-  }
-
   const reciprocalSnap = await db
     .collection('users')
     .doc(profileId)
@@ -285,31 +269,43 @@ router.post('/like', async (req: AuthenticatedRequest, res) => {
 
   const reciprocalLikes = reciprocalSnap.data()?.likes;
   const isMatch = Array.isArray(reciprocalLikes) && reciprocalLikes.includes(viewerUid);
-  let tastePersisted = tasteEventAlreadyRecorded;
-  if (!tastePersisted) {
-    tastePersisted = await persistDiscoveryTasteState(viewerUid, 'like', candidate);
-    if (!tastePersisted) {
-      res.status(500).json({ error: 'Like taste state was not persisted', profileId, persisted: false });
+  let tasteStateSnapshot: ReturnType<typeof serializeTasteState> | null = null;
+  if (!tasteEventAlreadyRecorded) {
+    tasteStateSnapshot = await buildDiscoveryTasteStateSnapshot(viewerUid, 'like', candidate);
+    if (!tasteStateSnapshot) {
+      res.status(500).json({ error: 'Like taste state was not prepared', profileId, persisted: false });
       return;
     }
   }
 
   const match = isMatch ? buildMatch(viewerUid, profileId, candidate ?? undefined) : null;
+  const interactionRef = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION).doc('interactions');
+  const batch = db.batch();
+  batch.set(interactionRef, {
+    likes: FieldValue.arrayUnion(profileId),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  if (tasteStateSnapshot) {
+    const tasteStateRef = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION).doc('taste_state');
+    batch.set(tasteStateRef, tasteStateSnapshot, { merge: false });
+  }
   if (match) {
-    const matchPersisted = await db.collection('matches').doc(match.id).set(match, { merge: true }).then(() => true).catch(() => false);
-    const conversationPersisted = await db.collection('conversations').doc(match.id).set({
+    batch.set(db.collection('matches').doc(match.id), match, { merge: true });
+    batch.set(db.collection('conversations').doc(match.id), {
       id: match.id,
       participants: [viewerUid, profileId],
       messages: [],
       createdAt: match.createdAt,
-    }, { merge: true }).then(() => true).catch(() => false);
-    if (!matchPersisted || !conversationPersisted) {
-      res.status(500).json({ error: 'Match was not persisted', profileId, persisted: false });
-      return;
-    }
+    }, { merge: true });
   }
 
-  res.json({ success: true, isMatch, match, persisted: true, tastePersisted });
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Discovery like was not fully persisted', profileId, persisted: false });
+    return;
+  }
+
+  res.json({ success: true, isMatch, match, persisted: true, tastePersisted: true });
 });
 
 router.post('/pass', async (req: AuthenticatedRequest, res) => {
@@ -336,32 +332,33 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const interactionPersisted = await db
-    .collection('users')
-    .doc(viewerUid)
-    .collection(PRIVATE_COLLECTION)
-    .doc('interactions')
-    .set({
-      passes: FieldValue.arrayUnion(profileId),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
-    .then(() => true)
-    .catch(() => false);
-  if (!interactionPersisted) {
-    res.status(500).json({ error: 'Pass was not persisted', profileId, persisted: false });
-    return;
-  }
-
-  let tastePersisted = tasteEventAlreadyRecorded;
-  if (!tastePersisted) {
-    tastePersisted = await persistDiscoveryTasteState(viewerUid, 'pass', candidate);
-    if (!tastePersisted) {
-      res.status(500).json({ error: 'Pass taste state was not persisted', profileId, persisted: false });
+  let tasteStateSnapshot: ReturnType<typeof serializeTasteState> | null = null;
+  if (!tasteEventAlreadyRecorded) {
+    tasteStateSnapshot = await buildDiscoveryTasteStateSnapshot(viewerUid, 'pass', candidate);
+    if (!tasteStateSnapshot) {
+      res.status(500).json({ error: 'Pass taste state was not prepared', profileId, persisted: false });
       return;
     }
   }
 
-  res.json({ success: true, profileId, persisted: true, tastePersisted });
+  const interactionRef = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION).doc('interactions');
+  const batch = db.batch();
+  batch.set(interactionRef, {
+    passes: FieldValue.arrayUnion(profileId),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  if (tasteStateSnapshot) {
+    const tasteStateRef = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION).doc('taste_state');
+    batch.set(tasteStateRef, tasteStateSnapshot, { merge: false });
+  }
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Discovery pass was not fully persisted', profileId, persisted: false });
+    return;
+  }
+
+  res.json({ success: true, profileId, persisted: true, tastePersisted: true });
 });
 
 async function loadViewer(uid: string | undefined): Promise<Profile> {
@@ -458,15 +455,14 @@ async function loadCandidateForInteraction(profileId: string): Promise<Profile |
   return null;
 }
 
-async function persistDiscoveryTasteState(
+async function buildDiscoveryTasteStateSnapshot(
   viewerUid: string,
   name: Extract<EventName, 'like' | 'pass'>,
   candidate: Profile | null,
-): Promise<boolean> {
-  const db = getOptionalAdminFirestore();
-  if (!db || !candidate) return false;
+): Promise<ReturnType<typeof serializeTasteState> | null> {
+  if (!candidate) return null;
   const candidateFeatures = profileToFeatureTags(candidate);
-  if (candidateFeatures.length === 0) return false;
+  if (candidateFeatures.length === 0) return null;
   const previous = await loadTasteState(viewerUid);
   const next = applyEvent(previous, {
     name,
@@ -475,14 +471,7 @@ async function persistDiscoveryTasteState(
     candidateFeatures,
     occurredAt: Date.now(),
   });
-  return await db
-    .collection('users')
-    .doc(viewerUid)
-    .collection(PRIVATE_COLLECTION)
-    .doc('taste_state')
-    .set(serializeTasteState(next), { merge: false })
-    .then(() => true)
-    .catch(() => false);
+  return serializeTasteState(next);
 }
 
 async function loadCandidatePool(viewerUid: string | undefined, options: CandidatePoolOptions = {}): Promise<Profile[] | null> {
