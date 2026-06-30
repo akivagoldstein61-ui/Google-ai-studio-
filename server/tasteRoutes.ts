@@ -18,6 +18,8 @@ import type { Profile } from '../src/types.ts';
 
 const router = express.Router();
 const PRIVATE_COLLECTION = 'private';
+type InteractionField = 'likes' | 'passes' | 'moreLikeThis' | 'lessLikeThis';
+const INTERACTION_FIELDS: InteractionField[] = ['likes', 'passes', 'moreLikeThis', 'lessLikeThis'];
 
 export const EMPTY_TASTE_PROFILE = {
   hard_dealbreakers: [],
@@ -62,7 +64,7 @@ const EVENT_CLASS_BY_NAME: Record<EventName, EventClass> = {
   session_stage: 'context',
 };
 
-const INTERACTION_FIELD_BY_EVENT: Partial<Record<EventName, 'likes' | 'passes' | 'moreLikeThis' | 'lessLikeThis'>> = {
+const INTERACTION_FIELD_BY_EVENT: Partial<Record<EventName, InteractionField>> = {
   like: 'likes',
   pass: 'passes',
   more_like_this: 'moreLikeThis',
@@ -73,6 +75,15 @@ const SURFACE_VALUES = new Set<TasteEvent['surface']>(['daily_picks', 'explore',
 
 function cloneEmptyTasteProfile() {
   return JSON.parse(JSON.stringify(EMPTY_TASTE_PROFILE));
+}
+
+function emptyInteractions(): Record<InteractionField, string[]> {
+  return {
+    likes: [],
+    passes: [],
+    moreLikeThis: [],
+    lessLikeThis: [],
+  };
 }
 
 function normalizeTasteProfile(raw: unknown) {
@@ -100,6 +111,13 @@ function normalizeTasteProfile(raw: unknown) {
     removedItems: Array.isArray(input.removedItems) ? input.removedItems : [],
     explanation: typeof input.explanation === 'string' ? input.explanation : '',
   };
+}
+
+function normalizeStoredInteractionList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map((item) => item.trim())));
 }
 
 function numberOrDefault(value: unknown, fallback: number) {
@@ -154,6 +172,38 @@ router.get('/profile', async (req: AuthenticatedRequest, res) => {
   res.json({
     userId: req.uid,
     profile: snap?.exists ? normalizeTasteProfile(snap.data()) : cloneEmptyTasteProfile(),
+  });
+});
+
+router.get('/interactions', async (req: AuthenticatedRequest, res) => {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  if (!req.uid) {
+    res.json({
+      userId: req.uid,
+      interactions: emptyInteractions(),
+      interactionIds: emptyInteractions(),
+    });
+    return;
+  }
+
+  const snap = await interactionsRef(req.uid)?.get().catch(() => null);
+  const raw = snap?.exists ? snap.data() : {};
+  const interactionIds = emptyInteractions();
+  const interactions = emptyInteractions();
+
+  await Promise.all(INTERACTION_FIELDS.map(async (field) => {
+    const ids = normalizeStoredInteractionList(raw?.[field]);
+    interactionIds[field] = ids;
+    interactions[field] = await Promise.all(ids.map((value) => summarizeInteractionValue(value)));
+  }));
+
+  res.json({
+    userId: req.uid,
+    interactions,
+    interactionIds,
+    updatedAt: raw?.updatedAt ?? null,
+    resetAt: raw?.resetAt ?? null,
+    deletedAt: raw?.deletedAt ?? null,
   });
 });
 
@@ -290,11 +340,13 @@ router.post('/reset', async (req: AuthenticatedRequest, res) => {
 router.get('/export', async (req: AuthenticatedRequest, res) => {
   const profileSnap = req.uid ? await tasteProfileRef(req.uid)?.get().catch(() => null) : null;
   const stateSnap = req.uid ? await tasteStateRef(req.uid)?.get().catch(() => null) : null;
+  const interactionsSnap = req.uid ? await interactionsRef(req.uid)?.get().catch(() => null) : null;
   res.json({
     exportedAt: new Date().toISOString(),
     userId: req.uid,
     tasteProfile: profileSnap?.exists ? normalizeTasteProfile(profileSnap.data()) : cloneEmptyTasteProfile(),
     tasteState: stateSnap?.exists ? stateSnap.data() : null,
+    tasteInteractions: interactionsSnap?.exists ? normalizeInteractionDocument(interactionsSnap.data()) : emptyInteractions(),
   });
 });
 
@@ -321,6 +373,27 @@ async function loadTasteProfile(uid: string) {
 async function loadTasteState(uid: string): Promise<TasteState> {
   const snap = await tasteStateRef(uid)?.get().catch(() => null);
   return snap?.exists ? deserializeTasteState(snap.data()) : emptyTasteState();
+}
+
+function normalizeInteractionDocument(raw: unknown) {
+  const input = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  const normalized = emptyInteractions();
+  for (const field of INTERACTION_FIELDS) {
+    normalized[field] = normalizeStoredInteractionList(input[field]);
+  }
+  return normalized;
+}
+
+async function summarizeInteractionValue(value: string) {
+  if (value.startsWith('Profile with tags:')) return value;
+  const profile = await loadCandidateProfile(value);
+  if (!profile) return `Profile id: ${value}`;
+  return summarizeProfileForTaste(profile);
+}
+
+function summarizeProfileForTaste(profile: Profile) {
+  const tags = profile.tags.length > 0 ? profile.tags.join(', ') : 'none listed';
+  return `Profile with tags: ${tags} and observance: ${profile.observance}`;
 }
 
 async function persistTasteEventAudit(
