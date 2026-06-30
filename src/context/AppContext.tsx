@@ -755,6 +755,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           occurredAt: Date.now(),
         }, { persistRemote: false });
       }
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
@@ -817,6 +818,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           occurredAt: Date.now(),
         }, { persistRemote: false });
       }
+      await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
