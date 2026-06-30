@@ -213,84 +213,107 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
     res.status(400).json({ error: 'Unsupported taste event' });
     return;
   }
+  if (!req.uid) {
+    res.status(401).json({ error: 'Authentication required', persisted: false });
+    return;
+  }
 
-  let stateUpdated = false;
-  let candidateFeaturesCaptured = 0;
   const db = getOptionalAdminFirestore();
+  if (!db) {
+    res.status(503).json({ error: 'Taste event persistence unavailable', persisted: false });
+    return;
+  }
 
-  if (req.uid && db) {
-    const candidateId = typeof req.body?.candidateId === 'string' && req.body.candidateId.trim().length > 0
-      ? req.body.candidateId.trim()
-      : undefined;
-    const candidate = candidateId ? await loadCandidateProfile(candidateId) : null;
-    const candidateFeatures = candidate ? profileToFeatureTags(candidate) : [];
-    candidateFeaturesCaptured = candidateFeatures.length;
+  const candidateId = typeof req.body?.candidateId === 'string' && req.body.candidateId.trim().length > 0
+    ? req.body.candidateId.trim()
+    : undefined;
+  const candidate = candidateId ? await loadCandidateProfile(candidateId) : null;
+  if (candidateId && !candidate) {
+    res.status(500).json({ error: 'Taste event candidate profile was not loaded', candidateId, persisted: false });
+    return;
+  }
 
-    await persistTasteEventAudit(req.uid, {
-      name,
-      eventClass: EVENT_CLASS_BY_NAME[name],
-      candidateId: candidateId ?? null,
-      surface: normalizeSurface(req.body?.surface) ?? null,
-      candidateFeaturesCaptured,
-    });
+  const candidateFeatures = candidate ? profileToFeatureTags(candidate) : [];
+  const candidateFeaturesCaptured = candidateFeatures.length;
+  const previousState = await loadTasteState(req.uid);
+  const profile = await loadTasteProfile(req.uid);
+  const event: TasteEvent = {
+    name,
+    class: EVENT_CLASS_BY_NAME[name],
+    candidateId,
+    candidateFeatures,
+    value: optionalNumber(req.body?.value),
+    surface: normalizeSurface(req.body?.surface),
+    occurredAt: Date.now(),
+  };
 
-    await persistInteractionSummary(req.uid, name, candidateId);
+  const stateForEvent: TasteState = {
+    ...previousState,
+    learningPaused: name === 'taste_consent_granted' ? false : (profile.learning.paused || previousState.learningPaused),
+    optedOut: name === 'taste_consent_granted' ? false : (profile.learning.optedOut || previousState.optedOut),
+  };
+  const nextState = applyEvent(stateForEvent, event);
 
-    const previousState = await loadTasteState(req.uid);
-    const profile = await loadTasteProfile(req.uid);
-    const event: TasteEvent = {
-      name,
-      class: EVENT_CLASS_BY_NAME[name],
-      candidateId,
-      candidateFeatures,
-      value: optionalNumber(req.body?.value),
-      surface: normalizeSurface(req.body?.surface),
-      occurredAt: Date.now(),
-    };
+  const batch = db.batch();
+  const userPrivate = db.collection('users').doc(req.uid).collection(PRIVATE_COLLECTION);
+  batch.set(userPrivate.doc('taste_events').collection('events').doc(), {
+    name,
+    eventClass: EVENT_CLASS_BY_NAME[name],
+    candidateId: candidateId ?? null,
+    surface: normalizeSurface(req.body?.surface) ?? null,
+    candidateFeaturesCaptured,
+    occurredAt: new Date().toISOString(),
+    createdAt: FieldValue.serverTimestamp(),
+  });
 
-    const stateForEvent: TasteState = {
-      ...previousState,
-      learningPaused: name === 'taste_consent_granted' ? false : (profile.learning.paused || previousState.learningPaused),
-      optedOut: name === 'taste_consent_granted' ? false : (profile.learning.optedOut || previousState.optedOut),
-    };
-    const nextState = applyEvent(stateForEvent, event);
+  const interactionField = INTERACTION_FIELD_BY_EVENT[name];
+  if (interactionField && candidateId) {
+    batch.set(userPrivate.doc('interactions'), {
+      [interactionField]: FieldValue.arrayUnion(candidateId),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
 
-    await tasteStateRef(req.uid)?.set(serializeTasteState(nextState), { merge: false }).catch(() => null);
-    stateUpdated = didTasteStateChange(previousState, nextState);
+  batch.set(userPrivate.doc('taste_state'), serializeTasteState(nextState), { merge: false });
 
-    if (name === 'taste_pause') {
-      const existingProfile = profile;
-      const paused = typeof req.body?.paused === 'boolean' ? req.body.paused : true;
-      const optedOut = typeof req.body?.optedOut === 'boolean'
-        ? req.body.optedOut
-        : existingProfile.learning.optedOut;
+  if (name === 'taste_pause') {
+    const paused = typeof req.body?.paused === 'boolean' ? req.body.paused : true;
+    const optedOut = typeof req.body?.optedOut === 'boolean'
+      ? req.body.optedOut
+      : profile.learning.optedOut;
 
-      await tasteProfileRef(req.uid)?.set({
-        learning: {
-          paused,
-          optedOut,
-          lastUpdatedAt: new Date().toISOString(),
-        },
-      }, { merge: true }).catch(() => null);
-    }
+    batch.set(userPrivate.doc('taste_profile'), {
+      learning: {
+        paused,
+        optedOut,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    }, { merge: true });
+  }
 
-    if (name === 'taste_consent_granted') {
-      await tasteProfileRef(req.uid)?.set({
-        learning: {
-          paused: false,
-          optedOut: false,
-          lastUpdatedAt: new Date().toISOString(),
-        },
-      }, { merge: true }).catch(() => null);
-    }
+  if (name === 'taste_consent_granted') {
+    batch.set(userPrivate.doc('taste_profile'), {
+      learning: {
+        paused: false,
+        optedOut: false,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    }, { merge: true });
+  }
+
+  const persisted = await batch.commit().then(() => true).catch(() => false);
+  if (!persisted) {
+    res.status(500).json({ error: 'Taste event was not persisted', persisted: false });
+    return;
   }
 
   res.json({
     success: true,
+    persisted: true,
     userId: req.uid,
     accepted: name,
     eventClass: EVENT_CLASS_BY_NAME[name],
-    stateUpdated,
+    stateUpdated: didTasteStateChange(previousState, nextState),
     candidateFeaturesCaptured,
   });
 });
