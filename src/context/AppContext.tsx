@@ -526,7 +526,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const response = await discoveryService.saveDiscoveryPreferences(normalized);
       const serverPreferences = normalizeDiscoveryPreferences(response?.preferences ?? normalized);
       setPreferencesState(serverPreferences);
-      await discoveryService.recordTasteEvent('hard_filter_edited').catch(() => null);
+      await discoveryService.recordTasteEvent('hard_filter_edited');
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -811,14 +811,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastUpdatedAt: new Date().toISOString(),
       },
     });
-    setTasteProfileState(emptyProfile);
-
     const nextEmptyInteractions = createEmptyInteractions();
-    setInteractions(nextEmptyInteractions);
-
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
-    setTasteStateRaw(freshTasteState);
+
     if (isLocalOnlyMode) {
+      setTasteProfileState(emptyProfile);
+      setInteractions(nextEmptyInteractions);
+      setTasteStateRaw(freshTasteState);
       refreshLocalDiscovery(preferences, freshTasteState);
       return;
     }
@@ -826,11 +825,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return;
 
     try {
-      const { doc, setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), emptyProfile);
-      await setDoc(doc(db, `users/${user.uid}/private/interactions`), nextEmptyInteractions);
-      await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(freshTasteState));
-      await discoveryService.resetTasteProfile();
+      const result = await discoveryService.resetTasteProfile();
+      const persistedProfile = normalizeTasteProfile(result?.profile ?? emptyProfile);
+      const persistedTasteState = result?.tasteState
+        ? deserializeTasteState(result.tasteState)
+        : freshTasteState;
+      setTasteProfileState(persistedProfile);
+      setInteractions(normalizeTasteInteractions(result?.interactions ?? nextEmptyInteractions));
+      setTasteStateRaw(persistedTasteState);
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error resetting taste profile in Firestore:', error);
@@ -853,16 +855,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastUpdatedAt: new Date().toISOString(),
       },
     });
-    setTasteProfileState(updatedProfile);
-    setTasteStateRaw(prev => ({ ...cloneTasteState(prev), learningPaused: paused, optedOut: updatedProfile.learning.optedOut }));
+    const updatedTasteState = {
+      ...cloneTasteState(tasteState),
+      learningPaused: paused,
+      optedOut: updatedProfile.learning.optedOut,
+    };
 
-    if (isLocalOnlyMode || !user) return;
+    if (isLocalOnlyMode || !user) {
+      setTasteProfileState(updatedProfile);
+      setTasteStateRaw(updatedTasteState);
+      return;
+    }
+
     try {
-      await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), updatedProfile);
       await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted', undefined, {
         paused,
         optedOut: updatedProfile.learning.optedOut,
-      }).catch(() => null);
+      });
+      setTasteProfileState(updatedProfile);
+      setTasteStateRaw(updatedTasteState);
     } catch (error) {
       console.error('Error updating taste pause state:', error);
       setTasteProfileState(previousProfile);
@@ -887,14 +898,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       learningPaused: true,
       optedOut: true,
     };
-    setTasteProfileState(updatedProfile);
-    setTasteStateRaw(optedOutTasteState);
 
-    if (isLocalOnlyMode || !user) return;
+    if (isLocalOnlyMode || !user) {
+      setTasteProfileState(updatedProfile);
+      setTasteStateRaw(optedOutTasteState);
+      return;
+    }
+
     try {
-      await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), updatedProfile);
-      await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(optedOutTasteState));
-      await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true }).catch(() => null);
+      await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true });
+      setTasteProfileState(updatedProfile);
+      setTasteStateRaw(optedOutTasteState);
     } catch (error) {
       console.error('Error opting out of taste learning:', error);
       setTasteProfileState(previousProfile);
@@ -928,17 +942,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const previousTasteState = tasteState;
     const emptyProfile = cloneDefaultTasteProfile();
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
-    setTasteProfileState(emptyProfile);
-    setTasteStateRaw(freshTasteState);
-    setInteractions(createEmptyInteractions());
+    const emptyInteractionState = createEmptyInteractions();
+
     if (isLocalOnlyMode) {
+      setTasteProfileState(emptyProfile);
+      setTasteStateRaw(freshTasteState);
+      setInteractions(emptyInteractionState);
       refreshLocalDiscovery(preferences, freshTasteState);
       return;
     }
 
     if (!user) return;
     try {
-      await discoveryService.deleteTasteProfile();
+      const result = await discoveryService.deleteTasteProfile();
+      setTasteProfileState(emptyProfile);
+      setTasteStateRaw(freshTasteState);
+      setInteractions(normalizeTasteInteractions(result?.interactions ?? emptyInteractionState));
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error deleting taste profile:', error);
