@@ -90,10 +90,13 @@ describe('canonical filtering preference contracts', () => {
 describe('private taste skill contracts', () => {
   it('taste learning is off by default until consent and resumes via taste_consent_granted', () => {
     const app = readSource('src/context/AppContext.tsx');
+    const server = readSource('server/tasteRoutes.ts');
 
     expect(app).toContain('paused: true');
     expect(app).toContain('emptyTasteStateForProfile');
     expect(app).toContain("recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted')");
+    expect(server).toContain('paused: true');
+    expect(server).toContain('learningPaused: true');
   });
 
   it('Private Taste skill persists consent and rebuilt taste profile instead of using local-only state', () => {
@@ -105,6 +108,16 @@ describe('private taste skill contracts', () => {
     expect(source).toContain('mergeManualControls');
     expect(source).toContain('Current Owner Profile');
     expect(source).not.toContain('SAMPLE_TASTE_PROFILE');
+  });
+
+  it('Private Taste settings profile preserves manual controls and does not resume learning on reset', () => {
+    const source = readSource('src/features/settings/PrivateTasteProfile.tsx');
+
+    expect(source).toContain('const TasteListEditor');
+    expect(source).not.toContain('const renderListEditor');
+    expect(source).toContain('emptyPrivateTasteProfile(true)');
+    expect(source).toContain("learningPaused ? 'Paused' : 'Refresh from Activity'");
+    expect(source).not.toContain('hard_dealbreakers: [],\n    learning: current.learning');
   });
 
   it('Learned Taste skill recompute persists owner summaries', () => {
@@ -159,6 +172,33 @@ describe('canonical learned-taste behavior', () => {
 
     expect(implicitAffinity(afterLike, tags)).toBe(0);
     expect(serializeTasteState(afterLike)).toMatchObject({
+      fast: {},
+      slow: {},
+      learningPaused: true,
+    });
+  });
+
+  it('reset clears learned vectors without granting fresh taste-learning consent', () => {
+    const tags = profileToFeatureTags(candidate);
+    const learned = applyEvent(emptyTasteState(1_000), {
+      name: 'like',
+      class: 'explicit_preference',
+      candidateFeatures: tags,
+      occurredAt: 2_000,
+    });
+    const paused = applyEvent(learned, {
+      name: 'taste_pause',
+      class: 'policy_consent',
+      occurredAt: 3_000,
+    });
+    const reset = applyEvent(paused, {
+      name: 'taste_reset',
+      class: 'policy_consent',
+      occurredAt: 4_000,
+    });
+
+    expect(implicitAffinity(reset, tags)).toBe(0);
+    expect(serializeTasteState(reset)).toMatchObject({
       fast: {},
       slow: {},
       learningPaused: true,
