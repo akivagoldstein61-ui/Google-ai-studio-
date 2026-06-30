@@ -63,6 +63,33 @@ export interface SystemExclusionState {
   suspectedBotIds: Set<string>;
 }
 
+export type SystemExclusionReason = 'blocked' | 'reported' | 'suspected_bot';
+
+export function emptySystemExclusionState(): SystemExclusionState {
+  return {
+    blockedUserIds: new Set(),
+    reportedUserIds: new Set(),
+    suspectedBotIds: new Set(),
+  };
+}
+
+export function violatesSystemExclusions(
+  candidate: Profile,
+  state: SystemExclusionState,
+): { violates: true; reason: SystemExclusionReason } | { violates: false } {
+  const ids = candidateIds(candidate);
+  if (ids.some((id) => state.blockedUserIds.has(id))) {
+    return { violates: true, reason: 'blocked' };
+  }
+  if (ids.some((id) => state.reportedUserIds.has(id))) {
+    return { violates: true, reason: 'reported' };
+  }
+  if (ids.some((id) => state.suspectedBotIds.has(id)) || hasSuspectedBotFlag(candidate)) {
+    return { violates: true, reason: 'suspected_bot' };
+  }
+  return { violates: false };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HARD FILTER EVALUATION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -288,6 +315,25 @@ export function adjustedFinalScore(reciprocal: number, fairness: number): number
 function sharedTagsCount(a: string[], b: string[]): number {
   const set = new Set(a.map(t => t.toLowerCase()));
   return b.filter(t => set.has(t.toLowerCase())).length;
+}
+
+function candidateIds(candidate: Profile): string[] {
+  return [candidate.uid, candidate.id].filter((id, index, ids): id is string =>
+    typeof id === 'string' && id.length > 0 && ids.indexOf(id) === index,
+  );
+}
+
+function hasSuspectedBotFlag(candidate: Profile): boolean {
+  const raw = candidate as Profile & {
+    isBot?: boolean;
+    suspectedBot?: boolean;
+    trustStatus?: string;
+    moderationStatus?: string;
+  };
+  return raw.isBot === true ||
+    raw.suspectedBot === true ||
+    raw.trustStatus === 'suspected_bot' ||
+    raw.moderationStatus === 'suspected_bot';
 }
 
 function isDiscoveryPreferences(ctx: HardFilterContext | DiscoveryPreferences): ctx is DiscoveryPreferences {
