@@ -15,4 +15,14 @@ describe('Discovery preference persistence contracts', () => {
     expect(source).toContain('throw error;');
     expect(source).not.toContain("console.error('Error saving preferences:', error);\n    }");
   });
+
+  it('rejects discovery preference API responses that report persisted false', () => {
+    const source = readSource('src/services/discoveryService.ts');
+
+    expect(source).toContain('async saveDiscoveryPreferences(preferences: DiscoveryPreferences)');
+    expect(source).toContain("const result = await apiFetch('/api/discovery/preferences'");
+    expect(source).toContain('result?.persisted !== true');
+    expect(source).toContain("throw new Error('Discovery preferences were not persisted')");
+    expect(source).toContain('return result;');
+  });
 });
