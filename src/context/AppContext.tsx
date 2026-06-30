@@ -70,7 +70,7 @@ const DEFAULT_PREFERENCES: DiscoveryPreferences = {
   observancePreference: ['secular', 'traditional', 'masorti', 'dati', 'modern_orthodox'],
   intentPreference: ['serious_relationship', 'marriage_minded'],
   hardFilters: [],
-  softPreferences: [],
+  softPreferences: ['shared_interests', 'same_city', 'similar_age'],
   recommendationMode: 'balanced',
   dealbreakers: {
     age: true,
@@ -84,6 +84,7 @@ const DEFAULT_PREFERENCES: DiscoveryPreferences = {
     shared_interests: 0.6,
     same_city: 0.25,
     similar_observance: 0.15,
+    similar_age: 0.35,
   },
   poolImpact: {
     age: 'high',
@@ -102,7 +103,7 @@ const EMPTY_TASTE_PROFILE: TasteProfileDraft = {
     pacing_weight: 0.5
   },
   learning: {
-    paused: false,
+    paused: true,
     optedOut: false,
     lastUpdatedAt: null,
   },
@@ -117,11 +118,20 @@ function cloneDefaultTasteProfile(): TasteProfileDraft {
   return JSON.parse(JSON.stringify(EMPTY_TASTE_PROFILE));
 }
 
+function emptyTasteStateForProfile(profile: TasteProfileDraft = cloneDefaultTasteProfile()): TasteState {
+  return {
+    ...emptyTasteState(),
+    learningPaused: profile.learning.paused,
+    optedOut: profile.learning.optedOut,
+  };
+}
+
 function normalizeTasteProfile(raw: any): TasteProfileDraft {
   const input = raw && typeof raw === 'object' ? raw : {};
   const weights = input.weights && typeof input.weights === 'object' ? input.weights : {};
+  const defaultProfile = cloneDefaultTasteProfile();
   return {
-    ...cloneDefaultTasteProfile(),
+    ...defaultProfile,
     ...input,
     hard_dealbreakers: Array.isArray(input.hard_dealbreakers) ? input.hard_dealbreakers : [],
     soft_preferences: Array.isArray(input.soft_preferences) ? input.soft_preferences : [],
@@ -136,7 +146,7 @@ function normalizeTasteProfile(raw: any): TasteProfileDraft {
       pacing_weight: typeof weights.pacing_weight === 'number' ? weights.pacing_weight : 0.5,
     },
     learning: {
-      paused: input.learning?.paused === true,
+      paused: typeof input.learning?.paused === 'boolean' ? input.learning.paused : defaultProfile.learning.paused,
       optedOut: input.learning?.optedOut === true,
       lastUpdatedAt: typeof input.learning?.lastUpdatedAt === 'string' ? input.learning.lastUpdatedAt : null,
     },
@@ -236,7 +246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(!isLocalOnlyMode);
   const [preferences, setPreferencesState] = useState<DiscoveryPreferences>(DEFAULT_PREFERENCES);
   const [tasteProfile, setTasteProfileState] = useState<TasteProfileDraft>(() => cloneDefaultTasteProfile());
-  const [tasteState, setTasteStateRaw] = useState<TasteState>(() => emptyTasteState());
+  const [tasteState, setTasteStateRaw] = useState<TasteState>(() => emptyTasteStateForProfile());
   const [isPremium, setIsPremium] = useState(isLocalOnlyMode);
 
   const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
@@ -306,12 +316,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             const tasteDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/taste_profile`));
             if (tasteDoc.exists()) {
-              setTasteProfileState(normalizeTasteProfile(tasteDoc.data()));
+              const normalizedTasteProfile = normalizeTasteProfile(tasteDoc.data());
+              setTasteProfileState(normalizedTasteProfile);
+              setTasteStateRaw(prev => ({
+                ...cloneTasteState(prev),
+                learningPaused: normalizedTasteProfile.learning.paused,
+                optedOut: normalizedTasteProfile.learning.optedOut,
+              }));
             }
 
             const tasteStateDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/taste_state`));
             if (tasteStateDoc.exists()) {
-              setTasteStateRaw(deserializeTasteState(tasteStateDoc.data()));
+              const loadedTasteState = deserializeTasteState(tasteStateDoc.data());
+              setTasteStateRaw(prev => ({
+                ...loadedTasteState,
+                learningPaused: loadedTasteState.learningPaused ?? prev.learningPaused,
+                optedOut: loadedTasteState.optedOut ?? prev.optedOut,
+              }));
             }
 
             const prefDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/discovery_preferences`));
@@ -406,6 +427,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setTasteProfile = async (profile: TasteProfileDraft) => {
     const normalized = normalizeTasteProfile(profile);
     setTasteProfileState(normalized);
+    setTasteStateRaw(prev => ({
+      ...cloneTasteState(prev),
+      learningPaused: normalized.learning.paused,
+      optedOut: normalized.learning.optedOut,
+    }));
     if (isLocalOnlyMode || !user) {
       return;
     }
@@ -621,7 +647,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setInteractions(emptyInteractions);
 
-    const freshTasteState = emptyTasteState();
+    const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteStateRaw(freshTasteState);
 
     if (isLocalOnlyMode || !user) {
@@ -645,16 +671,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       learning: {
         ...tasteProfile.learning,
         paused,
+        optedOut: paused ? tasteProfile.learning.optedOut : false,
         lastUpdatedAt: new Date().toISOString(),
       },
     });
     setTasteProfileState(updatedProfile);
-    setTasteStateRaw(prev => ({ ...cloneTasteState(prev), learningPaused: paused }));
+    setTasteStateRaw(prev => ({ ...cloneTasteState(prev), learningPaused: paused, optedOut: updatedProfile.learning.optedOut }));
 
     if (isLocalOnlyMode || !user) return;
     try {
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), updatedProfile);
-      await discoveryService.recordTasteEvent('taste_pause').catch(() => null);
+      await discoveryService.recordTasteEvent(paused ? 'taste_pause' : 'taste_consent_granted').catch(() => null);
     } catch (error) {
       console.error('Error updating taste pause state:', error);
     }
@@ -680,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         learningPaused: true,
         optedOut: true,
       }));
+      await discoveryService.recordTasteEvent('taste_pause').catch(() => null);
     } catch (error) {
       console.error('Error opting out of taste learning:', error);
     }
@@ -703,8 +731,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteTasteProfile = async () => {
-    setTasteProfileState(cloneDefaultTasteProfile());
-    setTasteStateRaw(emptyTasteState());
+    const emptyProfile = cloneDefaultTasteProfile();
+    setTasteProfileState(emptyProfile);
+    setTasteStateRaw(emptyTasteStateForProfile(emptyProfile));
     setInteractions({
       likes: [],
       passes: [],
