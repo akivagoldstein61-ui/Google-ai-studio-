@@ -1,4 +1,5 @@
 import { auth } from '@/firebase';
+import type { DiscoveryPreferences } from '@/types';
 
 async function getJsonHeaders() {
   const headers: Record<string, string> = {
@@ -43,6 +44,17 @@ export const discoveryService = {
     return apiFetch('/api/taste/events', {
       method: 'POST',
       body: JSON.stringify({ name, candidateId }),
+    });
+  },
+
+  getDiscoveryPreferences() {
+    return apiFetch('/api/discovery/preferences');
+  },
+
+  saveDiscoveryPreferences(preferences: DiscoveryPreferences) {
+    return apiFetch('/api/discovery/preferences', {
+      method: 'POST',
+      body: JSON.stringify({ preferences }),
     });
   },
 
