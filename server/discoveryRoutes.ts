@@ -2,7 +2,12 @@ import express from 'express';
 import { MOCK_PROFILES } from '../src/data/mockProfiles.ts';
 import type { DiscoveryPreferences, Match, Profile } from '../src/types.ts';
 import { applyEvent, emptyTasteState, type EventName, type TasteState } from '../src/lib/learnedTaste.ts';
-import type { FairnessState } from '../src/lib/filteringGrammar.ts';
+import {
+  emptySystemExclusionState,
+  violatesSystemExclusions,
+  type FairnessState,
+  type SystemExclusionState,
+} from '../src/lib/filteringGrammar.ts';
 import { deserializeTasteState, profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence.ts';
 import { selectDailyPicks, selectExploreProfiles, type CandidateRankingContext } from '../src/lib/integratedRanking.ts';
 import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
@@ -80,6 +85,7 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
       finiteDailyPickLimit: 5,
       hiddenOverrideUsed: false,
       paidPlacementUsed: false,
+      systemExclusionsApplied: Boolean(req.uid),
       reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
       exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
     },
@@ -104,6 +110,7 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
   res.json({
     generatedAt: new Date().toISOString(),
     items,
+    systemExclusionsApplied: Boolean(req.uid),
     reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
     exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
     spilloverDisclosure: 'Explore may show clearly labeled age or distance breadth only when those settings are not dealbreakers.',
@@ -300,12 +307,27 @@ async function persistDiscoveryTasteState(
 async function loadCandidatePool(viewerUid: string | undefined): Promise<Profile[]> {
   const db = getOptionalAdminFirestore();
   if (!db) return demoCandidatePool();
-  const snap = await db.collection('users').limit(100).get().catch(() => null);
+  const [snap, exclusions] = await Promise.all([
+    db.collection('users').limit(100).get().catch(() => null),
+    loadSystemExclusions(viewerUid),
+  ]);
   const profiles = snap?.docs
     .filter((doc) => doc.id !== viewerUid)
     .map((doc) => normalizeProfile(doc.id, doc.data()))
     .filter((profile): profile is Profile => Boolean(profile)) ?? [];
-  return profiles.length > 0 ? profiles : demoCandidatePool();
+  if (profiles.length === 0) return demoCandidatePool();
+  return profiles.filter((profile) => !violatesSystemExclusions(profile, exclusions).violates);
+}
+
+async function loadSystemExclusions(uid: string | undefined): Promise<SystemExclusionState> {
+  const db = getOptionalAdminFirestore();
+  if (!db || !uid) return emptySystemExclusionState();
+  const docs = await Promise.all([
+    db.collection('users').doc(uid).collection(PRIVATE_COLLECTION).doc('interactions').get().catch(() => null),
+    db.collection('users').doc(uid).collection(PRIVATE_COLLECTION).doc('system_exclusions').get().catch(() => null),
+    db.collection('users').doc(uid).collection(PRIVATE_COLLECTION).doc('safety').get().catch(() => null),
+  ]);
+  return normalizeSystemExclusions(docs.map((snap) => snap?.data()).filter(Boolean));
 }
 
 function normalizePreferences(raw: unknown): DiscoveryPreferences {
@@ -345,6 +367,27 @@ function normalizeFairnessState(raw: unknown): FairnessState | undefined {
     impressionsLast7d,
     impressionsLast24h,
   };
+}
+
+function normalizeSystemExclusions(docs: unknown[]): SystemExclusionState {
+  const state = emptySystemExclusionState();
+  for (const doc of docs) {
+    if (!doc || typeof doc !== 'object') continue;
+    const input = doc as Record<string, unknown>;
+    addIds(state.blockedUserIds, input.blockedUserIds, input.blocked, input.blocks);
+    addIds(state.reportedUserIds, input.reportedUserIds, input.reported, input.reports);
+    addIds(state.suspectedBotIds, input.suspectedBotIds, input.suspectedBots, input.botUserIds);
+  }
+  return state;
+}
+
+function addIds(target: Set<string>, ...values: unknown[]) {
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    for (const id of value) {
+      if (typeof id === 'string' && id) target.add(id);
+    }
+  }
 }
 
 function readNumber(value: unknown): number | undefined {
