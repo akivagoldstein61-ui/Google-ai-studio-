@@ -526,7 +526,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const response = await discoveryService.saveDiscoveryPreferences(normalized);
       const serverPreferences = normalizeDiscoveryPreferences(response?.preferences ?? normalized);
       setPreferencesState(serverPreferences);
-      await discoveryService.recordTasteEvent('hard_filter_edited');
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error saving preferences:', error);
