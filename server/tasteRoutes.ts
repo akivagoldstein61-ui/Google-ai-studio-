@@ -209,10 +209,16 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
     stateUpdated = didTasteStateChange(previousState, nextState);
 
     if (name === 'taste_pause') {
+      const existingProfile = profile;
+      const paused = typeof req.body?.paused === 'boolean' ? req.body.paused : true;
+      const optedOut = typeof req.body?.optedOut === 'boolean'
+        ? req.body.optedOut
+        : existingProfile.learning.optedOut;
+
       await tasteProfileRef(req.uid)?.set({
         learning: {
-          paused: req.body?.paused !== false,
-          optedOut: req.body?.optedOut === true,
+          paused,
+          optedOut,
           lastUpdatedAt: new Date().toISOString(),
         },
       }, { merge: true }).catch(() => null);
@@ -240,15 +246,24 @@ router.post('/events', async (req: AuthenticatedRequest, res) => {
 });
 
 router.post('/reset', async (req: AuthenticatedRequest, res) => {
-  const profile = cloneEmptyTasteProfile();
+  const previousProfile = req.uid ? await loadTasteProfile(req.uid) : cloneEmptyTasteProfile();
+  const profile = normalizeTasteProfile({
+    ...cloneEmptyTasteProfile(),
+    learning: {
+      paused: previousProfile.learning.paused,
+      optedOut: previousProfile.learning.optedOut,
+      lastUpdatedAt: new Date().toISOString(),
+    },
+  });
+
   if (req.uid) {
     await tasteProfileRef(req.uid)?.set(profile).catch(() => null);
     await tasteStateRef(req.uid)?.set({
       fast: {},
       slow: {},
       lastUpdatedMs: Date.now(),
-      learningPaused: true,
-      optedOut: false,
+      learningPaused: profile.learning.paused,
+      optedOut: profile.learning.optedOut,
     }).catch(() => null);
     await interactionsRef(req.uid)?.set({
       likes: [],
