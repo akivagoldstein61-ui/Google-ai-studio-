@@ -30,4 +30,16 @@ describe('Explore filter drawer live contracts', () => {
     expect(source).toContain('Could not save filters. Please try again.');
     expect(source).not.toContain('onApply={(prefs) => { setPreferences(prefs); setShowFilters(false); }}');
   });
+
+  it('waits for private taste reset persistence and keeps the drawer open on failure', () => {
+    const source = readSource('src/features/discovery/ExploreScreen.tsx');
+
+    expect(source).toContain('onResetTaste: () => Promise<void> | void');
+    expect(source).toContain('const handleResetTaste = async () => {');
+    expect(source).toContain('await onResetTaste();');
+    expect(source).toContain('onClose();');
+    expect(source).toContain('Could not reset taste learning. Please try again.');
+    expect(source).toContain('onClick={handleResetTaste}');
+    expect(source).not.toContain('onResetTaste();\n                onClose();');
+  });
 });
