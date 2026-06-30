@@ -49,13 +49,20 @@ describe('discovery preference API contracts', () => {
     expect(server).not.toContain('...DEFAULT_DISCOVERY_PREFERENCES,\n    ...input,');
   });
 
-  it('reports actual preference write success instead of only firestore availability', () => {
+  it('fails preference saves when durable persistence is unavailable or rejected', () => {
     const server = readSource('server/discoveryRoutes.ts');
 
-    expect(server).toContain('let persisted = false');
+    expect(server).toContain("res.setHeader('Cache-Control', 'no-store, max-age=0');\n\n  if (!db) {");
+    expect(server).toContain('res.status(503).json({');
+    expect(server).toContain("error: 'Discovery preference persistence unavailable'");
+    expect(server).toContain('const persisted = await db');
     expect(server).toContain('.then(() => true)');
     expect(server).toContain('.catch(() => false)');
-    expect(server).toContain('persisted,');
+    expect(server).toContain('if (!persisted) {');
+    expect(server).toContain('res.status(500).json({');
+    expect(server).toContain("error: 'Discovery preferences were not persisted'");
+    expect(server).toContain('persisted: true,');
     expect(server).not.toContain('persisted: Boolean(db)');
+    expect(server).not.toContain('let persisted = false');
   });
 });
