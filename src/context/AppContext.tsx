@@ -684,7 +684,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetTasteProfile = async () => {
-    const emptyProfile = cloneDefaultTasteProfile();
+    const emptyProfile = normalizeTasteProfile({
+      ...cloneDefaultTasteProfile(),
+      learning: {
+        paused: tasteProfile.learning.paused,
+        optedOut: tasteProfile.learning.optedOut,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    });
     setTasteProfileState(emptyProfile);
 
     const emptyInteractions = {
