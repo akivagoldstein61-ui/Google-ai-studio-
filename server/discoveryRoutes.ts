@@ -37,6 +37,10 @@ type CandidatePoolOptions = {
   allowDemoFallback?: boolean;
 };
 
+type ViewerLoadOptions = {
+  allowDemoFallback?: boolean;
+};
+
 type DiscoveryInteractionExclusionState = {
   likedUserIds: Set<string>;
   passedUserIds: Set<string>;
@@ -147,13 +151,21 @@ router.post('/preferences', async (req: AuthenticatedRequest, res) => {
 });
 
 router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
-  const viewer = await loadViewer(req.uid);
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  const allowDemoFallback = req.authContext?.mode === 'local-dev-mock';
+  const viewer = await loadViewer(req.uid, { allowDemoFallback });
+  if (!viewer) {
+    res.status(req.uid ? 404 : 401).json({
+      error: req.uid ? 'Discovery viewer profile was not loaded' : 'Authentication required',
+      items: [],
+      persisted: false,
+    });
+    return;
+  }
+
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
-  const candidates = await loadCandidatePool(req.uid, {
-    allowDemoFallback: req.authContext?.mode === 'local-dev-mock',
-  });
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  const candidates = await loadCandidatePool(req.uid, { allowDemoFallback });
   if (!candidates) {
     res.status(503).json({
       error: 'Discovery candidate persistence unavailable',
@@ -191,13 +203,21 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
 });
 
 router.get('/explore', async (req: AuthenticatedRequest, res) => {
-  const viewer = await loadViewer(req.uid);
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  const allowDemoFallback = req.authContext?.mode === 'local-dev-mock';
+  const viewer = await loadViewer(req.uid, { allowDemoFallback });
+  if (!viewer) {
+    res.status(req.uid ? 404 : 401).json({
+      error: req.uid ? 'Discovery viewer profile was not loaded' : 'Authentication required',
+      items: [],
+      persisted: false,
+    });
+    return;
+  }
+
   const preferences = await loadPreferences(req.uid);
   const tasteState = await loadTasteState(req.uid);
-  const candidates = await loadCandidatePool(req.uid, {
-    allowDemoFallback: req.authContext?.mode === 'local-dev-mock',
-  });
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  const candidates = await loadCandidatePool(req.uid, { allowDemoFallback });
   if (!candidates) {
     res.status(503).json({
       error: 'Discovery candidate persistence unavailable',
@@ -361,13 +381,13 @@ router.post('/pass', async (req: AuthenticatedRequest, res) => {
   res.json({ success: true, profileId, persisted: true, tastePersisted: true });
 });
 
-async function loadViewer(uid: string | undefined): Promise<Profile> {
+async function loadViewer(uid: string | undefined, options: ViewerLoadOptions = {}): Promise<Profile | null> {
   const fallback = { ...DEFAULT_VIEWER, uid: uid ?? DEFAULT_VIEWER.uid, id: uid ?? DEFAULT_VIEWER.id };
-  if (!uid) return fallback;
+  if (!uid) return options.allowDemoFallback ? fallback : null;
   const db = getOptionalAdminFirestore();
-  if (!db) return fallback;
+  if (!db) return options.allowDemoFallback ? fallback : null;
   const snap = await db.collection('users').doc(uid).get().catch(() => null);
-  if (!snap?.exists) return fallback;
+  if (!snap?.exists) return options.allowDemoFallback ? fallback : null;
   return normalizeProfile(snap.id, snap.data(), fallback);
 }
 
