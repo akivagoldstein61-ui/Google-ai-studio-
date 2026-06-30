@@ -377,14 +377,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExploreProfiles(apiExploreProfiles.length > 0 ? apiExploreProfiles : []);
   };
 
-  const applyTasteEvent = (uid: string | undefined, ev: TasteEvent) => {
+  const applyTasteEvent = (
+    uid: string | undefined,
+    ev: TasteEvent,
+    options: { persistRemote?: boolean } = {},
+  ) => {
     setTasteStateRaw(prev => {
       const next = applyEvent(cloneTasteState(prev), ev);
       if (isLocalOnlyMode && user) {
         const nextPrefs = preferences;
         setTimeout(() => refreshLocalDiscovery(nextPrefs, next, user), 0);
       }
-      if (!isLocalOnlyMode && uid) {
+      if (!isLocalOnlyMode && uid && options.persistRemote !== false) {
         setTimeout(() => {
           setDoc(doc(db, `users/${uid}/private/taste_state`), serializeTasteState(next))
             .catch((e: unknown) => console.error('Error saving taste_state:', e));
@@ -602,8 +606,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      await discoveryService.recordTasteEvent('like', profile.uid ?? profileId);
       const result = await discoveryService.likeProfile(profile.uid ?? profileId);
+      if (result?.persisted !== true || result?.tastePersisted !== true) {
+        throw new Error('Like was not fully persisted');
+      }
       setInteractions(prev => ({
         ...prev,
         likes: [...prev.likes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
@@ -612,7 +618,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'like', class: 'explicit_preference',
         candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
         occurredAt: Date.now(),
-      });
+      }, { persistRemote: false });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
 
@@ -661,8 +667,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      await discoveryService.recordTasteEvent('pass', profile.uid ?? profileId);
-      await discoveryService.passProfile(profile.uid ?? profileId);
+      const result = await discoveryService.passProfile(profile.uid ?? profileId);
+      if (result?.persisted !== true || result?.tastePersisted !== true) {
+        throw new Error('Pass was not fully persisted');
+      }
       setInteractions(prev => ({
         ...prev,
         passes: [...prev.passes, `Profile with tags: ${profile.tags.join(', ')} and observance: ${profile.observance}`],
@@ -671,7 +679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'pass', class: 'explicit_preference',
         candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
         occurredAt: Date.now(),
-      });
+      }, { persistRemote: false });
       setExploreProfiles(prev => prev.filter(p => p.id !== profileId));
       setDailyPicks(prev => prev.filter(p => p.id !== profileId));
     } catch (error) {
@@ -716,7 +724,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'more_like_this', class: 'explicit_preference',
         candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
         occurredAt: Date.now(),
-      });
+      }, { persistRemote: false });
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
@@ -759,7 +767,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'less_like_this', class: 'explicit_preference',
         candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
         occurredAt: Date.now(),
-      });
+      }, { persistRemote: false });
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
