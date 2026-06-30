@@ -21,7 +21,7 @@ export const ProfileDetail: React.FC<{
   const [openers, setOpeners] = useState<any[]>([]);
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
-  const { user, moreLikeThis, lessLikeThis } = useApp();
+  const { user, moreLikeThis, lessLikeThis, recordTasteSignal } = useApp();
   const [explanation, setExplanation] = useState<{
     reasons_he: string[];
     first_question_he?: string;
@@ -32,6 +32,19 @@ export const ProfileDetail: React.FC<{
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
   const [showReportFlow, setShowReportFlow] = useState(false);
+
+  useEffect(() => {
+    if (!user || !profile?.id) return;
+
+    const profileId = profile.uid ?? profile.id;
+    recordTasteSignal('profile_open', profileId, { surface: 'profile' });
+
+    const dwellTimer = window.setTimeout(() => {
+      recordTasteSignal('long_dwell', profileId, { surface: 'profile', value: 8000 });
+    }, 8000);
+
+    return () => window.clearTimeout(dwellTimer);
+  }, [profile.id, profile.uid, user?.uid]);
 
   useEffect(() => {
     if (profile && user) {
