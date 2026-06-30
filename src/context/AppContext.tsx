@@ -724,18 +724,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      await discoveryService.recordTasteEvent('more_like_this', profile.uid ?? profileId);
       const { aiService } = await import('../services/aiService');
-      const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
-      if (newProfile) {
-        await setTasteProfile(normalizeTasteProfile(newProfile));
+      let analyzedProfile: TasteProfileDraft | null = null;
+      try {
+        analyzedProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
+      } catch (analysisError) {
+        console.error('Failed to analyze more-like-this taste profile:', analysisError);
       }
+      const derivedProfile = normalizeTasteProfile(analyzedProfile ?? {
+        ...tasteProfile,
+        soft_preferences: Array.from(new Set([...(tasteProfile.soft_preferences ?? []), ...profile.tags.slice(0, 2)])),
+        learning: {
+          ...tasteProfile.learning,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      });
+      const result = await discoveryService.recordTasteEvent('more_like_this', profile.uid ?? profileId, {
+        profile: derivedProfile,
+      });
+      const persistedProfile = normalizeTasteProfile(result?.profile ?? derivedProfile);
+      const persistedTasteState = result?.tasteState ? deserializeTasteState(result.tasteState) : null;
+      setTasteProfileState(persistedProfile);
       setInteractions(newInteractions);
-      applyTasteEvent(user.uid, {
-        name: 'more_like_this', class: 'explicit_preference',
-        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
-        occurredAt: Date.now(),
-      }, { persistRemote: false });
+      if (persistedTasteState) {
+        setTasteStateRaw(persistedTasteState);
+      } else {
+        applyTasteEvent(user.uid, {
+          name: 'more_like_this', class: 'explicit_preference',
+          candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+          occurredAt: Date.now(),
+        }, { persistRemote: false });
+      }
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
@@ -767,18 +786,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      await discoveryService.recordTasteEvent('less_like_this', profile.uid ?? profileId);
       const { aiService } = await import('../services/aiService');
-      const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
-      if (newProfile) {
-        await setTasteProfile(normalizeTasteProfile(newProfile));
+      let analyzedProfile: TasteProfileDraft | null = null;
+      try {
+        analyzedProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
+      } catch (analysisError) {
+        console.error('Failed to analyze less-like-this taste profile:', analysisError);
       }
+      const derivedProfile = normalizeTasteProfile(analyzedProfile ?? {
+        ...tasteProfile,
+        things_to_avoid: Array.from(new Set([...(tasteProfile.things_to_avoid ?? []), ...profile.tags.slice(0, 2)])),
+        learning: {
+          ...tasteProfile.learning,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      });
+      const result = await discoveryService.recordTasteEvent('less_like_this', profile.uid ?? profileId, {
+        profile: derivedProfile,
+      });
+      const persistedProfile = normalizeTasteProfile(result?.profile ?? derivedProfile);
+      const persistedTasteState = result?.tasteState ? deserializeTasteState(result.tasteState) : null;
+      setTasteProfileState(persistedProfile);
       setInteractions(newInteractions);
-      applyTasteEvent(user.uid, {
-        name: 'less_like_this', class: 'explicit_preference',
-        candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
-        occurredAt: Date.now(),
-      }, { persistRemote: false });
+      if (persistedTasteState) {
+        setTasteStateRaw(persistedTasteState);
+      } else {
+        applyTasteEvent(user.uid, {
+          name: 'less_like_this', class: 'explicit_preference',
+          candidateId: profileId, candidateFeatures: profileToFeatureTags(profile),
+          occurredAt: Date.now(),
+        }, { persistRemote: false });
+      }
     } catch (error) {
       console.error('Failed to update taste profile:', error);
       throw error;
