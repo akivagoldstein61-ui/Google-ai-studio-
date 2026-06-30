@@ -177,7 +177,7 @@ const FilterDrawer: React.FC<{
   profiles: Profile[],
   onClose: () => void,
   onApply: (prefs: DiscoveryPreferences) => Promise<void> | void,
-  onResetTaste: () => void
+  onResetTaste: () => Promise<void> | void
 }> = ({ preferences, profiles, onClose, onApply, onResetTaste }) => {
   const [localPrefs, setLocalPrefs] = useState(preferences);
   const [saving, setSaving] = useState(false);
@@ -239,6 +239,19 @@ const FilterDrawer: React.FC<{
     } catch (error) {
       console.error('Failed to save discovery filters', error);
       setSaveError('Could not save filters. Please try again.');
+      setSaving(false);
+    }
+  };
+
+  const handleResetTaste = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onResetTaste();
+      onClose();
+    } catch (error) {
+      console.error('Failed to reset taste learning from Explore filters', error);
+      setSaveError('Could not reset taste learning. Please try again.');
       setSaving(false);
     }
   };
@@ -405,13 +418,11 @@ const FilterDrawer: React.FC<{
               <p className="text-[10px] text-[#8C7E6E] font-medium italic">Your private learned preferences</p>
             </div>
             <button
-              onClick={() => {
-                onResetTaste();
-                onClose();
-              }}
-              className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] hover:text-[#B8962E] transition-colors"
+              onClick={handleResetTaste}
+              disabled={saving}
+              className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] hover:text-[#B8962E] transition-colors disabled:opacity-50"
             >
-              Reset Learning
+              {saving ? 'Saving...' : 'Reset Learning'}
             </button>
           </div>
         </section>
