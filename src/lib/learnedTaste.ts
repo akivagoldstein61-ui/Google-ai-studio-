@@ -152,7 +152,13 @@ function applyDecay(map: Map<string, number>, elapsedMs: number, halfLife: numbe
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function applyEvent(state: TasteState, ev: TasteEvent): TasteState {
-  if (ev.name === 'taste_reset') return resetTasteState(ev.occurredAt);
+  if (ev.name === 'taste_reset') {
+    return {
+      ...resetTasteState(ev.occurredAt),
+      learningPaused: state.learningPaused ?? true,
+      optedOut: state.optedOut ?? false,
+    };
+  }
   if (ev.name === 'taste_pause') return { ...cloneTasteState(state), learningPaused: true };
   if (state.learningPaused || state.optedOut) return cloneTasteState(state);
 
