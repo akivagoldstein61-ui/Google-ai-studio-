@@ -177,6 +177,7 @@ const LiveLearnedSignals: React.FC = () => {
   } = useApp();
   const [loading, setLoading] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const counts = {
     likes: interactions?.likes?.length ?? 0,
@@ -209,6 +210,7 @@ const LiveLearnedSignals: React.FC = () => {
   const recompute = async () => {
     setLoading(true);
     setAttempted(true);
+    setSaveError(null);
     try {
       const result = await aiService.analyzeTasteProfile(interactions, tasteProfile);
       if (result) {
@@ -219,12 +221,14 @@ const LiveLearnedSignals: React.FC = () => {
             lastUpdatedAt: new Date().toISOString(),
           },
         });
-        setTasteProfile(persisted);
+        await setTasteProfile(persisted);
         trackEvent?.('skill_completed', { skillId: 'learned-taste', hasResult: true, signals: total, persisted: true });
       } else {
         trackEvent?.('skill_completed', { skillId: 'learned-taste', hasResult: false, signals: total, persisted: false });
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to recompute learned taste summary:', error);
+      setSaveError('Could not save learned taste summary. Please try again.');
       trackEvent?.('skill_completed', { skillId: 'learned-taste', hasResult: false, signals: total, persisted: false });
     } finally {
       setLoading(false);
@@ -258,6 +262,12 @@ const LiveLearnedSignals: React.FC = () => {
             <div className={`p-3 rounded-xl text-xs border ${learningPaused ? 'bg-amber-500/10 text-amber-100 border-amber-500/20' : 'bg-green-500/10 text-green-100 border-green-500/20'}`}>
               <span className="font-bold">Learning {learningPaused ? 'paused' : 'active'}</span> - recompute saves category summaries, but event learning only updates while active.
             </div>
+
+            {saveError && (
+              <p role="alert" className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-100">
+                {saveError}
+              </p>
+            )}
 
             {total === 0 ? (
               <p className="text-sm text-white/70 italic leading-relaxed">Like or pass on profiles in Daily Picks first. Messages, location, and protected traits are never used.</p>
