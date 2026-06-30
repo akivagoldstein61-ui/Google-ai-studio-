@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { emptySystemExclusionState, violatesSystemExclusions } from '../src/lib/filteringGrammar';
 import { applyEvent, emptyTasteState, implicitAffinity } from '../src/lib/learnedTaste';
 import { estimateDistanceKm, selectDailyPicks, selectExploreProfiles } from '../src/lib/integratedRanking';
 import { profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence';
@@ -61,6 +62,18 @@ describe('taste and filtering server contracts', () => {
     expect(ranking).toContain('fairness?: FairnessState');
     expect(ranking).toContain('fairness: candidateContext?.fairness ?? neutralFairnessState(candidate)');
     expect(ranking).not.toContain('candidateAccountAgeMs: 14 * 24 * 60 * 60 * 1000,\n          impressionsLast7d: 10,\n          impressionsLast24h: 1');
+  });
+
+  it('server discovery applies canonical system exclusions before ranking', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+    const grammar = readSource('src/lib/filteringGrammar.ts');
+
+    expect(grammar).toContain('export function violatesSystemExclusions');
+    expect(server).toContain('loadSystemExclusions(viewerUid)');
+    expect(server).toContain('violatesSystemExclusions(profile, exclusions)');
+    expect(server).toContain("doc('system_exclusions')");
+    expect(server).toContain("doc('safety')");
+    expect(server).toContain('systemExclusionsApplied');
   });
 });
 
@@ -168,6 +181,27 @@ describe('canonical filtering preference contracts', () => {
 
     expect(ranked.map((item) => item.profile.id)).toEqual(['starved', 'saturated']);
     expect(ranked[0].score).toBeGreaterThan(ranked[1].score);
+  });
+
+  it('system exclusions reject blocked, reported, and suspected-bot candidates', () => {
+    const state = emptySystemExclusionState();
+    state.blockedUserIds.add('blocked-user');
+    state.reportedUserIds.add('reported-user');
+    state.suspectedBotIds.add('bot-by-id');
+
+    expect(violatesSystemExclusions(profile({ id: 'blocked-user', uid: 'blocked-user' }), state))
+      .toEqual({ violates: true, reason: 'blocked' });
+    expect(violatesSystemExclusions(profile({ id: 'reported-user', uid: 'reported-user' }), state))
+      .toEqual({ violates: true, reason: 'reported' });
+    expect(violatesSystemExclusions(profile({ id: 'bot-by-id', uid: 'bot-by-id' }), state))
+      .toEqual({ violates: true, reason: 'suspected_bot' });
+    expect(violatesSystemExclusions({
+      ...profile({ id: 'flagged-bot', uid: 'flagged-bot' }),
+      suspectedBot: true,
+    } as Profile, emptySystemExclusionState()))
+      .toEqual({ violates: true, reason: 'suspected_bot' });
+    expect(violatesSystemExclusions(profile({ id: 'allowed', uid: 'allowed' }), state))
+      .toEqual({ violates: false });
   });
 });
 
