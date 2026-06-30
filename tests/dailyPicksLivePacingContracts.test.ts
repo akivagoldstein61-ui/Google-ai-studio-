@@ -56,11 +56,14 @@ describe('Daily picks live pacing contracts', () => {
     expect(appContext).toContain('passProfile: (profileId: string) => Promise<void>');
     expect(appContext).toContain('moreLikeThis: (profileId: string) => Promise<void>');
     expect(appContext).toContain('lessLikeThis: (profileId: string) => Promise<void>');
-    expect(appContext).toContain("await discoveryService.recordTasteEvent('like'");
     expect(appContext).toContain('const result = await discoveryService.likeProfile');
-    expect(appContext).toContain("await discoveryService.recordTasteEvent('pass'");
-    expect(appContext).toContain('await discoveryService.passProfile');
+    expect(appContext).toContain('const result = await discoveryService.passProfile');
+    expect(appContext).toContain("throw new Error('Like was not fully persisted')");
+    expect(appContext).toContain("throw new Error('Pass was not fully persisted')");
+    expect(appContext).toContain('}, { persistRemote: false });');
     expect(appContext).toContain("throw error;\n    }\n  };\n\n  const passProfile");
+    expect(appContext).not.toContain("await discoveryService.recordTasteEvent('like'");
+    expect(appContext).not.toContain("await discoveryService.recordTasteEvent('pass'");
     expect(appContext).not.toContain("console.error('Error saving like:', error);\n    }\n\n    setExploreProfiles");
     expect(appContext).not.toContain("console.error('Error saving pass:', error);\n    }\n  };");
   });
