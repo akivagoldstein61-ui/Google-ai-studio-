@@ -9,7 +9,7 @@ import {
   type SystemExclusionState,
 } from '../src/lib/filteringGrammar.ts';
 import { deserializeTasteState, profileToFeatureTags, serializeTasteState } from '../src/lib/tastePersistence.ts';
-import { selectDailyPicks, selectExploreProfiles, type CandidateRankingContext } from '../src/lib/integratedRanking.ts';
+import { selectDailyPicks, selectExploreProfiles, type CandidateRankingContext, type RankedProfile } from '../src/lib/integratedRanking.ts';
 import { authMiddleware, type AuthenticatedRequest } from './authMiddleware.ts';
 import { FieldValue, getOptionalAdminFirestore } from './firebaseAdmin.ts';
 
@@ -17,6 +17,10 @@ const router = express.Router();
 const outboundLikes = new Set<string>();
 const PRIVATE_COLLECTION = 'private';
 const LEGACY_RECOMMENDATION_MODE = 'chemistry' + '_first';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const EXPOSURE_RETENTION_MS = 7 * DAY_MS;
+const EXPOSURE_EVENT_LIMIT = 200;
+const NEUTRAL_ACCOUNT_AGE_MS = 14 * DAY_MS;
 
 const DEFAULT_VIEWER: Profile = {
   id: 'local-dev-user',
@@ -76,6 +80,7 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
     candidateContexts,
     limit: 5,
   });
+  const exposureImpressionsRecorded = await recordDiscoveryImpressions(items);
 
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.json({
@@ -88,6 +93,7 @@ router.get('/daily-picks', async (req: AuthenticatedRequest, res) => {
       systemExclusionsApplied: Boolean(req.uid),
       reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
       exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
+      exposureImpressionsRecorded,
     },
   });
 });
@@ -106,6 +112,7 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
     candidateContexts,
     allowDisclosedSpillover: true,
   });
+  const exposureImpressionsRecorded = await recordDiscoveryImpressions(items);
 
   res.json({
     generatedAt: new Date().toISOString(),
@@ -113,6 +120,7 @@ router.get('/explore', async (req: AuthenticatedRequest, res) => {
     systemExclusionsApplied: Boolean(req.uid),
     reciprocalPreferencesUsed: Object.values(candidateContexts).some((context) => Boolean(context.preferences || context.tasteState)),
     exposureFairnessUsed: Object.values(candidateContexts).some((context) => Boolean(context.fairness)),
+    exposureImpressionsRecorded,
     spilloverDisclosure: 'Explore may show clearly labeled age or distance breadth only when those settings are not dealbreakers.',
   });
 });
@@ -330,6 +338,43 @@ async function loadSystemExclusions(uid: string | undefined): Promise<SystemExcl
   return normalizeSystemExclusions(docs.map((snap) => snap?.data()).filter(Boolean));
 }
 
+async function recordDiscoveryImpressions(items: RankedProfile[]): Promise<number> {
+  const db = getOptionalAdminFirestore();
+  if (!db || items.length === 0) return 0;
+  const profilesByUid = new Map<string, Profile>();
+  for (const item of items) {
+    const uid = item.profile.uid || item.profile.id;
+    if (uid && !profilesByUid.has(uid)) profilesByUid.set(uid, item.profile);
+  }
+  const now = Date.now();
+  const results = await Promise.all(Array.from(profilesByUid.entries()).map(async ([uid, profile]) => {
+    const ref = db.collection('users').doc(uid).collection(PRIVATE_COLLECTION).doc('discovery_exposure');
+    const snap = await ref.get().catch(() => null);
+    const data = snap?.data() ?? {};
+    const prior = normalizeTimestampArray(data.recentImpressionMs ?? data.recentImpressions ?? data.impressionTimestamps);
+    const recentImpressionMs = [...prior.filter((ms) => now - ms <= EXPOSURE_RETENTION_MS), now]
+      .slice(-EXPOSURE_EVENT_LIMIT);
+    const profileCreatedAtMs = timestampToMs((profile as Profile & { createdAt?: unknown }).createdAt);
+    const storedCreatedAtMs = timestampToMs(data.accountCreatedAt) ?? timestampToMs(data.createdAt);
+    const createdAtMs = profileCreatedAtMs ?? storedCreatedAtMs;
+    const candidateAccountAgeMs = createdAtMs != null
+      ? Math.max(0, now - createdAtMs)
+      : readNumber(data.candidateAccountAgeMs) ?? NEUTRAL_ACCOUNT_AGE_MS;
+    const totalImpressions = Math.max(0, readNumber(data.totalImpressions) ?? 0) + 1;
+    await ref.set({
+      candidateAccountAgeMs,
+      impressionsLast24h: recentImpressionMs.filter((ms) => now - ms <= DAY_MS).length,
+      impressionsLast7d: recentImpressionMs.length,
+      recentImpressionMs,
+      totalImpressions,
+      lastImpressionAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }).catch(() => null);
+    return true;
+  }));
+  return results.filter(Boolean).length;
+}
+
 function normalizePreferences(raw: unknown): DiscoveryPreferences {
   if (!raw || typeof raw !== 'object') return DEFAULT_DISCOVERY_PREFERENCES;
   const input = raw as Record<string, any>;
@@ -359,8 +404,12 @@ function normalizeFairnessState(raw: unknown): FairnessState | undefined {
   const accountAgeMs = readNumber(input.candidateAccountAgeMs);
   const createdAtMs = timestampToMs(input.createdAt) ?? timestampToMs(input.accountCreatedAt);
   const candidateAccountAgeMs = accountAgeMs ?? (createdAtMs != null ? Math.max(0, Date.now() - createdAtMs) : undefined);
-  const impressionsLast7d = readNumber(input.impressionsLast7d);
-  const impressionsLast24h = readNumber(input.impressionsLast24h);
+  const recentImpressionMs = normalizeTimestampArray(input.recentImpressionMs ?? input.recentImpressions ?? input.impressionTimestamps);
+  const now = Date.now();
+  const impressionsLast7d = readNumber(input.impressionsLast7d) ??
+    recentImpressionMs.filter((ms) => now - ms <= EXPOSURE_RETENTION_MS).length;
+  const impressionsLast24h = readNumber(input.impressionsLast24h) ??
+    recentImpressionMs.filter((ms) => now - ms <= DAY_MS).length;
   if (candidateAccountAgeMs == null || impressionsLast7d == null || impressionsLast24h == null) return undefined;
   return {
     candidateAccountAgeMs,
@@ -388,6 +437,14 @@ function addIds(target: Set<string>, ...values: unknown[]) {
       if (typeof id === 'string' && id) target.add(id);
     }
   }
+}
+
+function normalizeTimestampArray(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => timestampToMs(item))
+    .filter((ms): ms is number => typeof ms === 'number' && Number.isFinite(ms))
+    .sort((a, b) => a - b);
 }
 
 function readNumber(value: unknown): number | undefined {
