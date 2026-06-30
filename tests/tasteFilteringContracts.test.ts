@@ -33,6 +33,21 @@ describe('taste and filtering server contracts', () => {
     expect(source).toContain("persistDiscoveryTasteState(viewerUid, 'pass', candidate)");
     expect(source).toContain('serializeTasteState(next)');
   });
+
+  it('server discovery loads reciprocal candidate contexts instead of ranking against empty candidate state', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+    const ranking = readSource('src/lib/integratedRanking.ts');
+
+    expect(server).toContain('loadCandidateRankingContexts(candidates)');
+    expect(server).toContain('candidateContexts,');
+    expect(server).toContain('loadOptionalPreferences(uid)');
+    expect(server).toContain('loadOptionalTasteState(uid)');
+    expect(server).toContain('reciprocalPreferencesUsed');
+    expect(ranking).toContain('export interface CandidateRankingContext');
+    expect(ranking).toContain('candidateContexts?: Record<string, CandidateRankingContext>');
+    expect(ranking).toContain('candidatePreferences ? hardCtxFromPreferences(candidatePreferences');
+    expect(ranking).not.toContain('candidateHardCtx: {},\n        candidateSoftWeights: {},');
+  });
 });
 
 describe('canonical filtering preference contracts', () => {
