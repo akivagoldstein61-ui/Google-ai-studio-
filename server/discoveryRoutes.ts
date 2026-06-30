@@ -21,6 +21,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPOSURE_RETENTION_MS = 7 * DAY_MS;
 const EXPOSURE_EVENT_LIMIT = 200;
 const NEUTRAL_ACCOUNT_AGE_MS = 14 * DAY_MS;
+const MIN_AGE = 18;
+const MAX_AGE = 80;
+const MAX_DISTANCE_KM = 500;
+
+const VALID_GENDERS = new Set(['male', 'female', 'non_binary']);
+const VALID_OBSERVANCE = new Set(['secular', 'traditional', 'masorti', 'dati', 'modern_orthodox', 'ultra_orthodox']);
+const VALID_INTENTS = new Set(['marriage_minded', 'serious_relationship', 'open_to_possibilities']);
+const VALID_RECOMMENDATION_MODES = new Set(['values_first', 'balanced', 'serendipity', 'open_exploration']);
+const VALID_HARD_FILTERS = new Set(['verified', 'verified_only', 'age', 'age_range', 'distance', 'max_distance', 'gender', 'intent', 'intent_alignment', 'observance']);
+const VALID_SOFT_PREFERENCES = new Set(['shared_interests', 'same_city', 'similar_observance', 'similar_age', 'values_alignment', 'pacing_alignment']);
+const VALID_POOL_IMPACT_TIERS = new Set(['low', 'medium', 'high', 'very_high']);
 
 type CandidatePoolOptions = {
   includeInteracted?: boolean;
@@ -79,12 +90,13 @@ export const DEFAULT_DISCOVERY_PREFERENCES: DiscoveryPreferences = {
 router.use(authMiddleware);
 
 router.get('/preferences', async (req: AuthenticatedRequest, res) => {
-  const preferences = await loadPreferences(req.uid);
+  const saved = req.uid ? await loadOptionalPreferences(req.uid) : undefined;
+  const preferences = saved ?? DEFAULT_DISCOVERY_PREFERENCES;
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.json({
     preferences,
-    source: req.uid ? 'private/discovery_preferences' : 'defaults',
-    persisted: Boolean(req.uid && await loadOptionalPreferences(req.uid)),
+    source: saved ? 'private/discovery_preferences' : 'defaults',
+    persisted: Boolean(saved),
   });
 });
 
@@ -97,8 +109,9 @@ router.post('/preferences', async (req: AuthenticatedRequest, res) => {
 
   const nextPreferences = normalizePreferences(req.body?.preferences ?? req.body);
   const db = getOptionalAdminFirestore();
+  let persisted = false;
   if (db) {
-    await db
+    persisted = await db
       .collection('users')
       .doc(viewerUid)
       .collection(PRIVATE_COLLECTION)
@@ -107,13 +120,14 @@ router.post('/preferences', async (req: AuthenticatedRequest, res) => {
         ...nextPreferences,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: false })
-      .catch(() => null);
+      .then(() => true)
+      .catch(() => false);
   }
 
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.json({
     preferences: nextPreferences,
-    persisted: Boolean(db),
+    persisted,
   });
 });
 
@@ -452,23 +466,87 @@ function normalizePreferences(raw: unknown): DiscoveryPreferences {
   if (!raw || typeof raw !== 'object') return DEFAULT_DISCOVERY_PREFERENCES;
   const input = raw as Record<string, any>;
   return {
-    ...DEFAULT_DISCOVERY_PREFERENCES,
-    ...input,
-    hardFilters: Array.isArray(input.hardFilters) ? input.hardFilters : DEFAULT_DISCOVERY_PREFERENCES.hardFilters,
-    softPreferences: Array.isArray(input.softPreferences) ? input.softPreferences : DEFAULT_DISCOVERY_PREFERENCES.softPreferences,
-    recommendationMode:
-      input.recommendationMode === LEGACY_RECOMMENDATION_MODE
-        ? 'serendipity'
-        : input.recommendationMode ?? DEFAULT_DISCOVERY_PREFERENCES.recommendationMode,
-    dealbreakers: {
-      ...DEFAULT_DISCOVERY_PREFERENCES.dealbreakers,
-      ...(input.dealbreakers && typeof input.dealbreakers === 'object' ? input.dealbreakers : {}),
-    },
-    softPreferenceWeights: {
-      ...DEFAULT_DISCOVERY_PREFERENCES.softPreferenceWeights,
-      ...(input.softPreferenceWeights && typeof input.softPreferenceWeights === 'object' ? input.softPreferenceWeights : {}),
-    },
+    genderPreference: normalizeStringList(input.genderPreference, VALID_GENDERS, DEFAULT_DISCOVERY_PREFERENCES.genderPreference),
+    ageRange: normalizeAgeRange(input.ageRange),
+    maxDistance: normalizeNumber(input.maxDistance, 0, MAX_DISTANCE_KM, DEFAULT_DISCOVERY_PREFERENCES.maxDistance),
+    observancePreference: normalizeStringList(input.observancePreference, VALID_OBSERVANCE, DEFAULT_DISCOVERY_PREFERENCES.observancePreference),
+    intentPreference: normalizeStringList(input.intentPreference, VALID_INTENTS, DEFAULT_DISCOVERY_PREFERENCES.intentPreference),
+    hardFilters: normalizeStringList(input.hardFilters, VALID_HARD_FILTERS, DEFAULT_DISCOVERY_PREFERENCES.hardFilters),
+    softPreferences: normalizeStringList(input.softPreferences, VALID_SOFT_PREFERENCES, DEFAULT_DISCOVERY_PREFERENCES.softPreferences),
+    recommendationMode: normalizeRecommendationMode(input.recommendationMode),
+    dealbreakers: normalizeDealbreakers(input.dealbreakers),
+    softPreferenceWeights: normalizeSoftPreferenceWeights(input.softPreferenceWeights),
+    poolImpact: normalizePoolImpact(input.poolImpact),
   };
+}
+
+function normalizeStringList(value: unknown, allowed: Set<string>, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return [...fallback];
+  const output: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !allowed.has(item) || output.includes(item)) continue;
+    output.push(item);
+  }
+  return output.length > 0 ? output : [...fallback];
+}
+
+function normalizeAgeRange(value: unknown): [number, number] {
+  if (!Array.isArray(value) || value.length < 2) return [...DEFAULT_DISCOVERY_PREFERENCES.ageRange];
+  const min = normalizeNumber(value[0], MIN_AGE, MAX_AGE, DEFAULT_DISCOVERY_PREFERENCES.ageRange[0]);
+  const max = normalizeNumber(value[1], MIN_AGE, MAX_AGE, DEFAULT_DISCOVERY_PREFERENCES.ageRange[1]);
+  return min <= max ? [min, max] : [max, min];
+}
+
+function normalizeNumber(value: unknown, min: number, max: number, fallback: number): number {
+  const number = typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  return Math.max(min, Math.min(max, Math.round(number)));
+}
+
+function normalizeRecommendationMode(value: unknown): DiscoveryPreferences['recommendationMode'] {
+  if (value === LEGACY_RECOMMENDATION_MODE) return 'serendipity';
+  return typeof value === 'string' && VALID_RECOMMENDATION_MODES.has(value)
+    ? value as DiscoveryPreferences['recommendationMode']
+    : DEFAULT_DISCOVERY_PREFERENCES.recommendationMode;
+}
+
+function normalizeDealbreakers(value: unknown): NonNullable<DiscoveryPreferences['dealbreakers']> {
+  const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  return {
+    age: typeof input.age === 'boolean' ? input.age : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.age,
+    distance: typeof input.distance === 'boolean' ? input.distance : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.distance,
+    gender: typeof input.gender === 'boolean' ? input.gender : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.gender,
+    intent: typeof input.intent === 'boolean' ? input.intent : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.intent,
+    observance: typeof input.observance === 'boolean' ? input.observance : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.observance,
+    verified: typeof input.verified === 'boolean' ? input.verified : DEFAULT_DISCOVERY_PREFERENCES.dealbreakers?.verified,
+  };
+}
+
+function normalizeSoftPreferenceWeights(value: unknown): NonNullable<DiscoveryPreferences['softPreferenceWeights']> {
+  const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  return {
+    shared_interests: normalizeWeight(input.shared_interests, DEFAULT_DISCOVERY_PREFERENCES.softPreferenceWeights?.shared_interests),
+    same_city: normalizeWeight(input.same_city, DEFAULT_DISCOVERY_PREFERENCES.softPreferenceWeights?.same_city),
+    similar_observance: normalizeWeight(input.similar_observance, DEFAULT_DISCOVERY_PREFERENCES.softPreferenceWeights?.similar_observance),
+    similar_age: normalizeWeight(input.similar_age, DEFAULT_DISCOVERY_PREFERENCES.softPreferenceWeights?.similar_age),
+    values_alignment: normalizeWeight(input.values_alignment, undefined),
+    pacing_alignment: normalizeWeight(input.pacing_alignment, undefined),
+  };
+}
+
+function normalizeWeight(value: unknown, fallback: number | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value));
+}
+
+function normalizePoolImpact(value: unknown): DiscoveryPreferences['poolImpact'] {
+  if (!value || typeof value !== 'object') return undefined;
+  const output: NonNullable<DiscoveryPreferences['poolImpact']> = {};
+  for (const [key, tier] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof tier === 'string' && VALID_POOL_IMPACT_TIERS.has(tier)) {
+      output[key] = tier as NonNullable<DiscoveryPreferences['poolImpact']>[string];
+    }
+  }
+  return Object.keys(output).length > 0 ? output : undefined;
 }
 
 function normalizeFairnessState(raw: unknown): FairnessState | undefined {
