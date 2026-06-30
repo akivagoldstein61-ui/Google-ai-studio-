@@ -62,8 +62,8 @@ interface AppState {
   moreLikeThis: (profileId: string) => void;
   lessLikeThis: (profileId: string) => void;
   recordTasteSignal: (name: EventName, profileId: string, options?: TasteSignalOptions) => void;
-  resetTasteProfile: () => void;
-  setTasteProfile: (profile: TasteProfileDraft) => void;
+  resetTasteProfile: () => Promise<void>;
+  setTasteProfile: (profile: TasteProfileDraft) => Promise<void>;
   pauseTasteLearning: (paused: boolean) => Promise<void>;
   optOutTasteLearning: () => Promise<void>;
   exportTasteProfile: () => Promise<any>;
@@ -533,6 +533,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setTasteProfile = async (profile: TasteProfileDraft) => {
     const normalized = normalizeTasteProfile(profile);
+    const previousProfile = tasteProfile;
+    const previousTasteState = tasteState;
     setTasteProfileState(normalized);
     setTasteStateRaw(prev => ({
       ...cloneTasteState(prev),
@@ -547,6 +549,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), normalized);
     } catch (error) {
       console.error('Error saving taste profile:', error);
+      setTasteProfileState(previousProfile);
+      setTasteStateRaw(previousTasteState);
+      throw error;
     }
   };
 
@@ -688,7 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
-        setTasteProfile(normalizeTasteProfile(newProfile));
+        await setTasteProfile(normalizeTasteProfile(newProfile));
       }
     } catch (error) {
       console.error('Failed to update taste profile:', error);
@@ -724,7 +729,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { aiService } = await import('../services/aiService');
       const newProfile = await aiService.analyzeTasteProfile(newInteractions, tasteProfile);
       if (newProfile) {
-        setTasteProfile(normalizeTasteProfile(newProfile));
+        await setTasteProfile(normalizeTasteProfile(newProfile));
       }
     } catch (error) {
       console.error('Failed to update taste profile:', error);
@@ -752,6 +757,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetTasteProfile = async () => {
+    const previousProfile = tasteProfile;
+    const previousInteractions = interactions;
+    const previousTasteState = tasteState;
     const emptyProfile = normalizeTasteProfile({
       ...cloneDefaultTasteProfile(),
       learning: {
@@ -779,14 +787,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), emptyProfile);
       await setDoc(doc(db, `users/${user.uid}/private/interactions`), nextEmptyInteractions);
       await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(freshTasteState));
-      await discoveryService.resetTasteProfile().catch(() => null);
+      await discoveryService.resetTasteProfile();
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error resetting taste profile in Firestore:', error);
+      setTasteProfileState(previousProfile);
+      setInteractions(previousInteractions);
+      setTasteStateRaw(previousTasteState);
+      throw error;
     }
   };
 
   const pauseTasteLearning = async (paused: boolean) => {
+    const previousProfile = tasteProfile;
+    const previousTasteState = tasteState;
     const updatedProfile = normalizeTasteProfile({
       ...tasteProfile,
       learning: {
@@ -808,10 +822,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }).catch(() => null);
     } catch (error) {
       console.error('Error updating taste pause state:', error);
+      setTasteProfileState(previousProfile);
+      setTasteStateRaw(previousTasteState);
+      throw error;
     }
   };
 
   const optOutTasteLearning = async () => {
+    const previousProfile = tasteProfile;
+    const previousTasteState = tasteState;
     const updatedProfile = normalizeTasteProfile({
       ...tasteProfile,
       learning: {
@@ -820,20 +839,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastUpdatedAt: new Date().toISOString(),
       },
     });
+    const optedOutTasteState = {
+      ...emptyTasteState(),
+      learningPaused: true,
+      optedOut: true,
+    };
     setTasteProfileState(updatedProfile);
-    setTasteStateRaw(prev => ({ ...cloneTasteState(prev), learningPaused: true, optedOut: true }));
+    setTasteStateRaw(optedOutTasteState);
 
     if (isLocalOnlyMode || !user) return;
     try {
       await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), updatedProfile);
-      await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState({
-        ...emptyTasteState(),
-        learningPaused: true,
-        optedOut: true,
-      }));
+      await setDoc(doc(db, `users/${user.uid}/private/taste_state`), serializeTasteState(optedOutTasteState));
       await discoveryService.recordTasteEvent('taste_pause', undefined, { paused: true, optedOut: true }).catch(() => null);
     } catch (error) {
       console.error('Error opting out of taste learning:', error);
+      setTasteProfileState(previousProfile);
+      setTasteStateRaw(previousTasteState);
+      throw error;
     }
   };
 
@@ -843,6 +866,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return await discoveryService.exportTasteProfile();
       } catch (error) {
         console.error('Error exporting taste profile:', error);
+        throw error;
       }
     }
 
@@ -856,6 +880,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteTasteProfile = async () => {
+    const previousProfile = tasteProfile;
+    const previousInteractions = interactions;
+    const previousTasteState = tasteState;
     const emptyProfile = cloneDefaultTasteProfile();
     const freshTasteState = emptyTasteStateForProfile(emptyProfile);
     setTasteProfileState(emptyProfile);
@@ -872,6 +899,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshRemoteDiscovery();
     } catch (error) {
       console.error('Error deleting taste profile:', error);
+      setTasteProfileState(previousProfile);
+      setInteractions(previousInteractions);
+      setTasteStateRaw(previousTasteState);
+      throw error;
     }
   };
 
