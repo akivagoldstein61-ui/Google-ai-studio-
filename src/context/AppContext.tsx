@@ -539,18 +539,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const normalized = normalizeTasteProfile(profile);
     const previousProfile = tasteProfile;
     const previousTasteState = tasteState;
-    setTasteProfileState(normalized);
-    setTasteStateRaw(prev => ({
-      ...cloneTasteState(prev),
+    const nextTasteState = {
+      ...cloneTasteState(tasteState),
       learningPaused: normalized.learning.paused,
       optedOut: normalized.learning.optedOut,
-    }));
+    };
+
     if (isLocalOnlyMode || !user) {
+      setTasteProfileState(normalized);
+      setTasteStateRaw(nextTasteState);
       return;
     }
 
     try {
-      await setDoc(doc(db, `users/${user.uid}/private/taste_profile`), normalized);
+      const result = await discoveryService.saveTasteProfile(normalized);
+      const persistedProfile = normalizeTasteProfile(result?.profile ?? normalized);
+      const persistedTasteState = result?.tasteState
+        ? deserializeTasteState(result.tasteState)
+        : {
+          ...cloneTasteState(tasteState),
+          learningPaused: persistedProfile.learning.paused,
+          optedOut: persistedProfile.learning.optedOut,
+        };
+      setTasteProfileState(persistedProfile);
+      setTasteStateRaw(persistedTasteState);
     } catch (error) {
       console.error('Error saving taste profile:', error);
       setTasteProfileState(previousProfile);
