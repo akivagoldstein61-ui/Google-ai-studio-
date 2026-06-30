@@ -131,6 +131,20 @@ describe('canonical filtering preference contracts', () => {
     expect(source).toContain('setExploreProfiles(ranked.explore)');
   });
 
+  it('discovery preference saves batch hard-filter taste audit on the server', () => {
+    const server = readSource('server/discoveryRoutes.ts');
+    const app = readSource('src/context/AppContext.tsx');
+    const handler = app.slice(app.indexOf('const setPreferences'), app.indexOf('const setTasteProfile'));
+
+    expect(server).toContain("const userPrivate = db.collection('users').doc(viewerUid).collection(PRIVATE_COLLECTION);");
+    expect(server).toContain("batch.set(userPrivate.doc('discovery_preferences'), {");
+    expect(server).toContain("batch.set(userPrivate.doc('taste_events').collection('events').doc(), {");
+    expect(server).toContain("name: 'hard_filter_edited'");
+    expect(server).toContain("eventClass: 'policy_consent'");
+    expect(server).toContain('const persisted = await batch.commit().then(() => true).catch(() => false);');
+    expect(handler).not.toContain("recordTasteEvent('hard_filter_edited'");
+  });
+
   it('filtering skill persists canonical controls and shows pool impact before saving', () => {
     const source = readSource('src/features/skills/FilteringMarketplaceSkill.tsx');
 
