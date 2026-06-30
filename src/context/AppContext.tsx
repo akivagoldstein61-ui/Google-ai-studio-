@@ -391,11 +391,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }));
             }
 
-            const prefDoc = await getDoc(doc(db, `users/${firebaseUser.uid}/private/discovery_preferences`));
-            if (prefDoc.exists()) {
-              setPreferencesState(normalizeDiscoveryPreferences(prefDoc.data()));
-            }
-
             try {
               const { collection, query, where, getDocs } = await import('firebase/firestore');
               const matchesQuery = query(collection(db, 'matches'), where('users', 'array-contains', firebaseUser.uid));
@@ -407,6 +402,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const conversationsSnapshot = await getDocs(conversationsQuery);
               const fetchedConversations = conversationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
               setConversations(fetchedConversations);
+
+              const preferenceResponse = await discoveryService.getDiscoveryPreferences().catch(() => null);
+              if (preferenceResponse?.preferences) {
+                setPreferencesState(normalizeDiscoveryPreferences(preferenceResponse.preferences));
+              }
 
               const tasteResponse = await discoveryService.getTasteProfile().catch(() => null);
               if (tasteResponse?.profile) {
@@ -462,8 +462,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      const { doc, setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, `users/${user.uid}/private/discovery_preferences`), normalized);
+      const response = await discoveryService.saveDiscoveryPreferences(normalized);
+      const serverPreferences = normalizeDiscoveryPreferences(response?.preferences ?? normalized);
+      setPreferencesState(serverPreferences);
       await discoveryService.recordTasteEvent('hard_filter_edited').catch(() => null);
       await refreshRemoteDiscovery();
     } catch (error) {
