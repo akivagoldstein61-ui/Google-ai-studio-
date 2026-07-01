@@ -59,6 +59,10 @@ const EXPECTED_SKILL_IDS = [
 ];
 
 const LIVE_IDS = new Set([
+  'personality-assessment',
+  'personality-profile',
+  'personality-ocean',
+  'personality-visibility',
   'filtering-marketplace',
   'private-taste',
   'learned-taste',
@@ -75,18 +79,18 @@ const PERSONALITY_DATA_GATED_IDS = [
 
 const HIDDEN_MEMBER_VISIBLE_EXCEPTION_IDS = new Set(['image-analysis']);
 
-describe('Kesher skills registry prototype visibility', () => {
-  it('keeps all 35 Kesher skills visible as prototype experiences', () => {
+describe('Kesher skills registry visibility', () => {
+  it('keeps all 35 Kesher skills visible with explicit launch status', () => {
     expect(SKILLS).toHaveLength(35);
     for (const skill of SKILLS) {
       expect(skill.status).toBe(LIVE_IDS.has(skill.id) ? 'live' : 'prototype');
     }
   });
 
-  it('gates personality scored data while keeping UI-native surfaces prototype-labelled', () => {
+  it('marks member-operable personality surfaces live while keeping data handling explicit', () => {
     for (const id of PERSONALITY_DATA_GATED_IDS) {
-      expect(getSkillById(id)?.status).toBe('prototype');
-      expect(getSkillById(id)?.dataStatus).toBe('gated_pending_validation');
+      expect(getSkillById(id)?.status).toBe('live');
+      expect(getSkillById(id)?.dataStatus).toBe('live');
     }
   });
 

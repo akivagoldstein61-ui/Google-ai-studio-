@@ -22,7 +22,13 @@ export const ProfileDetail: React.FC<{
   const [loadingOpeners, setLoadingOpeners] = useState(false);
   const [showOpeners, setShowOpeners] = useState(false);
   const { user, moreLikeThis, lessLikeThis } = useApp();
-  const [explanation, setExplanation] = useState<{ reasons: string[], first_question?: string, gentle_clarification?: string } | null>(null);
+  const [explanation, setExplanation] = useState<{
+    reasons_he: string[];
+    first_question_he?: string;
+    gentle_clarification_he?: string;
+    signals_used: string[];
+    signals_not_used: string[];
+  } | null>(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
   const [showReportFlow, setShowReportFlow] = useState(false);
@@ -40,7 +46,9 @@ export const ProfileDetail: React.FC<{
           setExplanation(result);
         } catch (error) {
           setExplanation({
-            reasons: [`You both share an interest in ${profile.tags.slice(0, 2).join(' and ')}.`]
+            reasons_he: [`יש לכם עניין משותף ב${profile.tags.slice(0, 2).join(' ו')}.`],
+            signals_used: ['interests'],
+            signals_not_used: ['private_personality', 'private_taste', 'safety_flags', 'hidden_rank', 'raw_messages']
           });
         } finally {
           setLoadingExplanation(false);
@@ -166,24 +174,24 @@ export const ProfileDetail: React.FC<{
               {explanation ? (
                 <>
                   <ul className="space-y-2">
-                    {explanation.reasons?.map((reason, i) => (
+                    {explanation.reasons_he?.map((reason, i) => (
                       <li key={i} className="text-lg text-[#2D2926] leading-relaxed italic font-serif flex gap-3">
                         <span className="text-[#D4AF37]">•</span>
                         <span>{reason}</span>
                       </li>
                     ))}
                   </ul>
-                  {explanation.first_question && (
+                  {explanation.first_question_he && (
                     <div className="pt-4 mt-4 border-t border-[#E5DED5]">
                       <p className="text-sm text-[#8C7E6E] italic">
-                        <span className="font-bold text-[#2D2926] not-italic">Icebreaker:</span> {explanation.first_question}
+                        <span className="font-bold text-[#2D2926] not-italic">Icebreaker:</span> {explanation.first_question_he}
                       </p>
                     </div>
                   )}
-                  {explanation.gentle_clarification && (
+                  {explanation.gentle_clarification_he && (
                     <div className="pt-2 mt-2">
                       <p className="text-xs text-[#8C7E6E] italic opacity-80">
-                        <span className="font-bold text-[#2D2926] not-italic">Note:</span> {explanation.gentle_clarification}
+                        <span className="font-bold text-[#2D2926] not-italic">Note:</span> {explanation.gentle_clarification_he}
                       </p>
                     </div>
                   )}
@@ -200,9 +208,14 @@ export const ProfileDetail: React.FC<{
                 <span>AI Draft • Human Control</span>
               </div>
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37]">
-                Based on your settings
+                Signals used: {explanation?.signals_used.join(', ') || 'public profile'}
               </span>
             </div>
+            {explanation?.signals_not_used?.length ? (
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#8C7E6E]">
+                Not used: {explanation.signals_not_used.join(', ')}
+              </p>
+            ) : null}
           </section>
 
           <SkillContextPanel

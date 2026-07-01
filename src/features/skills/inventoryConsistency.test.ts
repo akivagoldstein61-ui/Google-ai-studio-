@@ -29,9 +29,9 @@ const REFERENCE_CLASSES = ['reference', 'research', 'operator', 'legal_privacy',
 const flagKeyFor = (featureKey: string) => `ENABLE_AI_${featureKey.toUpperCase()}`;
 
 describe('Skills Hub inventory consistency (PR 0: inventory only, not behavior)', () => {
-  it('keeps exactly 35 visible prototype skills', () => {
+  it('keeps exactly 35 visible skills with explicit launch statuses', () => {
     expect(SKILLS).toHaveLength(35);
-    expect(SKILLS.every((s) => s.status === 'prototype')).toBe(true);
+    expect(SKILLS.every((s) => s.status === 'prototype' || s.status === 'live')).toBe(true);
   });
 
   it('has unique visible skill ids', () => {

@@ -1,10 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Brain, Sparkles, Heart, ShieldAlert, MessageCircle, Activity, Loader2, Trash2, RefreshCw, X } from 'lucide-react';
+import { ChevronLeft, Brain, Download, Heart, ShieldAlert, Loader2, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useApp } from '@/context/AppContext';
 import { aiService } from '@/services/aiService';
 import { trustService } from '@/services/trustService';
+import {
+  buildPrivatePersonalityProfileSummary,
+  type PersonalityAssessmentReport,
+} from '@/personality/scoring';
+
+const bandLabelHe = (band?: string) => {
+  switch (band) {
+    case 'lower':
+      return 'נמוך יחסית';
+    case 'higher':
+      return 'גבוה יחסית';
+    case 'balanced':
+      return 'מאוזן';
+    default:
+      return 'רפלקטיבי';
+  }
+};
+
+const bandFromPercentile = (percentile?: number) => {
+  if (typeof percentile !== 'number') return undefined;
+  if (percentile >= 67) return 'higher';
+  if (percentile <= 33) return 'lower';
+  return 'balanced';
+};
+
+const buildFallbackProfile = (report?: PersonalityAssessmentReport) => {
+  if (!report) return null;
+  const summary = buildPrivatePersonalityProfileSummary(report);
+  const sortedDomains = [...report.domains].sort((a, b) => b.score - a.score);
+  const strongest = sortedDomains[0];
+  const quietest = sortedDomains[sortedDomains.length - 1];
+
+  return {
+    ...summary,
+    implication_card: {
+      dating_superpower_he:
+        strongest?.dating_note_he ?? 'בחר/י תחום שמרגיש מדויק והשתמש/י בו לשיחה פתוחה יותר.',
+      growth_area_he:
+        quietest?.dating_note_he ?? report.next_step_he,
+      likely_friction_loops_he: [],
+      repair_suggestions_he: [report.next_step_he],
+    },
+  };
+};
 
 export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { user, trackEvent } = useApp();
@@ -24,24 +68,7 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
           setProfile(result);
           trackEvent('personality_profile_viewed', { userId: user.id });
         } else {
-          // Fallback to deterministic display if AI fails
-          const scores = user.personalityScores || {};
-          setProfile({
-            summary_he: "מערכת הבינה המלאכותית שלנו אינה זמינה כרגע. הנה סיכום בסיסי של התוצאות שלך:",
-            implication_card: {
-              dating_superpower_he: "לא זמין כרגע. אנא נסה שוב מאוחר יותר.",
-              growth_area_he: "לא זמין כרגע. אנא נסה שוב מאוחר יותר.",
-              likely_friction_loops_he: [],
-              repair_suggestions_he: []
-            },
-            domains: [
-              { domain_name: "פתיחות", percentile: scores['Openness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי אינטלקט ופתיחות לחוויות." },
-              { domain_name: "מצפוניות", percentile: scores['Conscientiousness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי סדר וחריצות." },
-              { domain_name: "מוחצנות", percentile: scores['Extraversion'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי אסרטיביות והתלהבות." },
-              { domain_name: "נעימות", percentile: scores['Agreeableness'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי נימוס וחמלה." },
-              { domain_name: "נוירוטיות", percentile: scores['Neuroticism'] ?? 50, description_he: "נקבע על פי התשובות שלך בנושאי תנודתיות ונסיגה." }
-            ]
-          });
+          setProfile(buildFallbackProfile(user.personalityScores));
           trackEvent('personality_profile_viewed', { userId: user.id, fallback: true });
         }
       } catch (error) {
@@ -60,8 +87,7 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
       await trustService.resetPersonalityAssessment(user.uid);
       console.log("Assessment reset requested");
       setShowResetConfirm(false);
-      // In production, navigate to assessment screen
-      onBack(); // For now, just go back
+      onBack();
     } catch (error) {
       console.error("Failed to reset assessment", error);
     }
@@ -142,27 +168,30 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
         <section className="space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8C7E6E] px-2">תכונות ליבה</h4>
           <div className="space-y-3">
-            {profile.domains.map((domain: any, i: number) => (
-              <div key={i} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm text-[#2D2926] font-hebrew">{domain.domain_name}</span>
-                  <span className="text-xs text-[#8C7E6E] font-mono">{domain.percentile}%</span>
+            {profile.domains.map((domain: any, i: number) => {
+              const domainBand = domain.band ?? bandFromPercentile(domain.percentile);
+              return (
+                <div key={i} className="p-4 bg-white border border-[#F3EFEA] rounded-2xl space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm text-[#2D2926] font-hebrew">
+                      {domain.domain_name ?? domain.label_he ?? domain.id}
+                    </span>
+                    <span className="text-[10px] text-[#8C7E6E] font-bold uppercase tracking-widest">
+                      {bandLabelHe(domainBand)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#8C7E6E] leading-relaxed pt-1 font-hebrew">
+                    {domain.description_he ?? domain.description ?? domain.reflection_prompt_he}
+                  </p>
                 </div>
-                <div className="w-full h-1.5 bg-[#F7F2EE] rounded-full overflow-hidden" dir="ltr">
-                  <div 
-                    className="h-full bg-[#D4AF37] rounded-full" 
-                    style={{ width: `${domain.percentile}%` }}
-                  />
-                </div>
-                <p className="text-xs text-[#8C7E6E] leading-relaxed pt-1 font-hebrew">{domain.description_he}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
         
         <div className="pt-4 text-center">
           <p className="text-[10px] text-[#8C7E6E] italic max-w-xs mx-auto font-hebrew">
-            פרופיל זה פרטי וגלוי רק לך. הוא עוזר לקשר להבין את ההעדפות שלך ולספק התאמות טובות יותר.
+            פרופיל זה פרטי וגלוי רק לך. הוא מיועד לרפלקציה אישית ולשיחה ברורה יותר, לא לדירוג התאמה.
           </p>
         </div>
 
@@ -191,7 +220,7 @@ export const PersonalityProfileScreen: React.FC<{ onBack: () => void }> = ({ onB
                 downloadAnchorNode.remove();
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <Download size={18} />
               Export Data
             </Button>
             <Button 

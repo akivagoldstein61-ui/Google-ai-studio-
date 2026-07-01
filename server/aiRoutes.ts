@@ -35,8 +35,16 @@ import {
 import { sanitize } from "../src/ai/promptSanitizer.ts";
 import { filterWhyMatchSignals } from "../src/ai/dataClassification.ts";
 import { verifyBilateralShareConsent } from "./consentVerification.ts";
+import {
+  assertNoForbiddenPersonalityFields,
+  redactPersonalityLogPayload,
+} from "../src/personality/privacy.ts";
 
 export const aiRouter = express.Router();
+
+const getAiRouteAuthMode = () =>
+  process.env.AI_ROUTE_AUTH_MODE ||
+  (process.env.NODE_ENV === "production" ? "strict" : "prototype");
 
 const getAI = () => {
   let apiKey = process.env.GEMINI_API_KEY;
@@ -130,7 +138,7 @@ const routeMetadataLogger = (
   
   res.json = function(body) {
     const latencyMs = Date.now() - start;
-    const authMode = process.env.AI_ROUTE_AUTH_MODE || "prototype";
+    const authMode = getAiRouteAuthMode();
     
     // Determine error class implicitly
     let errorClass = "none";
@@ -162,9 +170,27 @@ const routeMetadataLogger = (
   next();
 };
 
-// Apply middlewares to all AI routes
+const forbiddenFieldGuard = (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) => {
+  try {
+    assertNoForbiddenPersonalityFields(req.body);
+    next();
+  } catch (error) {
+    res.locals.ai_metadata.validator_result = "forbidden_field";
+    res.locals.ai_metadata.error_class = "policy_violation";
+    return res.status(400).json({
+      error: error instanceof Error ? error.message : "Forbidden field",
+    });
+  }
+};
+
+// Apply middlewares to all AI routes. Authentication is mounted in server.ts.
 aiRouter.use(apiLimiter);
 aiRouter.use(routeMetadataLogger);
+aiRouter.use(forbiddenFieldGuard);
 
 const handleAiError = (error: any, res: express.Response, logMessage: string) => {
   const isMissingKey = error?.message === "MISSING_API_KEY" || error?.message?.includes("API key not valid");
@@ -176,7 +202,7 @@ const handleAiError = (error: any, res: express.Response, logMessage: string) =>
     res.locals.ai_metadata.fallback_used = true;
     res.locals.ai_metadata.validator_result = "schema_failure_or_catch";
     res.locals.ai_metadata.error_class = "api_error_fallback";
-    console.error(logMessage, error);
+    console.error(logMessage, redactPersonalityLogPayload(error));
   }
 };
 

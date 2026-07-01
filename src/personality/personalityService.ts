@@ -1,69 +1,105 @@
 /**
- * Personality Service — runtime shell.
+ * Personality Service - deterministic Kesher reflection adapter.
  *
- * This is a deliberate placeholder. Personality is a sensitive domain
- * (Israeli PPL Amendment 13 considers some inferred traits sensitive
- * personal information). Until a validated instrument is licensed AND
- * a measurement-validation review clears, this service refuses to
- * produce scores.
- *
- * What is forbidden here, by construction:
- *   - LLM-based personality inference from messages, bios, or photos
- *   - Public raw trait scores
- *   - Attachment-style labels rendered as public badges
- *   - Compatibility percentages built from inferred traits
- *
- * What is allowed here, by construction:
- *   - Defining the type contract (./types.ts) so downstream code can
- *     compile against the eventual shape.
- *   - Reporting the current service status so callers can render an
- *     "instrument not yet available" empty state without crashing.
+ * Personality is sensitive data. This service only accepts explicit Kesher
+ * reflection item responses and delegates scoring to ./scoring.ts. It never
+ * infers traits from messages, bios, photos, behavior, or an LLM.
  */
 
 import type {
+  DomainScores,
+  FacetOrAspectScores,
   PersonalityRecord,
   PersonalityServiceStatus,
 } from "./types";
+import {
+  PERSONALITY_INSTRUMENT_VERSION,
+  scoreKesherPersonalityAssessment,
+  type PersonalityAssessmentReport,
+} from "./scoring";
 
 export interface PersonalityService {
-  /** Current operational status of the personality layer. */
   getStatus(): PersonalityServiceStatus;
 
-  /** Submit raw item responses from a validated instrument. Throws if
-   *  the service is not yet active — i.e. always, today. */
-  submitInstrumentResponses(_input: {
+  submitInstrumentResponses(input: {
+    user_id?: string;
     instrument_type: string;
     instrument_version: string;
     locale: string;
     responses: Record<string, number>;
   }): Promise<PersonalityRecord>;
 
-  /** Read a record for the current user. Returns null when no record
-   *  exists or when the service is not active. */
-  getRecord(_userId: string): Promise<PersonalityRecord | null>;
+  getRecord(userId: string): Promise<PersonalityRecord | null>;
 }
 
-/**
- * The default service. Refuses to score until measurement validation
- * clears. Wiring a real instrument requires:
- *   1. Licensing + permission documentation in CLAUDE.md
- *   2. Approval gate per CLAUDE.md Section 6
- *   3. A dedicated slice with consent UX, instrument administration,
- *      and audit logging.
- */
+const records = new Map<string, PersonalityRecord>();
+
+async function responseHash(responses: Record<string, number>) {
+  const stable = JSON.stringify(Object.entries(responses).sort(([a], [b]) => a.localeCompare(b)));
+  const digest = await globalThis.crypto?.subtle?.digest("SHA-256", new TextEncoder().encode(stable));
+  if (!digest) return `sha256-unavailable:${stable.length}`;
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function toDomainScores(report: PersonalityAssessmentReport): DomainScores {
+  return report.domains.reduce(
+    (scores, domain) => ({
+      ...scores,
+      [domain.id]: domain.score / 100,
+    }),
+    {
+      openness: null,
+      conscientiousness: null,
+      extraversion: null,
+      agreeableness: null,
+      neuroticism: null,
+    } as DomainScores,
+  );
+}
+
+function toFacetScores(report: PersonalityAssessmentReport): FacetOrAspectScores {
+  return Object.fromEntries(report.aspects.map((aspect) => [aspect.id, aspect.score / 100]));
+}
+
 export const personalityService: PersonalityService = {
   getStatus(): PersonalityServiceStatus {
-    return "not_validated";
+    return "active";
   },
 
-  async submitInstrumentResponses() {
-    throw new Error(
-      "Personality service is not active. No validated instrument is licensed. " +
-        "See src/personality/personalityService.ts for the gating notes."
-    );
+  async submitInstrumentResponses(input) {
+    if (
+      input.instrument_type !== "kesher_reflection" ||
+      input.instrument_version !== PERSONALITY_INSTRUMENT_VERSION
+    ) {
+      throw new Error("Unsupported personality instrument for active Kesher scoring.");
+    }
+
+    const report = scoreKesherPersonalityAssessment(input.responses);
+    const record: PersonalityRecord = {
+      instrument_type: "kesher_reflection",
+      instrument_version: {
+        version: report.instrument_version,
+        administered_at: new Date().toISOString(),
+        locale: input.locale,
+      },
+      domain_scores: toDomainScores(report),
+      facet_or_aspect_scores: toFacetScores(report),
+      score_metadata: {
+        response_vector_hash: await responseHash(input.responses),
+        complete: !report.is_partial,
+        notes: `${report.score_version}; raw answers not stored in this record`,
+      },
+      created_at: new Date().toISOString(),
+      visibility_status: "private",
+    };
+
+    records.set(input.user_id ?? "local-user", record);
+    return record;
   },
 
-  async getRecord() {
-    return null;
+  async getRecord(userId: string) {
+    return records.get(userId) ?? null;
   },
 };
