@@ -29,3 +29,28 @@ Use this skill to decide whether a personality-related feature is prototype-only
 - Tests cover reverse scoring, missing answers, quality flags, reset/delete behavior, and forbidden output language.
 - Docs mark production personality ranking as blocked unless all named gates are closed.
 - User-visible copy frames personality as optional private reflection, not scientific matchmaking certainty.
+
+
+## Implementation Workflow
+1. **Data Loading:** Load anonymized pilot assessment data.
+2. **Statistical Analysis:** Run `scripts/run_validation.py` to calculate Cronbach's alpha and factor loadings.
+3. **Reporting:** Generate a validation report using the template below.
+
+## Output Pattern: Validation Report
+```markdown
+# Psychometric Validation Report
+## Dataset
+- N = [Sample Size]
+## Reliability (Cronbach's Alpha)
+- Openness: [Score]
+- Conscientiousness: [Score]
+- Extraversion: [Score]
+- Agreeableness: [Score]
+- Neuroticism: [Score]
+## Conclusion
+[Pass/Fail based on alpha > 0.70]
+```
+
+## Manus Execution Directive
+- **Capability:** `data_analysis`, `shell`, `technical_writing`
+- **Action:** Run statistical validation on assessment data and generate a formal report before enabling the assessment in production.

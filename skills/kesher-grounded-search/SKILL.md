@@ -23,3 +23,14 @@ The Vercel prototype page should show the route map, allowed use cases, citation
 ## Stop Points
 
 Stop before enabling background user lookup, caching third-party search results, removing source attribution, or sending sensitive personality data to a non-approved search workflow.
+
+
+## Implementation Workflow
+1. **Tool Configuration:** Configure the Gemini API call to include the Google Search grounding tool.
+2. **Citation Parsing:** Parse the response to extract and render citations correctly in the UI.
+3. **Use Case Restriction:** Ensure grounding is only used for approved use cases (e.g., safety advice, event discovery).
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Gemini API
+- **Action:** Implement Google Search grounding in the Gemini API call and render citations.

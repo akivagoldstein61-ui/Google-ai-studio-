@@ -23,3 +23,13 @@ The Vercel prototype page should show the token route, session lifecycle, consen
 ## Stop Points
 
 Stop before enabling always-listening mode, voice cloning, emotional companion framing, unconfirmed app actions, or production voice tokens without security review.
+
+
+## Implementation Workflow
+1. **Audio Capture:** Implement client-side audio capture using the Web Audio API.
+2. **Speech-to-Text:** Implement a server route to send the audio blob to a Speech-to-Text API (e.g., Gemini or Google Cloud Speech).
+3. **Transcript Rendering:** Render the transcript in the UI for user review before processing.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement client-side audio capture and server-side Speech-to-Text processing.

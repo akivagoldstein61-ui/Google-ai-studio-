@@ -24,3 +24,13 @@ Use this skill when a Kesher flow asks for permission, exposes a sensitive toggl
 - Revocation is visible and reachable in the same product area.
 - UI state after revocation cannot still show shared personality content.
 - Tests or manual QA cover grant, decline, revoke, and fallback states.
+
+
+## Implementation Workflow
+1. **Consent Capture:** Implement explicit opt-in UI for all data sharing actions.
+2. **Revocation Logic:** Implement the backend logic to handle consent revocation, including cascading deletes for shared cards.
+3. **Audit Logging:** Log all consent grants and revocations in the immutable audit log.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement explicit consent capture UI and the backend logic for cascading revocation.

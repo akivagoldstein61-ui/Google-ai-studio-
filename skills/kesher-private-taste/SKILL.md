@@ -39,3 +39,13 @@ The recommender may use private taste internally only after consent. Public-faci
 - Private taste never appears in another user's UI.
 
 Use `$kesher-personality-why-match` for explanation-layer work and `$kesher-personality-delivery` for verification.
+
+
+## Implementation Workflow
+1. **Signal Capture:** Wire the "more like this" / "less like this" buttons in the UI to send signals to the backend.
+2. **Vector Update:** Implement the backend logic to update the user's taste embedding in Firestore based on the received signals.
+3. **Discovery Refresh:** Trigger a refresh of the user's discovery queue using the updated taste embedding.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the taste vector update logic and wire it to the UI signals.

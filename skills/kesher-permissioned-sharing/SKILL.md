@@ -35,3 +35,13 @@ Read `references/share-card-contract.md` before implementing persistence, schema
 - Analytics excludes raw answers, private taste, and private messages.
 
 Use `$kesher-personality-visibility` for surface policy and `$kesher-personality-delivery` for release checks.
+
+
+## Implementation Workflow
+1. **Token Generation:** Implement backend logic to generate ephemeral, signed tokens for shared insights.
+2. **Access Control:** Implement middleware to verify the token before rendering the shared insight.
+3. **Revocation:** Implement logic to invalidate tokens upon consent revocation.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement ephemeral token generation and access control middleware for shared insights.

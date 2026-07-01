@@ -44,3 +44,13 @@ Read `references/assessment-contract.md` when changing questionnaire length, sco
 - `npm run check` or the narrowest TypeScript/test command passes.
 
 Use `$kesher-personality-delivery` for browser validation, GitHub/CI review, or deployment workflow after implementation.
+
+
+## Implementation Workflow
+1. **Questionnaire Rendering:** Implement the 100-item BFAS questionnaire UI, ensuring a calm, non-gamified experience.
+2. **Scoring Logic:** Implement the scoring algorithm in `scripts/score_bfas.py` to convert raw answers into OCEAN facet scores.
+3. **Data Storage:** Store the raw answers in the `System Only` layer and the calculated scores in the `Private Owner` layer.
+
+## Manus Execution Directive
+- **Capability:** `data_analysis`, `web_development`
+- **Action:** Implement the BFAS questionnaire and scoring logic, ensuring raw data is strictly isolated in the System Only layer.

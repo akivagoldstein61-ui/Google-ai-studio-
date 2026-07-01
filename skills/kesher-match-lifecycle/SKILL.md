@@ -19,3 +19,13 @@ Use this skill for discovery-to-chat product behavior.
 - Mutual matches create one conversation and one match record.
 - Block/report/unmatch remove unsafe access without erasing operator evidence.
 - The UI has empty states for no picks, no matches, no conversations, and paused profiles.
+
+
+## Implementation Workflow
+1. **Unmatch Logic:** Implement the backend logic to sever the match connection and remove access to mutual consent data.
+2. **Block Logic:** Implement the backend logic to block the user, sever the match, and prevent future discovery.
+3. **Safety Escalation:** If a block includes a report, escalate the report to the trust & safety queue.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the unmatch and block backend logic, including safety queue escalation.

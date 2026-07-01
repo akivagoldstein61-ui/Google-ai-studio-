@@ -23,3 +23,13 @@ Use this skill before shipping any Kesher UI that could pressure a user into sha
 - Copy is short enough to understand and names the data, purpose, and audience.
 - Premium flows do not imply compatibility scores or degrade core privacy/safety access.
 - QA covers default-off, decline, revoke, and repeated-entry behavior.
+
+
+## Implementation Workflow
+1. **Flow Identification:** Identify critical user flows (e.g., subscription cancellation, account deletion).
+2. **Heuristic Review:** Review the flows against dark pattern heuristics (e.g., roach motel, confirmshaming).
+3. **Remediation:** Refactor any identified dark patterns to ensure clear, unambiguous user choices.
+
+## Manus Execution Directive
+- **Capability:** `web_development`, `technical_writing`
+- **Action:** Audit critical user flows for dark patterns and refactor UI components to ensure clarity.

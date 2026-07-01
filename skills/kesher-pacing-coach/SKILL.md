@@ -38,3 +38,13 @@ Use a calm prompt to pause, breathe, or reflect on what felt energizing or drain
 - UI does not shift layout or obscure critical discovery controls.
 
 Use `$kesher-personality-delivery` for browser checks across mobile and desktop.
+
+
+## Implementation Workflow
+1. **Session Tracking:** Implement logic to track the number of profiles viewed in the current session.
+2. **Threshold Logic:** Define the threshold for triggering the pacing nudge (e.g., 5 profiles).
+3. **UI Rendering:** Render the `PacingCoachSkill.tsx` component when the threshold is reached.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the session tracking and threshold logic to trigger the pacing coach UI.

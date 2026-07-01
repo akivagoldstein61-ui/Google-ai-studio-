@@ -40,3 +40,14 @@ Say "you might connect over", "based on what is visible", or "one thing to explo
 - Tests include at least one leakage attempt.
 
 Use `$kesher-private-taste` for recommender inputs and `$kesher-personality-delivery` for verification.
+
+
+## Implementation Workflow
+1. **Allowlist Enforcement:** Ensure the prompt only includes data fields explicitly whitelisted for the `Public Browse` and `Mutual Consent` layers.
+2. **Generation:** Call the Gemini API to generate the explanation.
+3. **UI Rendering:** Render the explanation in the `WhyThisMatchSkill.tsx` component.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Gemini API
+- **Action:** Implement the "Why Match" explanation generation, strictly enforcing the data allowlist.

@@ -19,3 +19,13 @@ Use this skill for member protection and operator workflows.
 - Operators can see status, severity, assignment, last action, and evidence retention state.
 - Scam/payment requests and coercive messages can be escalated.
 - Appeal and review decisions are idempotent and logged.
+
+
+## Implementation Workflow
+1. **Report Queue:** Implement the backend logic to aggregate user reports into a review queue.
+2. **Operator Dashboard:** Implement a secure, internal dashboard for operators to review reports and take action.
+3. **Audit Logging:** Ensure all operator actions (e.g., warnings, bans) are logged immutably.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the operator dashboard and report queue backend logic.

@@ -19,3 +19,14 @@ Use this skill for privacy-rights and retention work.
 - Settings exposes data-rights actions with clear status.
 - Admin tooling can verify pending, completed, and failed rights requests.
 - Retention rules are documented before launch.
+
+
+## Implementation Workflow
+1. **Export Endpoint:** Implement a server route (`/api/data-export`) that aggregates all owner-visible data from Firestore into a JSON payload.
+2. **Deletion Endpoint:** Implement a server route (`/api/delete-account`) that soft-deletes the user record, schedules hard-deletion via a Cloud Task, and archives billing/safety records.
+3. **Settings UI:** Wire the export and deletion endpoints to the `SettingsScreen.tsx`.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Firebase
+- **Action:** Implement the export and deletion server routes, ensuring safety and billing records are properly archived during deletion.

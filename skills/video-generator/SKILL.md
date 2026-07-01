@@ -23,3 +23,13 @@ The Vercel prototype page should show the delivery checklist, demo script, priva
 ## Stop Points
 
 Stop before using real member data, implying AI impersonation, showing private scoring, or publishing a demo that suggests production activation.
+
+
+## Implementation Workflow
+1. **Script Writing:** Write the script for the demo video, highlighting key Kesher features.
+2. **Audio Generation:** Use the `tts-prompter` skill to generate voiceovers.
+3. **Video Assembly:** Use a programmatic video assembly tool or API to combine visuals and audio.
+
+## Manus Execution Directive
+- **Capability:** `media_generation`, `technical_writing`
+- **Action:** Generate promotional and instructional video content for the application.

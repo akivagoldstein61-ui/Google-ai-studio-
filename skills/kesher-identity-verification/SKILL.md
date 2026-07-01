@@ -20,3 +20,13 @@ Use this skill when turning Kesher from demo auth into a production identity sur
 - Onboarding cannot enter discovery until required profile and terms gates are complete.
 - Verification status is recoverable and auditable.
 - Account deletion preserves only legally required safety/evidence records.
+
+
+## Implementation Workflow
+1. **Provider Integration:** Integrate a third-party ID verification provider (e.g., Stripe Identity or Persona).
+2. **Webhook Handling:** Implement a webhook handler in `server/trustRoutes.ts` to receive verification results.
+3. **Status Update:** Update the user's verification status in Firestore upon successful verification.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the ID verification webhook handler and update the user's status in Firestore.

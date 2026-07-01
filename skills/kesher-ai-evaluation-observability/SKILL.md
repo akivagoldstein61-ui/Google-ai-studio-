@@ -19,3 +19,13 @@ Use this skill for AI runtime hardening.
 - AI Ops can see route health and launch blockers.
 - Golden tests cover every `/api/ai/*` route.
 - Release gates fail when high-risk AI features lack tests or provenance.
+
+
+## Implementation Workflow
+1. **Analysis:** Analyze the requirements for this skill.
+2. **Implementation:** Implement the necessary code changes in the repository.
+3. **Verification:** Verify the implementation meets the Kesher architecture rules.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the feature according to the Kesher standards.

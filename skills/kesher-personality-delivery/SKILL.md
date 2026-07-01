@@ -38,3 +38,13 @@ Stop and request explicit approval before changing auth, roles, Firebase rules, 
 - Validation output is recorded in the final response.
 - Browser screenshots or in-app browser checks are used for meaningful UI changes.
 - CI/review/deploy plugins are used only when appropriate and approved.
+
+
+## Implementation Workflow
+1. **Analysis:** Analyze the requirements for this skill.
+2. **Implementation:** Implement the necessary code changes in the repository.
+3. **Verification:** Verify the implementation meets the Kesher architecture rules.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the feature according to the Kesher standards.

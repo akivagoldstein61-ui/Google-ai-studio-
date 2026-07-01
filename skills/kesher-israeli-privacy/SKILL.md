@@ -22,3 +22,13 @@ Use this skill when product or code changes affect sensitive Kesher data. This i
 - Server routes enforce the owner or mutual-consent boundary for protected reads/writes.
 - User-facing copy uses uncertainty and rights language, not fixed labels or legal overclaims.
 - Firebase rules, production auth mode, deployment settings, billing, and credentials are unchanged unless explicitly requested.
+
+
+## Implementation Workflow
+1. **Data Model Audit:** When adding a new data field to Firestore, evaluate it against the Israeli Privacy Protection Law (PPL) definition of "sensitive information".
+2. **Consent Verification:** Ensure explicit, informed consent is gathered before collecting the data (refer to `kesher-consent-ux`).
+3. **Retention Policy:** Define a clear TTL (Time-To-Live) for the data in the Firestore security rules.
+
+## Manus Execution Directive
+- **Capability:** `technical_writing`, `web_development`
+- **Action:** Audit all new data models for PPL compliance and document the retention policy before implementation.

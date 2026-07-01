@@ -39,3 +39,13 @@ Use this skill before implementing or reviewing personality features that depend
 Stop for human approval before changing production auth, Firebase rules, database schema, secrets, billing, deployment settings, instrument item text, commercial instrument activation, personality-driven ordering, or cross-user personality disclosure.
 
 Use `$kesher-personality-delivery` after this skill when implementation, browser verification, CI, or Vercel prototype updates are required.
+
+
+## Implementation Workflow
+1. **Analysis:** Analyze the requirements for this skill.
+2. **Implementation:** Implement the necessary code changes in the repository.
+3. **Verification:** Verify the implementation meets the Kesher architecture rules.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the feature according to the Kesher standards.

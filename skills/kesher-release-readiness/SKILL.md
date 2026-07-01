@@ -19,3 +19,14 @@ Use this skill to decide whether Kesher can ship.
 - AI Ops or release dashboards show blocker status.
 - Required checks are linked from PR/release documentation.
 - Production promotion is blocked when P0 gates are missing.
+
+
+## Implementation Workflow
+1. **Test Execution:** Run the full test suite (`npm run test`) and type checks (`npx tsc --noEmit`).
+2. **Completion Plan Audit:** Read `src/product/completionPlan.ts` and verify that the feature's status accurately reflects its implementation state.
+3. **Deployment Verification:** After pushing to the production branch, use the Vercel MCP `get_deployment` or `list_deployments` tools to verify the build succeeded and retrieve the preview URL.
+
+## Manus Execution Directive
+- **Capability:** `shell`, `web_development`
+- **Connector:** Vercel MCP
+- **Action:** Execute tests, audit completion plan, and verify deployment via Vercel MCP before reporting a feature as "live".

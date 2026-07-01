@@ -41,3 +41,14 @@ The profile must not include diagnosis or treatment language, fixed identity lab
 - `npm run check` or a targeted TypeScript/test command passes.
 
 Use `$kesher-personality-delivery` for browser validation and release workflow.
+
+
+## Implementation Workflow
+1. **Data Aggregation:** Retrieve the user's calculated OCEAN scores and behavioral archetypes from Firestore.
+2. **Prompt Construction:** Construct a prompt for the Gemini API using the aggregated data to generate a cohesive, private personality narrative.
+3. **Generation & Storage:** Call the Gemini API, parse the response, and store the generated narrative in the `Private Owner` layer.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Gemini API
+- **Action:** Implement the server route to generate the private personality narrative using the Gemini API.

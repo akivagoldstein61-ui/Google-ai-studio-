@@ -23,3 +23,13 @@ The Vercel prototype page should show the layer diagram, signal table, blocked r
 ## Stop Points
 
 Stop before exposing hidden ordering, using personality without consent, adding public fit meters, or changing production ranking behavior.
+
+
+## Implementation Workflow
+1. **Analysis:** Analyze the requirements for this skill.
+2. **Implementation:** Implement the necessary code changes in the repository.
+3. **Verification:** Verify the implementation meets the Kesher architecture rules.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Action:** Implement the feature according to the Kesher standards.

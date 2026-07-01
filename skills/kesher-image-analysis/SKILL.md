@@ -23,3 +23,14 @@ The Vercel prototype page should show tiered decisioning, member/moderator schem
 ## Stop Points
 
 Stop before adding biometric identification, attractiveness ranking, protected-trait inference, automated punitive action, or long-lived visual descriptors.
+
+
+## Implementation Workflow
+1. **Upload Handling:** Implement the photo upload flow to Firebase Storage.
+2. **Vision API Call:** Implement a server route to call the Gemini Vision API with the uploaded photo.
+3. **Schema Parsing:** Parse the response into the `PhotoAnalysisSchema` and flag issues for human review if necessary.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Gemini API
+- **Action:** Implement the Gemini Vision API integration for photo analysis and moderation flagging.

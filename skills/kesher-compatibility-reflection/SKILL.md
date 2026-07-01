@@ -39,3 +39,14 @@ Read `references/reflection-contract.md` before changing prompt or schema langua
 - Fallback behavior returns no invented compatibility report.
 
 Use `$kesher-personality-delivery` for browser and CI checks.
+
+
+## Implementation Workflow
+1. **Data Retrieval:** Retrieve the public profiles and mutual consent data for both matched users.
+2. **Prompt Construction:** Construct a prompt for the Gemini API requesting a balanced, non-prescriptive compatibility reflection.
+3. **Generation & Rendering:** Call the Gemini API, parse the JSON response, and render the share card in the UI.
+
+## Manus Execution Directive
+- **Capability:** `web_development`
+- **Connector:** Gemini API
+- **Action:** Implement the compatibility reflection generation using the Gemini API and render the result.

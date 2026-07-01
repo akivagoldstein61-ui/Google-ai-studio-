@@ -34,3 +34,13 @@ Read `references/visibility-rules.md` when changing any UI surface that displays
 - Admin views do not become backdoor profile-dossier views.
 
 Use `$kesher-permissioned-sharing` for share-card implementation and `$kesher-personality-delivery` for browser validation.
+
+
+## Implementation Workflow
+1. **Surface Identification:** Identify the UI component being modified (e.g., `ProfileCard.tsx`).
+2. **Field Classification:** Classify every data field in the component against the Four Visibility Layers (Public Browse, Private Owner, Mutual Consent, System Only).
+3. **Code Audit:** Use `grep` to ensure no fields from restricted layers are being rendered.
+
+## Manus Execution Directive
+- **Capability:** `shell`, `web_development`
+- **Action:** Audit UI components using `grep` to ensure strict adherence to the Four Visibility Layers before committing code.
