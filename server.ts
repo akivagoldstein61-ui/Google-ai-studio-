@@ -7,6 +7,10 @@ import discoveryRoutes from "./server/discoveryRoutes.ts";
 import trustRoutes from "./server/trustRoutes.ts";
 import shareRoutes from "./server/shareRoutes.ts";
 import tasteRoutes from "./server/tasteRoutes.ts";
+import billingRoutes from "./server/billingRoutes.ts";
+import notificationRoutes from "./server/notificationRoutes.ts";
+import safetyOpsRoutes from "./server/safetyOpsRoutes.ts";
+import aiGovernanceRoutes from "./server/aiGovernanceRoutes.ts";
 
 const GITHUB_REPO_URL = "https://github.com/akivagoldstein61-ui/Google-ai-studio-";
 
@@ -107,6 +111,18 @@ export async function createApp(): Promise<Express> {
 
   // Permissioned share-card Routes.
   app.use("/api/share", shareRoutes);
+
+  // Billing & Entitlements Routes.
+  app.use("/api/billing", billingRoutes);
+
+  // Notification preference & delivery routes.
+  app.use("/api/notifications", notificationRoutes);
+
+  // Safety Ops — immutable evidence, appeal state machine, moderation summaries.
+  app.use("/api/safety-ops", safetyOpsRoutes);
+
+  // AI Governance — route health, provenance, prompt versions, release gate.
+  app.use("/api/ai-governance", aiGovernanceRoutes);
 
   app.use("/api", (req, res) => {
     res.status(404).json({

@@ -14,8 +14,10 @@ export const SettingsScreen: React.FC<{
   onShowPersonalityVisibility: () => void,
   onShowAIOps: () => void,
   onShowExperiments: () => void,
-  onEditProfile: () => void
-}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowPersonalityVisibility, onShowAIOps, onShowExperiments, onEditProfile }) => {
+  onEditProfile: () => void,
+  onShowSubscription?: () => void,
+  onShowNotifications?: () => void,
+}> = ({ onShowSafety, onShowAITrust, onShowPersonalityProfile, onShowPersonalityVisibility, onShowAIOps, onShowExperiments, onEditProfile, onShowSubscription, onShowNotifications }) => {
   const { user, isPremium, signOut } = useApp();
 
   const [devClicks, setDevClicks] = useState(0);
@@ -133,8 +135,8 @@ export const SettingsScreen: React.FC<{
         <div className="space-y-8">
           <MenuGroup title="Account">
             <MenuItem icon={User} label="Personal Information" />
-            <MenuItem icon={CreditCard} label="Subscription" />
-            <MenuItem icon={Bell} label="Notifications" />
+            <MenuItem icon={CreditCard} label="Subscription" onClick={onShowSubscription} />
+            <MenuItem icon={Bell} label="Notifications" onClick={onShowNotifications} />
           </MenuGroup>
 
           <MenuGroup title="Personality">

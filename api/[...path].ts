@@ -19,6 +19,10 @@ const SUPPORTED_API_NAMESPACES = new Set([
   'account',
   'support',
   'share',
+  'billing',
+  'notifications',
+  'safety-ops',
+  'ai-governance',
 ]);
 
 let cached: Promise<ExpressHandler> | null = null;

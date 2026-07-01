@@ -13,6 +13,8 @@ import { PersonalityProfileScreen } from './features/settings/PersonalityProfile
 import { PersonalityVisibilitySettings } from './features/settings/PersonalityVisibilitySettings';
 import { AITrustHub } from './features/settings/AITrustHub';
 import { PrivateTasteProfile } from './features/settings/PrivateTasteProfile';
+import { SubscriptionScreen } from './features/settings/SubscriptionScreen';
+import { NotificationPreferencesScreen } from './features/settings/NotificationPreferencesScreen';
 import { AIOpsScreen } from './features/admin/AIOpsScreen';
 import { ExperimentsScreen } from './features/admin/ExperimentsScreen';
 import { ProfileDetail } from './components/discovery/ProfileDetail';
@@ -157,8 +159,20 @@ const SettingsRoute: React.FC = () => {
       onShowAIOps={() => navigate('/admin/ai-ops')}
       onShowExperiments={() => navigate('/admin/experiments')}
       onEditProfile={() => navigate('/profile/edit')}
+      onShowSubscription={() => navigate('/settings/subscription')}
+      onShowNotifications={() => navigate('/settings/notifications')}
     />
   );
+};
+
+const SubscriptionRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <SubscriptionScreen onBack={() => navigate(-1)} />;
+};
+
+const NotificationPreferencesRoute: React.FC = () => {
+  const navigate = useNavigate();
+  return <NotificationPreferencesScreen onBack={() => navigate(-1)} />;
 };
 
 const ProfileDetailRoute: React.FC = () => {
@@ -319,6 +333,8 @@ const AppContent: React.FC = () => {
           <Route path="/settings/taste-profile" element={<TasteProfileRoute />} />
           <Route path="/settings/personality" element={<PersonalityProfileRoute />} />
           <Route path="/settings/personality-visibility" element={<PersonalityVisibilityRoute />} />
+          <Route path="/settings/subscription" element={<SubscriptionRoute />} />
+          <Route path="/settings/notifications" element={<NotificationPreferencesRoute />} />
           <Route path="/admin/ai-ops" element={<AdminGuard><AIOpsRoute /></AdminGuard>} />
           <Route path="/admin/experiments" element={<AdminGuard><ExperimentsRoute /></AdminGuard>} />
           <Route path="/demo" element={<Navigate to="/daily?demo=1" replace />} />

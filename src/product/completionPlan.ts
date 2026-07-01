@@ -108,7 +108,7 @@ export const ADDED_PRODUCT_SKILLS: ProductCompletionSkill[] = [
     shortTitle: 'Notify',
     category: 'engagement',
     priority: 'p1',
-    status: 'missing',
+    status: 'prototype', // v2: server/notificationRoutes.ts + notificationService.ts + NotificationPreferencesScreen
     ownerSkill: 'skills/kesher-notifications/SKILL.md',
     summary: 'Preference-managed email, push, and SMS notifications for matches, messages, safety, date reminders, and consent changes.',
     implementationSurfaces: ['SettingsScreen', 'notification worker/API', 'email/SMS provider webhooks'],
@@ -125,7 +125,7 @@ export const ADDED_PRODUCT_SKILLS: ProductCompletionSkill[] = [
     shortTitle: 'Entitlements',
     category: 'commercial',
     priority: 'p1',
-    status: 'missing',
+    status: 'prototype', // v2: server/billingRoutes.ts + entitlementService.ts + SubscriptionScreen
     ownerSkill: 'skills/kesher-subscription-entitlements/SKILL.md',
     summary: 'Pricing, premium gates, quotas, invoices, refunds, and abuse-resistant trial entitlement checks.',
     implementationSurfaces: ['SettingsScreen', 'entitlement service/API', 'billing webhooks'],
@@ -291,33 +291,33 @@ export const PRODUCT_COMPLETION_GATES: CompletionGate[] = [
     id: 'trust_safety_operations',
     label: 'Trust & Safety Operations',
     category: 'trust_safety',
-    status: 'prototype',
-    evidence: ['Safety center', 'report flow', 'trust routes', 'moderation summary route'],
-    nextAction: 'Add report queue states, appeals, operator assignment, and immutable evidence retention.',
+    status: 'prototype', // v2: server/safetyOpsRoutes.ts adds immutable evidence, appeals, photo flags, moderation summaries
+    evidence: ['Safety center', 'report flow', 'trust routes', 'moderation summary route', 'server/safetyOpsRoutes.ts'],
+    nextAction: 'Wire operator dashboard in AIOpsScreen to read from safetyEvents Firestore collection.',
   },
   {
     id: 'ai_runtime_governance',
     label: 'AI Runtime Governance',
     category: 'ai_runtime',
-    status: 'prototype',
-    evidence: ['AI feature registry', 'capability router', 'output validators', 'route metadata logs'],
-    nextAction: 'Promote AI route health, provenance, prompt versions, and red-team status into release gates.',
+    status: 'prototype', // v2: server/aiGovernanceRoutes.ts adds route health, provenance, release gate, red-team status
+    evidence: ['AI feature registry', 'capability router', 'output validators', 'route metadata logs', 'server/aiGovernanceRoutes.ts'],
+    nextAction: 'Wire AIOpsScreen to /api/ai-governance/route-health and /api/ai-governance/release-gate endpoints.',
   },
   {
     id: 'payments_entitlements',
     label: 'Payments & Entitlements',
     category: 'commercial',
-    status: 'missing',
-    evidence: ['Premium UI banner only'],
-    nextAction: 'Add server-side entitlement checks, billing webhooks, subscription screens, and trial abuse controls.',
+    status: 'prototype', // v2 implemented
+    evidence: ['Premium UI banner', 'server/billingRoutes.ts', 'entitlementService.ts', 'SubscriptionScreen'],
+    nextAction: 'Wire Stripe webhook secret in production env vars and enable live payment processing.',
   },
   {
     id: 'notification_delivery',
     label: 'Notification Delivery',
     category: 'engagement',
-    status: 'missing',
-    evidence: ['Settings notification row only'],
-    nextAction: 'Add preference-managed email, push, and SMS delivery with consent and safety priority rules.',
+    status: 'prototype', // v2 implemented
+    evidence: ['Settings notification row', 'server/notificationRoutes.ts', 'notificationService.ts', 'NotificationPreferencesScreen'],
+    nextAction: 'Wire SendGrid/FCM provider keys in production env vars and enable live delivery.',
   },
   {
     id: 'observability_release_gates',
